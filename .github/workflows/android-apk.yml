@@ -8,6 +8,7 @@ on:
       - 'manifest.webmanifest'
       - 'sw.js'
       - 'icon.svg'
+      - 'privacy.html'
       - 'app/**'
       - 'build.gradle'
       - 'settings.gradle'
@@ -50,7 +51,7 @@ jobs:
       - name: Bundle the current web simulation into the Android app
         run: |
           mkdir -p app/src/main/assets
-          cp index.html manifest.webmanifest sw.js icon.svg app/src/main/assets/
+          cp index.html manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
 
       - name: Build installable APK and Google Play App Bundle
         shell: bash
