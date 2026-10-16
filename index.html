@@ -115,14 +115,16 @@ GTT:'V',GTC:'V',GTA:'V',GTG:'V',GCT:'A',GCC:'A',GCA:'A',GCG:'A',GAT:'D',GAC:'D',
 const BASES=['A','C','G','T'];
 const AA_ORDER='ACDEFGHIKLMNPQRSTVWY';
 const SENSE_CODONS=Object.keys(GENETIC_CODE).filter(c=>GENETIC_CODE[c]!=='*'&&c!=='ATG');
-const GENE_LENGTH=21,GENE_COUNT=6,GENOME_LENGTH=GENE_LENGTH*GENE_COUNT;
+const GENE_LENGTH=21,GENE_COUNT=8,GENOME_LENGTH=GENE_LENGTH*GENE_COUNT;
 const geneLabels=[
 {fa:'انرژی و سوخت‌وساز',en:'Energy and metabolism'},
 {fa:'حرکت',en:'Motility'},
 {fa:'حس‌کردن محیط',en:'Environmental sensing'},
 {fa:'پوشش و حفاظت',en:'Envelope and protection'},
 {fa:'تکثیر',en:'Replication'},
-{fa:'تحمل دما',en:'Temperature tolerance'}
+{fa:'تحمل دما',en:'Temperature tolerance'},
+{fa:'یادگیری و حافظه',en:'Learning and memory'},
+{fa:'همکاری اجتماعی',en:'Social cooperation'}
 ];
 const speciesCatalog=[];
 let speciesSerial=0,evolutionGeneration=0,evolutionAccumulator=0,lastSpeciationGeneration=-99;
@@ -147,14 +149,163 @@ function currentLifeStageIndex(age){let idx=0;for(let i=0;i<lifeStages.length;i+
 function currentHabitat(age){if(age<1700)return 'ocean';if(age<3900)return 'ocean';if(age<4250)return 'shore';return 'land';}
 function randomGene(){let out='ATG';for(let i=0;i<5;i++)out+=SENSE_CODONS[Math.floor(Math.random()*SENSE_CODONS.length)];return out+['TAA','TAG','TGA'][Math.floor(Math.random()*3)];}
 function randomGenome(){let out='';for(let i=0;i<GENE_COUNT;i++)out+=randomGene();return out;}
+function normalizeGenome(dna){if(typeof dna!=='string'||!/^[ACGT]+$/.test(dna))return null;if(dna.length===GENOME_LENGTH)return dna;if(dna.length===GENE_LENGTH*6)return dna+randomGene()+randomGene();return null;}
 function translateGene(dna){let protein='';for(let i=0;i+2<dna.length;i+=3){const aa=GENETIC_CODE[dna.slice(i,i+3)]||'?';if(aa==='*')break;protein+=aa;}return protein;}
 function translateGenome(dna){const genes=[];for(let i=0;i<GENE_COUNT;i++)genes.push(translateGene(dna.slice(i*GENE_LENGTH,(i+1)*GENE_LENGTH)));return genes;}
 function proteinSignal(protein,geneIndex){if(!protein)return .05;let total=0;for(let i=0;i<protein.length;i++){let n=AA_ORDER.indexOf(protein[i]);if(n<0)n=0;total+=((n+1)*(((i+3)*(geneIndex+5))%17+1));}return (total%997)/996;}
-function phenotypeFromDNA(dna){const proteins=translateGenome(dna),v=proteins.map((p,i)=>proteinSignal(p,i));const energy=v[0];const metabolism=energy<.22?'anaerobic':energy<.44?'fermentative':energy<.69?'chemosynthetic':'photosynthetic';return{proteins,signals:v,metabolism,motility:.08+.88*v[1],sensing:.10+.86*v[2],protection:.12+.82*v[3],replication:.18+.80*v[4],thermalTolerance:.05+.90*v[5],size:.12+.95*v[3],photosynthetic:metabolism==='photosynthetic',swims:v[1]>.48};}
+function phenotypeFromDNA(dna){dna=normalizeGenome(dna)||randomGenome();const proteins=translateGenome(dna),v=proteins.map((p,i)=>proteinSignal(p,i));const energy=v[0];const metabolism=energy<.22?'anaerobic':energy<.44?'fermentative':energy<.69?'chemosynthetic':'photosynthetic',learning=.05+.90*v[6],cooperation=.05+.90*v[7],sensing=.10+.86*v[2],motility=.08+.88*v[1];return{proteins,signals:v,metabolism,motility,sensing,protection:.12+.82*v[3],replication:.18+.80*v[4],thermalTolerance:.05+.90*v[5],learning,cooperation,cognition:Math.min(1,.08+.34*sensing+.36*learning+.12*motility+.10*cooperation),memoryCapacity:Math.round(2+10*learning),decisionAccuracy:.08+.57*learning+.30*sensing,size:.12+.95*v[3],photosynthetic:metabolism==='photosynthetic',swims:motility>.48};}
 function mutateGenome(dna,rate){const a=dna.split('');for(let g=0;g<GENE_COUNT;g++){const start=g*GENE_LENGTH;for(let i=3;i<18;i++){if(Math.random()<rate){let b=a[start+i],n=b;while(n===b)n=BASES[Math.floor(Math.random()*4)];a[start+i]=n;}}}return a.join('');}
 function geneticDistance(a,b){let d=0;for(let i=0;i<Math.min(a.length,b.length);i++)if(a[i]!==b[i])d++;return d+Math.abs(a.length-b.length);}
 function nameForSpecies(id){const p=speciesPrefixes.fa[Math.floor(Math.random()*speciesPrefixes.fa.length)],s=speciesSuffixes.fa[Math.floor(Math.random()*speciesSuffixes.fa.length)],pe=speciesPrefixes.en[Math.floor(Math.random()*speciesPrefixes.en.length)],se=speciesSuffixes.en[Math.floor(Math.random()*speciesSuffixes.en.length)];return{fa:p+s+'-'+String(id).padStart(3,'0'),en:pe+'-'+se+'-'+String(id).padStart(3,'0')};}
-function makeSpecies(dna,opts){opts=opts||{};const id=++speciesSerial,seq=dna||randomGenome(),ph=phenotypeFromDNA(seq),names=nameForSpecies(id),age=Number.isFinite(opts.firstAppearanceMa)?opts.firstAppearanceMa:lifeAgeMa;const s={id,nameFa:names.fa,nameEn:names.en,dna:seq,lineageDNA:seq,proteins:ph.proteins,traits:ph,firstAppearanceMa:age,habitat:opts.habitat||currentHabitat(age),population:opts.population||Math.floor(150+Math.random()*1800),generation:opts.generation||0,fitness:.5,active:true,extinctAtMa:null,parentId:opts.parentId||null,seed:Math.random()*100000,hue:Math.floor(Math.random()*360),artificial:!!opts.artificial,mutations:opts.mutations||0,speciationCount:0};speciesCatalog.push(s);return s;}
+function makeSpecies(dna,opts){opts=opts||{};const id=++speciesSerial,seq=normalizeGenome(dna||randomGenome())||randomGenome(),ph=phenotypeFromDNA(seq),names=nameForSpecies(id),age=Number.isFinite(opts.firstAppearanceMa)?opts.firstAppearanceMa:lifeAgeMa;const s={id,nameFa:names.fa,nameEn:names.en,dna:seq,lineageDNA:seq,proteins:ph.proteins,traits:ph,firstAppearanceMa:age,habitat:opts.habitat||currentHabitat(age),population:opts.population||Math.floor(150+Math.random()*1800),generation:opts.generation||0,fitness:.5,active:true,extinctAtMa:null,parentId:opts.parentId||null,seed:Math.random()*100000,hue:Math.floor(Math.random()*360),artificial:!!opts.artificial,mutations:opts.mutations||0,speciationCount:0,agents:[],births:0,deaths:0,meanEnergy:55,meanReward:0,decisionCount:0};speciesCatalog.push(s);for(let i=0;i<12;i++)s.agents.push(createAgent(s,null));return s;}
+const MAX_AGENTS_PER_SPECIES=22;
+let agentSerial=0;
+const ACTIONS=['forage','explore','rest','avoid','reproduce','cooperate'];
+const ACTION_TEXT={
+forage:{fa:'جست‌وجوی غذا',en:'Foraging'},
+explore:{fa:'کاوش محیط',en:'Exploring'},
+rest:{fa:'استراحت و ترمیم',en:'Resting / recovery'},
+avoid:{fa:'دوری از خطر',en:'Avoiding danger'},
+reproduce:{fa:'تولیدمثل',en:'Reproducing'},
+cooperate:{fa:'همکاری با هم‌نوع',en:'Cooperating'}
+};
+function makeHabitatEnvironment(offset){const food=[];for(let i=0;i<24;i++){const x=(.07+((i*.61803398875+offset*.13)% .86)),y=(.06+((i*.41421356237+offset*.21)% .88));food.push({x,y,amount:.40+((i*7+offset*3)%11)/18,max:.85,regrowth:.008+((i+offset)%4)*.003});}const hazards=[];for(let i=0;i<5;i++)hazards.push({x:.12+((i*.271+offset*.19)% .76),y:.10+((i*.347+offset*.11)% .80),intensity:.25+((i*3+offset)%6)*.09,radius:.04+((i+offset)%3)*.012});return{food,hazards};}
+const ecologyWorld={ocean:makeHabitatEnvironment(1),shore:makeHabitatEnvironment(2),land:makeHabitatEnvironment(3)};
+function actionQSeed(){return{forage:0,explore:0,rest:0,avoid:0,reproduce:0,cooperate:0};}
+function createAgent(species,parent){
+ const dna=normalizeGenome(parent?parent.dna:species.lineageDNA||species.dna)||species.dna;
+ const genotype=parent?mutateGenome(dna,.0011):mutateGenome(dna,.0018);
+ const traits=phenotypeFromDNA(genotype);
+ return{id:++agentSerial,dna:genotype,traits,x:parent?clamp(parent.x+(Math.random()-.5)*.10,.03,.97):.06+Math.random()*.88,y:parent?clamp(parent.y+(Math.random()-.5)*.10,.03,.97):.06+Math.random()*.88,energy:parent?54+Math.random()*22:48+Math.random()*38,health:parent?72+Math.random()*22:56+Math.random()*40,age:0,lifeSpan:Math.round(36+traits.protection*38+traits.thermalTolerance*24+Math.random()*22),cooldown:0,q:actionQSeed(),memory:[],action:'explore',reward:0,previousEnergy:50,previousHealth:80,previousOffspring:0,offspring:0,decisions:0,successfulDecisions:0,alive:true,stress:0,fitness:.5};
+}
+function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+function nearestByDistance(items,x,y,field){let best=null,dist=Infinity;for(const p of items){if(field&&p[field]<=.015)continue;const d=Math.hypot(p.x-x,p.y-y);if(d<dist){dist=d;best=p;}}return best?{item:best,distance:dist}:null;}
+function moveAgent(a,tx,ty,step){let dx=tx-a.x,dy=ty-a.y,len=Math.hypot(dx,dy)||1;const stride=Math.min(step,len);a.x=clamp(a.x+dx/len*stride,.025,.975);a.y=clamp(a.y+dy/len*stride,.025,.975);}
+function learnFromOutcome(a){
+ if(!a.decisions)return;
+ const action=ACTIONS.includes(a.action)?a.action:'explore';
+ const reward=clamp((a.energy-a.previousEnergy)/22+(a.health-a.previousHealth)/34+(a.offspring-a.previousOffspring)*.34-.035,-1,1);
+ a.reward=reward;
+ const bestFuture=Math.max(...ACTIONS.map(k=>Number(a.q[k])||0));
+ const alpha=.06+.22*a.traits.learning;
+ a.q[action]=clamp((Number(a.q[action])||0)+alpha*(reward+.34*bestFuture-(Number(a.q[action])||0)),-2,2);
+ a.memory.push({action,reward,energy:Math.round(a.energy),danger:Math.round(a.stress*100),age:a.age});
+ if(a.memory.length>a.traits.memoryCapacity)a.memory.shift();
+ if(reward>.12)a.successfulDecisions++;
+}
+function decideAction(agent,s,env,neighbors){
+ const t=agent.traits,foodHit=nearestByDistance(env.food,agent.x,agent.y,'amount'),hazardHit=nearestByDistance(env.hazards,agent.x,agent.y);
+ const perceive=.09+.29*t.sensing;
+ const foodSignal=foodHit?clamp(1-foodHit.distance/perceive,0,1)*(foodHit.item.amount||0):0;
+ const danger=hazardHit?clamp(1-hazardHit.distance/(.07+.24*t.sensing),0,1)*hazardHit.item.intensity:0;
+ const hunger=clamp((72-agent.energy)/72,0,1),healthNeed=clamp((76-agent.health)/76,0,1);
+ const tired=clamp((agent.age/Math.max(1,agent.lifeSpan)-.72)/.28,0,1);
+ const lowEnergyNeighbors=neighbors.filter(n=>n.energy<44).length;
+ const readiness=agent.energy>67&&agent.health>42&&agent.age>4&&agent.cooldown<=0&&s.agents.length<MAX_AGENTS_PER_SPECIES;
+ const density=clamp(neighbors.length/7,0,1);
+ const instinct={
+  forage:hunger*1.48+foodSignal*1.72+t.sensing*.16-danger*.64,
+  explore:(1-foodSignal)*.55+t.sensing*.30+t.motility*.42+t.learning*.12,
+  rest:(1-agent.energy/100)*.42+healthNeed*.70+tired*.62-hunger*.22,
+  avoid:danger*1.86+healthNeed*.10+t.sensing*.24,
+  reproduce:readiness?.42+t.replication*.40+Math.min(.38,agent.age/Math.max(1,agent.lifeSpan))*.38-density*.52:-1.2,
+  cooperate:lowEnergyNeighbors? t.cooperation*Math.min(1,lowEnergyNeighbors*.45)-hunger*.50 :t.cooperation*.08-hunger*.45
+ };
+ let best='forage',bestScore=-Infinity;
+ for(const action of ACTIONS){
+  const score=instinct[action]+(Number(agent.q[action])||0)*(.42+.78*t.learning)+(Math.random()-.5)*(.05+.10*(1-t.learning));
+  if(score>bestScore){bestScore=score;best=action;}
+ }
+ const exploreChance=.025+.23*(1-t.learning);
+ if(Math.random()<exploreChance)best=ACTIONS[Math.floor(Math.random()*ACTIONS.length)];
+ return{action:best,food:foodHit,hazard:hazardHit,foodSignal,danger,hunger,healthNeed,perceive,bestScore};
+}
+function actAgent(agent,s,env,neighbors,context){
+ learnFromOutcome(agent);
+ agent.previousEnergy=agent.energy;agent.previousHealth=agent.health;agent.previousOffspring=agent.offspring;
+ agent.age++;agent.cooldown=Math.max(0,agent.cooldown-1);
+ const t=agent.traits,decision=decideAction(agent,s,env,neighbors);
+ agent.action=decision.action;agent.decisions++;agent.stress=decision.danger;
+ let births=0;
+ const basal=1.05+(t.size*.48)+(t.motility*.18);
+ agent.energy-=basal;
+ if(t.photosynthetic&&s.habitat!=='ocean')agent.energy+=.75*t.replication;
+ if(agent.action==='forage'){
+  if(decision.food&&decision.food.distance<.052&&decision.food.item.amount>.015){
+   const p=decision.food.item,take=Math.min(p.amount,.09+t.sensing*.12);p.amount-=take;
+   agent.energy+=take*(t.metabolism==='photosynthetic'?84:t.metabolism==='chemosynthetic'?69:58);
+  }else if(decision.food)moveAgent(agent,decision.food.item.x,decision.food.item.y,.018+.030*t.motility);
+  else{agent.x=clamp(agent.x+(Math.random()-.5)*.04,.025,.975);agent.y=clamp(agent.y+(Math.random()-.5)*.04,.025,.975);}
+  agent.energy-=.38;
+ }else if(agent.action==='explore'){
+  const near=decision.food&&decision.food.distance<.42?decision.food:null;
+  if(near&&Math.random()<.58)moveAgent(agent,near.item.x,near.item.y,.014+.034*t.motility);
+  else{const a=Math.random()*Math.PI*2,step=.025+.032*t.motility;agent.x=clamp(agent.x+Math.cos(a)*step,.025,.975);agent.y=clamp(agent.y+Math.sin(a)*step,.025,.975);}
+  agent.energy-=.70;
+ }else if(agent.action==='rest'){
+  agent.energy+=4.0+1.2*t.protection;agent.health=Math.min(100,agent.health+.45+t.protection*.55);
+ }else if(agent.action==='avoid'){
+  if(decision.hazard){moveAgent(agent,agent.x+(agent.x-decision.hazard.item.x)*2.1,agent.y+(agent.y-decision.hazard.item.y)*2.1,.018+.045*t.motility);}else{agent.x=clamp(agent.x+(Math.random()-.5)*.025,.025,.975);agent.y=clamp(agent.y+(Math.random()-.5)*.025,.025,.975);}
+  agent.energy-=.95;
+ }else if(agent.action==='cooperate'){
+  const partner=neighbors.filter(n=>n.energy<48).sort((a,b)=>a.energy-b.energy)[0];
+  if(partner&&agent.energy>47){const gift=Math.min(5,(agent.energy-42)*.20,t.cooperation*5);partner.energy=Math.min(100,partner.energy+gift);agent.energy-=gift*.60;}
+  else{const near=nearestByDistance(env.food,agent.x,agent.y,'amount');if(near)moveAgent(agent,near.item.x,near.item.y,.012+.018*t.motility);agent.energy-=.25;}
+ }else if(agent.action==='reproduce'){
+  if(agent.energy>67&&agent.health>42&&agent.cooldown<=0&&s.agents.length+context.pending.length<MAX_AGENTS_PER_SPECIES){
+   agent.energy-=27;agent.health-=3;agent.cooldown=5;agent.offspring++;births++;
+   const child=createAgent(s,agent);child.energy=52+Math.random()*18;child.health=65+Math.random()*25;context.pending.push(child);s.population=Math.min(1000000000,s.population+Math.max(1,Math.round(s.population/Math.max(1,s.agents.length)*.006)));
+  }else agent.energy-=.8;
+ }
+ if(decision.danger>.15&&decision.hazard&&decision.hazard.distance<decision.hazard.item.radius+.05){agent.health-=decision.hazard.item.intensity*(1-t.protection)*4.5;agent.stress=1;}
+ agent.energy=clamp(agent.energy,0,100);agent.health=clamp(agent.health,0,100);
+ if(agent.energy<12){agent.health-= (12-agent.energy)*.12;agent.energy=Math.max(0,agent.energy);}
+ agent.fitness=clamp(.25*calculateFitness(s,lifeAgeMa)+.42*(agent.energy/100)+.24*(agent.health/100)+.09*agent.traits.learning,0,1);
+ return{births,dead:agent.health<=0||agent.energy<=0||agent.age>agent.lifeSpan};
+}
+function regrowResources(){for(const env of Object.values(ecologyWorld))for(const p of env.food)p.amount=Math.min(p.max,p.amount+p.regrowth);}
+function populationConsensus(agents,fallbackDNA){
+ const usable=agents.filter(a=>a&&a.alive&&typeof a.dna==='string');
+ if(!usable.length)return fallbackDNA;
+ let out='';
+ for(let i=0;i<fallbackDNA.length;i++){const counts={A:0,C:0,G:0,T:0};for(const a of usable){const weight=1+Math.min(4,a.offspring*.25)+Math.max(0,(a.energy-50)/100);counts[a.dna[i]]=(counts[a.dna[i]]||0)+weight;}let winner=fallbackDNA[i],best=-1;for(const base of BASES)if(counts[base]>best){best=counts[base];winner=base;}out+=winner;}
+ return mutateGenome(out,.00025);
+}
+function simulateSpeciesEcology(s){
+ const env=ecologyWorld[s.habitat]||ecologyWorld.ocean;
+ if(!Array.isArray(s.agents))s.agents=[];
+ if(!s.agents.length&&s.population>10&&s.firstAppearanceMa<=lifeAgeMa&&!Number.isFinite(s.extinctAtMa))for(let i=0;i<4;i++)s.agents.push(createAgent(s,null));
+ const pending=[],context={pending},current=s.agents.slice();
+ let births=0,deaths=0,energySum=0,rewardSum=0,fitnessSum=0;
+ for(const agent of current){
+  if(!agent.alive)continue;
+  const neighbors=current.filter(n=>n!==agent&&n.alive&&Math.hypot(n.x-agent.x,n.y-agent.y)<.14);
+  const result=actAgent(agent,s,env,neighbors,context);births+=result.births;
+  if(result.dead){agent.alive=false;deaths++;}
+  energySum+=agent.energy;rewardSum+=agent.reward;fitnessSum+=agent.fitness;
+ }
+ s.agents=s.agents.filter(a=>a.alive).concat(pending);
+ s.births=births;s.deaths=deaths;
+ const n=Math.max(1,s.agents.length),avgEnergy=s.agents.reduce((sum,a)=>sum+a.energy,0)/n,avgReward=s.agents.reduce((sum,a)=>sum+a.reward,0)/n;
+ s.meanEnergy=avgEnergy;s.meanReward=avgReward;s.decisionCount+=current.reduce((sum,a)=>sum+(a.decisions||0),0);
+ const sampledFitness=s.agents.length?s.agents.reduce((sum,a)=>sum+a.fitness,0)/s.agents.length:0;
+ const baseFitness=calculateFitness(s,lifeAgeMa);
+ s.fitness=clamp(baseFitness*.32+sampledFitness*.58+clamp((avgEnergy-35)/100,0,.10),.02,1);
+ const peerCount=Math.max(1,activeSpecies().filter(x=>x.habitat===s.habitat).length);
+ const baseK=s.habitat==='ocean'?16000:s.habitat==='shore'?8500:11000;
+ const resourceMean=env.food.reduce((sum,p)=>sum+p.amount,0)/Math.max(1,env.food.length);
+ const carryingCapacity=Math.max(45,baseK*(.22+.92*resourceMean)/Math.sqrt(peerCount));
+ const logistic=.095*(.35+s.fitness)*(1-s.population/carryingCapacity);
+ const energyEffect=((avgEnergy-52)/100)*.045;
+ const eventEffect=(births-deaths)/Math.max(1,current.length)*.045;
+ const direction=clamp(logistic+energyEffect+eventEffect,-.38,.12);
+ s.population=Math.max(0,Math.min(1000000000,Math.round(s.population*(1+direction))));
+ s.lineageDNA=populationConsensus(s.agents,s.lineageDNA||s.dna);
+ s.traits=phenotypeFromDNA(s.lineageDNA);s.proteins=s.traits.proteins;
+ if(s.population<8||(!s.agents.length&&Math.random()<.65)){s.extinctAtMa=lifeAgeMa;s.active=false;}
+}
+function actionLabel(action){const row=ACTION_TEXT[action]||ACTION_TEXT.explore;return isEnglishLife()?row.en:row.fa;}
+
 function speciesName(s){return isEnglishLife()?s.nameEn:s.nameFa;}
 function calculateFitness(s,age){const t=phenotypeFromDNA(s.lineageDNA||s.dna),hab=currentHabitat(age);let f=.48;
 if(hab==='ocean'){f+=t.swims?.12:-.04;f+=t.protection*.12;if(age>1600&&t.photosynthetic)f+=.18;if(age>2140&&t.metabolism==='anaerobic')f-=.12;}
