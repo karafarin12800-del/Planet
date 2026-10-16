@@ -314,16 +314,48 @@ else{f+=t.motility*.16+t.protection*.12+t.sensing*.08;if(t.thermalTolerance<.25)
 f+=t.replication*.12;f-=Math.abs(t.thermalTolerance-(hab==='ocean'?.52:hab==='shore'?.60:.68))*.22;return Math.max(.05,Math.min(1,f));}
 function activeSpecies(){return speciesCatalog.filter(s=>s.firstAppearanceMa<=lifeAgeMa&&(!Number.isFinite(s.extinctAtMa)||s.extinctAtMa>lifeAgeMa));}
 function ensureFirstLineage(){const natural=speciesCatalog.find(s=>!s.artificial&&s.parentId===null);if(!natural&&lifeAgeMa>=740&&speciesCatalog.length<MAX_SPECIES){makeSpecies(randomGenome(),{firstAppearanceMa:740,habitat:'ocean',population:900});}}
-function evolutionaryStep(){if(lifeAgeMa<740)return;ensureFirstLineage();evolutionGeneration++;const living=activeSpecies().filter(s=>!s.artificial);for(const s of living){if(s.extinctAtMa)continue;s.fitness=calculateFitness(s,lifeAgeMa);const fit=s.fitness;let multiplier=.72+fit*.54+Math.random()*.13;if(fit<.25)multiplier*=.8;s.population=Math.max(0,Math.min(1000000000,Math.round(s.population*multiplier)));s.generation++;s.habitat=currentHabitat(lifeAgeMa);const previousDNA=s.lineageDNA;s.lineageDNA=mutateGenome(previousDNA,.007);s.mutations+=geneticDistance(previousDNA,s.lineageDNA);s.traits=phenotypeFromDNA(s.lineageDNA);s.proteins=s.traits.proteins;
-if(s.population<8&&Math.random()<.24){s.extinctAtMa=lifeAgeMa;s.active=false;continue;}
-const divergence=geneticDistance(s.dna,s.lineageDNA);const livingNow=activeSpecies().filter(x=>!x.artificial).length;if(divergence>=5&&evolutionGeneration-lastSpeciationGeneration>=4&&speciesCatalog.length<MAX_SPECIES&&livingNow<MAX_LIVING_SPECIES){const child=makeSpecies(s.lineageDNA,{firstAppearanceMa:lifeAgeMa,habitat:s.habitat,population:Math.max(30,Math.round(s.population*.12)),generation:s.generation,parentId:s.id,mutations:divergence});child.lineageDNA=mutateGenome(child.dna,.003);s.speciationCount++;s.lineageDNA=s.dna;lastSpeciationGeneration=evolutionGeneration;}
-}
-if(evolutionGeneration%8===0){for(const s of activeSpecies()){if(s.artificial)continue;s.fitness=calculateFitness(s,lifeAgeMa);if(s.population<20&&Math.random()<.18){s.extinctAtMa=lifeAgeMa;s.active=false;}}}
-updateLifeUI();if($('speciesOverlay').classList.contains('open'))renderSpeciesCatalog();
+function evolutionaryStep(){
+ if(lifeAgeMa<740)return;
+ ensureFirstLineage();evolutionGeneration++;regrowResources();
+ const living=activeSpecies().slice();
+ for(let i=living.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[living[i],living[j]]=[living[j],living[i]];}
+ for(const s of living){
+  if(!activeSpecies().includes(s)||s.extinctAtMa!==null&&s.extinctAtMa!==undefined)continue;
+  simulateSpeciesEcology(s);if(s.extinctAtMa!==null&&s.extinctAtMa!==undefined)continue;
+  s.generation++;
+  const divergence=geneticDistance(s.dna,s.lineageDNA);
+  const livingNow=activeSpecies().length;
+  if(divergence>=8&&evolutionGeneration-lastSpeciationGeneration>=7&&speciesCatalog.length<MAX_SPECIES&&livingNow<MAX_LIVING_SPECIES){
+   const child=makeSpecies(s.lineageDNA,{firstAppearanceMa:lifeAgeMa,habitat:s.habitat,population:Math.max(25,Math.round(s.population*.12)),generation:0,parentId:s.id,mutations:divergence,artificial:s.artificial});
+   child.fitness=s.fitness;
+   s.speciationCount++;s.dna=s.lineageDNA;s.fitness=clamp(s.fitness,0,1);
+   lastSpeciationGeneration=evolutionGeneration;
+  }
+ }
+ updateLifeUI();if($('speciesOverlay').classList.contains('open'))renderSpeciesCatalog();
 }
 
-function persistLifeState(){try{const snapshot={age:lifeAgeMa,started:lifeStarted,speed:lifeSpeed,generation:evolutionGeneration,serial:speciesSerial,lastSpeciationGeneration:lastSpeciationGeneration,species:speciesCatalog.map(s=>({id:s.id,nameFa:s.nameFa,nameEn:s.nameEn,dna:s.dna,lineageDNA:s.lineageDNA,firstAppearanceMa:s.firstAppearanceMa,habitat:s.habitat,population:s.population,generation:s.generation,fitness:s.fitness,active:s.active,extinctAtMa:s.extinctAtMa,parentId:s.parentId,seed:s.seed,hue:s.hue,artificial:s.artificial,mutations:s.mutations,speciationCount:s.speciationCount}))};localStorage.setItem('planet-life-state',JSON.stringify(snapshot));}catch(e){}}
-function restoreLifeState(){try{const raw=localStorage.getItem('planet-life-state');if(!raw)return;const data=JSON.parse(raw);lifeAgeMa=Math.max(0,Math.min(4540,Number(data.age)||0));lifeStarted=!!data.started;lifeSpeed=Math.max(1,Math.min(30,Number(data.speed)||8));evolutionGeneration=Math.max(0,Number(data.generation)||0);speciesSerial=Math.max(0,Number(data.serial)||0);lastSpeciationGeneration=Number.isFinite(data.lastSpeciationGeneration)?data.lastSpeciationGeneration:-99;speciesCatalog.length=0;for(const record of (Array.isArray(data.species)?data.species:[])){if(!record||typeof record.dna!=='string'||record.dna.length!==GENOME_LENGTH||!/^[ACGT]+$/.test(record.dna))continue;const lineage=typeof record.lineageDNA==='string'&&record.lineageDNA.length===GENOME_LENGTH&&/^[ACGT]+$/.test(record.lineageDNA)?record.lineageDNA:record.dna;const ph=phenotypeFromDNA(lineage);speciesCatalog.push({...record,lineageDNA:lineage,traits:ph,proteins:ph.proteins});}if(speciesCatalog.length)speciesSerial=Math.max(speciesSerial,...speciesCatalog.map(s=>s.id));$('lifeSpeed').value=String(lifeSpeed);$('lifeSpeedLabel').textContent='×'+lifeSpeed;}catch(e){}}
+function serialiseAgent(a){return{id:a.id,dna:a.dna,x:a.x,y:a.y,energy:a.energy,health:a.health,age:a.age,lifeSpan:a.lifeSpan,cooldown:a.cooldown,q:a.q,memory:(a.memory||[]).slice(-6),action:a.action,reward:a.reward,previousEnergy:a.previousEnergy,previousHealth:a.previousHealth,previousOffspring:a.previousOffspring,offspring:a.offspring,decisions:a.decisions,successfulDecisions:a.successfulDecisions,alive:a.alive,stress:a.stress,fitness:a.fitness,angle:a.angle||0};}
+function persistLifeState(){try{const snapshot={age:lifeAgeMa,started:lifeStarted,speed:lifeSpeed,generation:evolutionGeneration,serial:speciesSerial,agentSerial:agentSerial,lastSpeciationGeneration:lastSpeciationGeneration,world:ecologyWorld,species:speciesCatalog.map(s=>({id:s.id,nameFa:s.nameFa,nameEn:s.nameEn,dna:s.dna,lineageDNA:s.lineageDNA,firstAppearanceMa:s.firstAppearanceMa,habitat:s.habitat,population:s.population,generation:s.generation,fitness:s.fitness,active:s.active,extinctAtMa:s.extinctAtMa,parentId:s.parentId,seed:s.seed,hue:s.hue,artificial:s.artificial,mutations:s.mutations,speciationCount:s.speciationCount,births:s.births,deaths:s.deaths,meanEnergy:s.meanEnergy,meanReward:s.meanReward,decisionCount:s.decisionCount,agents:(s.agents||[]).map(serialiseAgent)}))};localStorage.setItem('planet-life-state',JSON.stringify(snapshot));}catch(e){}}
+function restoreLifeState(){try{const raw=localStorage.getItem('planet-life-state');if(!raw)return;const data=JSON.parse(raw);lifeAgeMa=Math.max(0,Math.min(4540,Number(data.age)||0));lifeStarted=!!data.started;lifeSpeed=Math.max(1,Math.min(30,Number(data.speed)||8));evolutionGeneration=Math.max(0,Number(data.generation)||0);speciesSerial=Math.max(0,Number(data.serial)||0);agentSerial=Math.max(0,Number(data.agentSerial)||0);lastSpeciationGeneration=Number.isFinite(data.lastSpeciationGeneration)?data.lastSpeciationGeneration:-99;
+ if(data.world&&typeof data.world==='object'){for(const type of ['ocean','shore','land']){const saved=data.world[type],current=ecologyWorld[type];if(saved&&Array.isArray(saved.food)&&Array.isArray(saved.hazards)){for(let i=0;i<Math.min(current.food.length,saved.food.length);i++)current.food[i].amount=clamp(Number(saved.food[i].amount)||0,0,current.food[i].max);}}}
+ speciesCatalog.length=0;
+ for(const record of (Array.isArray(data.species)?data.species:[])){
+  if(!record)continue;const dna=normalizeGenome(record.dna),lineage=normalizeGenome(record.lineageDNA)||dna;if(!dna||!lineage)continue;
+  const ph=phenotypeFromDNA(lineage),s={...record,dna,lineageDNA:lineage,traits:ph,proteins:ph.proteins,agents:[],births:Number(record.births)||0,deaths:Number(record.deaths)||0,meanEnergy:Number(record.meanEnergy)||55,meanReward:Number(record.meanReward)||0,decisionCount:Number(record.decisionCount)||0};
+  speciesCatalog.push(s);
+  if(Array.isArray(record.agents))for(const savedAgent of record.agents.slice(0,MAX_AGENTS_PER_SPECIES)){
+   const agentDNA=normalizeGenome(savedAgent&&savedAgent.dna)||lineage;const agent=createAgent(s,null);
+   Object.assign(agent,savedAgent||{},{dna:agentDNA,traits:phenotypeFromDNA(agentDNA),q:{...actionQSeed(),...(savedAgent&&savedAgent.q||{})},memory:Array.isArray(savedAgent&&savedAgent.memory)?savedAgent.memory.slice(-agent.traits.memoryCapacity):[],x:clamp(Number(savedAgent&&savedAgent.x)||agent.x,.025,.975),y:clamp(Number(savedAgent&&savedAgent.y)||agent.y,.025,.975),energy:clamp(Number(savedAgent&&savedAgent.energy)||agent.energy,0,100),health:clamp(Number(savedAgent&&savedAgent.health)||agent.health,0,100),alive:savedAgent&&savedAgent.alive!==false});
+   agent.id=Number(savedAgent&&savedAgent.id)||agent.id;agentSerial=Math.max(agentSerial,agent.id);s.agents.push(agent);
+  }
+  if(!s.agents.length&&s.population>0&&(!Number.isFinite(s.extinctAtMa)))for(let i=0;i<10;i++)s.agents.push(createAgent(s,null));
+ }
+ if(speciesCatalog.length)speciesSerial=Math.max(speciesSerial,...speciesCatalog.map(s=>s.id));
+ $('lifeSpeed').value=String(lifeSpeed);$('lifeSpeedLabel').textContent='×'+lifeSpeed;
+ }catch(e){console.warn('Life state could not be restored:',e);}
+}
+
 function catchUpEvolution(targetAge){if(targetAge<740)return;ensureFirstLineage();const initial=Math.max(740,Math.min(lifeSeekStartAge||740,targetAge));const span=Math.max(0,targetAge-initial);const steps=Math.min(42,Math.max(1,Math.floor(span/70)));for(let i=0;i<steps;i++){lifeAgeMa=initial+(span*(i+1)/steps);evolutionaryStep();}lifeAgeMa=targetAge;ensureFirstLineage();updateLifeUI();renderSpeciesCatalog();persistLifeState();}
 
 function lifeTimeLabel(age){const lang=isEnglishLife();if(age>=1000)return (age/1000).toFixed(2)+(lang?' billion years after Earth formed':' میلیارد سال پس از شکل‌گیری زمین');return Math.round(age).toLocaleString(lang?'en-US':'fa-IR')+(lang?' million years after Earth formed':' میلیون سال پس از شکل‌گیری زمین');}
