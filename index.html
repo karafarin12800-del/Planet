@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#050b17"><meta name="description" content="Planet — شبیه‌سازی تعاملی سیاره زمین، جو، چرخه آب‌وهوا، مدارها و حیات میکروسکوپی">
+<meta name="theme-color" content="#050b17"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.svg" type="image/svg+xml"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="description" content="Planet — شبیه‌سازی تعاملی سیاره زمین، جو، چرخه آب‌وهوا، مدارها و حیات میکروسکوپی">
 <title>PLANET — شبیه‌ساز سیاره</title>
 <style>
 
@@ -137,4 +137,5 @@ let resized=0;const oldRender=render;const _render=render;window.addEventListene
 $('bottomSystem').textContent='SOL / EARTH';requestAnimationFrame(render);requestAnimationFrame(drawLife);
 })();
 </script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script>
 </body></html>
