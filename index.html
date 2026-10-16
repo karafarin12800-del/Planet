@@ -236,7 +236,7 @@ function actAgent(agent,s,env,neighbors,context){
  let births=0;
  const basal=1.05+(t.size*.48)+(t.motility*.18);
  agent.energy-=basal;
- if(t.photosynthetic&&s.habitat!=='ocean')agent.energy+=.75*t.replication;
+ if(t.photosynthetic)agent.energy+=(s.habitat==='ocean'?.42:.75)*t.replication;
  if(agent.action==='forage'){
   if(decision.food&&decision.food.distance<.052&&decision.food.item.amount>.015){
    const p=decision.food.item,take=Math.min(p.amount,.09+t.sensing*.12);p.amount-=take;
@@ -278,6 +278,7 @@ function populationConsensus(agents,fallbackDNA){
  for(let i=0;i<fallbackDNA.length;i++){const counts={A:0,C:0,G:0,T:0};for(const a of usable){const weight=1+Math.min(4,a.offspring*.25)+Math.max(0,(a.energy-50)/100);counts[a.dna[i]]=(counts[a.dna[i]]||0)+weight;}let winner=fallbackDNA[i],best=-1;for(const base of BASES)if(counts[base]>best){best=counts[base];winner=base;}out+=winner;}
  return mutateGenome(out,.00025);
 }
+function attemptHabitatShift(s){const t=s.traits||phenotypeFromDNA(s.lineageDNA||s.dna);if(s.habitat==='ocean'&&lifeAgeMa>=3900&&t.motility>.46&&t.protection>.38&&t.sensing>.32&&Math.random()<.015){s.habitat='shore';for(const a of s.agents||[]){a.y=clamp(.63+Math.random()*.30,.025,.975);a.energy=Math.max(5,a.energy-3);}return;}if(s.habitat==='shore'&&lifeAgeMa>=4250&&t.motility>.48&&t.thermalTolerance>.36&&t.protection>.42&&Math.random()<.013){s.habitat='land';for(const a of s.agents||[]){a.y=clamp(.20+Math.random()*.70,.025,.975);a.energy=Math.max(5,a.energy-4);}}}
 function simulateSpeciesEcology(s){
  const env=ecologyWorld[s.habitat]||ecologyWorld.ocean;
  if(!Array.isArray(s.agents))s.agents=[];
@@ -329,7 +330,7 @@ function evolutionaryStep(){
  for(const s of living){
   if(!activeSpecies().includes(s))continue;
   simulateSpeciesEcology(s);if(s.extinctAtMa!==null&&s.extinctAtMa!==undefined)continue;
-  s.generation++;
+  attemptHabitatShift(s);s.generation++;
   const divergence=geneticDistance(s.dna,s.lineageDNA);
   const livingNow=activeSpecies().length;
   if(divergence>=8&&evolutionGeneration-lastSpeciationGeneration>=7&&speciesCatalog.length<MAX_SPECIES&&livingNow<MAX_LIVING_SPECIES){
@@ -342,7 +343,7 @@ function evolutionaryStep(){
  updateLifeUI();if($('speciesOverlay').classList.contains('open'))renderSpeciesCatalog();
 }
 
-function serialiseAgent(a){return{id:a.id,dna:a.dna,x:a.x,y:a.y,energy:a.energy,health:a.health,age:a.age,lifeSpan:a.lifeSpan,cooldown:a.cooldown,q:a.q,memory:(a.memory||[]).slice(-6),action:a.action,reward:a.reward,previousEnergy:a.previousEnergy,previousHealth:a.previousHealth,previousOffspring:a.previousOffspring,offspring:a.offspring,decisions:a.decisions,successfulDecisions:a.successfulDecisions,alive:a.alive,stress:a.stress,fitness:a.fitness,angle:a.angle||0};}
+function serialiseAgent(a){return{id:a.id,dna:a.dna,x:a.x,y:a.y,energy:a.energy,health:a.health,age:a.age,growth:a.growth,maturity:a.maturity,lifeSpan:a.lifeSpan,cooldown:a.cooldown,q:a.q,memory:(a.memory||[]).slice(-6),action:a.action,reward:a.reward,previousEnergy:a.previousEnergy,previousHealth:a.previousHealth,previousOffspring:a.previousOffspring,offspring:a.offspring,decisions:a.decisions,successfulDecisions:a.successfulDecisions,alive:a.alive,stress:a.stress,fitness:a.fitness,angle:a.angle||0};}
 function persistLifeState(){try{const snapshot={age:lifeAgeMa,started:lifeStarted,speed:lifeSpeed,generation:evolutionGeneration,serial:speciesSerial,agentSerial:agentSerial,lastSpeciationGeneration:lastSpeciationGeneration,world:ecologyWorld,species:speciesCatalog.map(s=>({id:s.id,nameFa:s.nameFa,nameEn:s.nameEn,dna:s.dna,lineageDNA:s.lineageDNA,firstAppearanceMa:s.firstAppearanceMa,habitat:s.habitat,population:s.population,generation:s.generation,fitness:s.fitness,active:s.active,extinctAtMa:s.extinctAtMa,parentId:s.parentId,seed:s.seed,hue:s.hue,artificial:s.artificial,mutations:s.mutations,speciationCount:s.speciationCount,births:s.births,deaths:s.deaths,meanEnergy:s.meanEnergy,meanReward:s.meanReward,decisionCount:s.decisionCount,agents:(s.agents||[]).map(serialiseAgent)}))};localStorage.setItem('planet-life-state',JSON.stringify(snapshot));}catch(e){}}
 function restoreLifeState(){try{const raw=localStorage.getItem('planet-life-state');if(!raw)return;const data=JSON.parse(raw);lifeAgeMa=Math.max(0,Math.min(4540,Number(data.age)||0));lifeStarted=!!data.started;lifeSpeed=Math.max(1,Math.min(30,Number(data.speed)||8));evolutionGeneration=Math.max(0,Number(data.generation)||0);speciesSerial=Math.max(0,Number(data.serial)||0);agentSerial=Math.max(0,Number(data.agentSerial)||0);lastSpeciationGeneration=Number.isFinite(data.lastSpeciationGeneration)?data.lastSpeciationGeneration:-99;
  if(data.world&&typeof data.world==='object'){for(const type of ['ocean','shore','land']){const saved=data.world[type],current=ecologyWorld[type];if(saved&&Array.isArray(saved.food)&&Array.isArray(saved.hazards)){for(let i=0;i<Math.min(current.food.length,saved.food.length);i++)current.food[i].amount=clamp(Number(saved.food[i].amount)||0,0,current.food[i].max);}}}
@@ -451,7 +452,7 @@ function drawHabitatScene(time){
  c.globalAlpha=1;
  const agents=(s.agents||[]).filter(a=>a.alive),chosen=getSelectedAgent(s);
  for(const a of agents){
-  const x=a.x*w,y=a.y*h,r=(2.3+a.traits.size*3.5)*dpr,angle=Number(a.angle)||0;
+  const x=a.x*w,y=a.y*h,r=(1.8+a.traits.size*(2.1+2.5*(a.growth||.4)))*dpr,angle=Number(a.angle)||0;
   c.save();c.translate(x,y);c.rotate(angle);
   if(a.id===selectedAgentId){c.strokeStyle='#ffffff';c.lineWidth=1.7*dpr;c.shadowColor='#ffffff';c.shadowBlur=8*dpr;c.beginPath();c.arc(0,0,r*2.4,0,Math.PI*2);c.stroke();c.shadowBlur=0;}
   const light=54+Math.round(a.energy*.16);c.fillStyle='hsl('+s.hue+',72%,'+light+'%)';c.strokeStyle='rgba(236,255,248,.82)';c.lineWidth=.8*dpr;
@@ -487,10 +488,10 @@ function drawLife(t){
    const rx=x*Math.cos(yaw)-z*Math.sin(yaw),rz=x*Math.sin(yaw)+z*Math.cos(yaw),ry=y*Math.cos(pitch)-rz*Math.sin(pitch),front=rz*Math.cos(pitch)+y*Math.sin(pitch);
    if(front<-.08)continue;
    const px=cx+rx*R,py=cy-ry*R,scale=.45+.55*Math.max(0,front);
-   const size=(1.0+a.traits.size*2.2)*dpr*scale*Math.max(.8,zoom);
+   const size=(.7+a.traits.size*(1.1+1.8*(a.growth||.4)))*dpr*scale*Math.max(.8,zoom);
    lifeCtx.globalAlpha=.38+.58*scale;lifeCtx.fillStyle='hsl('+s.hue+',72%,'+(54+Math.floor(14*scale))+'%)';lifeCtx.strokeStyle='rgba(235,255,250,.72)';lifeCtx.lineWidth=.7*dpr;lifeCtx.shadowColor=lifeCtx.fillStyle;lifeCtx.shadowBlur=2.5*dpr;
    lifeCtx.beginPath();lifeCtx.ellipse(px,py,size*(.8+a.traits.size),size*.72,Math.sin(a.angle||0),0,Math.PI*2);lifeCtx.fill();lifeCtx.stroke();
-   if(a.traits.cognition>.58){lifeCtx.fillStyle='#e5fcff';lifeCtx.beginPath();lifeCtx.arc(px,py,size*.45,0,Math.PI*2);lifeCtx.fill();}
+   if(a.traits.cognition>.58&&a.maturity>.65){lifeCtx.fillStyle='#e5fcff';lifeCtx.beginPath();lifeCtx.arc(px,py,size*.45,0,Math.PI*2);lifeCtx.fill();}
   }
  }
  lifeCtx.shadowBlur=0;lifeCtx.globalAlpha=1;requestAnimationFrame(drawLife);
