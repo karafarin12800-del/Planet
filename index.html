@@ -315,7 +315,7 @@ function simulateSpeciesEcology(s){
 function actionLabel(action){const row=ACTION_TEXT[action]||ACTION_TEXT.explore;return isEnglishLife()?row.en:row.fa;}
 
 function speciesName(s){return isEnglishLife()?s.nameEn:s.nameFa;}
-function calculateFitness(s,age){const t=phenotypeFromDNA(s.lineageDNA||s.dna),hab=currentHabitat(age);let f=.48;
+function calculateFitness(s,age){const t=phenotypeFromDNA(s.lineageDNA||s.dna),hab=s.habitat||currentHabitat(age);let f=.48;
 if(hab==='ocean'){f+=t.swims?.12:-.04;f+=t.protection*.12;if(age>1600&&t.photosynthetic)f+=.18;if(age>2140&&t.metabolism==='anaerobic')f-=.12;}
 else if(hab==='shore'){f+=t.motility*.13+t.protection*.13;if(t.metabolism==='photosynthetic')f+=.10;}
 else{f+=t.motility*.16+t.protection*.12+t.sensing*.08;if(t.thermalTolerance<.25)f-=.12;}
