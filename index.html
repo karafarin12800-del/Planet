@@ -134,7 +134,7 @@ $('earthView').onclick=()=>toggleView(false);$('systemView').onclick=()=>toggleV
 // Reset canvas dimensions on resize. Avoid resizing every frame once dimensions are stable.
 let resized=0;const oldRender=render;const _render=render;window.addEventListener('resize',()=>{const nextW=Math.floor(innerWidth*Math.min(devicePixelRatio||1,1.75)),nextH=Math.floor(innerHeight*Math.min(devicePixelRatio||1,1.75));if(canvas.width!==nextW||canvas.height!==nextH){canvas.width=nextW;canvas.height=nextH;gl.viewport(0,0,canvas.width,canvas.height);}});
 // Preserve canvas dimensions; they are recomputed here at low cost on each frame.
-$('bottomSystem').textContent='SOL / EARTH';requestAnimationFrame(render);
+$('bottomSystem').textContent='SOL / EARTH';requestAnimationFrame(render);requestAnimationFrame(drawLife);
 })();
 </script>
 </body></html>
