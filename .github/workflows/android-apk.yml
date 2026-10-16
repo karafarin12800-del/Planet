@@ -66,15 +66,17 @@ jobs:
           if [[ -n "$PLAY_UPLOAD_KEYSTORE_BASE64" && -n "$PLAY_UPLOAD_STORE_PASSWORD" && -n "$PLAY_UPLOAD_KEY_ALIAS" && -n "$PLAY_UPLOAD_KEY_PASSWORD" ]]; then
             KEYSTORE_PATH="$RUNNER_TEMP/planet-upload.jks"
             printf '%s' "$PLAY_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
-            gradle --no-daemon --stacktrace assembleDebug bundleRelease \
+            gradle --no-daemon --stacktrace assembleDebug assembleRelease bundleRelease \
               -PUPLOAD_STORE_FILE="$KEYSTORE_PATH" \
               -PUPLOAD_STORE_PASSWORD="$PLAY_UPLOAD_STORE_PASSWORD" \
               -PUPLOAD_KEY_ALIAS="$PLAY_UPLOAD_KEY_ALIAS" \
               -PUPLOAD_KEY_PASSWORD="$PLAY_UPLOAD_KEY_PASSWORD"
             cp app/build/outputs/bundle/release/app-release.aab dist/PLANET-PlayBundle-SIGNED.aab
+            cp app/build/outputs/apk/release/app-release.apk dist/PLANET-Android-Release-SIGNED.apk
           else
-            gradle --no-daemon --stacktrace assembleDebug bundleRelease
+            gradle --no-daemon --stacktrace assembleDebug assembleRelease bundleRelease
             cp app/build/outputs/bundle/release/app-release.aab dist/PLANET-PlayBundle-UNSIGNED-NEEDS-SIGNING.aab
+            cp app/build/outputs/apk/release/app-release-unsigned.apk dist/PLANET-Android-Release-UNSIGNED.apk
           fi
           cp app/build/outputs/apk/debug/app-debug.apk dist/PLANET-Android-Install.apk
           ls -lh dist
