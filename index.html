@@ -23,7 +23,7 @@
 <body>
 <div id="app">
 <canvas id="space" aria-label="نمای سه‌بعدی منظومه سیاره‌ای"></canvas><canvas id="lifeCanvas" aria-hidden="true"></canvas><div id="vignette"></div>
-<header class="topbar"><div class="brand"><div class="brand-mark"><svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="9" stroke="#82e3f4" stroke-width="1.4"/><ellipse cx="16" cy="16" rx="14" ry="5.5" transform="rotate(-28 16 16)" stroke="#659bff" stroke-width="1.1"/><circle cx="24.4" cy="10.5" r="2" fill="#82e3f4"/><path d="M12 8c-2.4 1-2 3.2-4 4.1m10.8 1.2c-2.5-.9-3.3 1.6-2 3.4s-.8 3.3-2.6 4.9" stroke="#9be8c9" stroke-width="1.4" stroke-linecap="round"/></svg></div><div><div class="brand-name">PLANET</div><div class="brand-sub">آزمایشگاه جهان‌های زنده</div></div></div><div class="top-actions"><div class="pill"><span class="dot" id="runDot"></span><span id="runLabel">شبیه‌سازی فعال</span></div><button class="icon-btn panel-toggle" id="panelToggle" aria-label="نمایش پنل">☷ پنل</button><button class="icon-btn" id="helpBtn">راهنما ؟</button></div></header>
+<header class="topbar"><div class="brand"><div class="brand-mark"><svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="9" stroke="#82e3f4" stroke-width="1.4"/><ellipse cx="16" cy="16" rx="14" ry="5.5" transform="rotate(-28 16 16)" stroke="#659bff" stroke-width="1.1"/><circle cx="24.4" cy="10.5" r="2" fill="#82e3f4"/><path d="M12 8c-2.4 1-2 3.2-4 4.1m10.8 1.2c-2.5-.9-3.3 1.6-2 3.4s-.8 3.3-2.6 4.9" stroke="#9be8c9" stroke-width="1.4" stroke-linecap="round"/></svg></div><div><div class="brand-name">PLANET</div><div class="brand-sub">آزمایشگاه جهان‌های زنده</div></div></div><div class="top-actions"><button class="icon-btn" id="languageToggle" type="button" aria-label="Switch language">EN</button><div class="pill"><span class="dot" id="runDot"></span><span id="runLabel">شبیه‌سازی فعال</span></div><button class="icon-btn panel-toggle" id="panelToggle" aria-label="نمایش پنل">☷ پنل</button><button class="icon-btn" id="helpBtn">راهنما ؟</button></div></header>
 <main class="layout"><section class="scene-hud"><div class="scene-title"><div class="eyebrow" id="viewKicker">PLANETARY ENVIRONMENT / 01</div><h1 id="viewTitle">EARTH</h1><p id="viewDesc">جهانی آبی با اقیانوس‌ها، ابرهای پویا و جو محافظ؛ یک مدل زنده از شرایط زمین.</p></div><div class="scene-coords"><div class="coord"><label>ROTATION</label><strong id="rotationReadout">00:42 / 04:00</strong></div><div class="coord"><label>ORBITAL PHASE</label><strong id="phaseReadout">142.8°</strong></div><div class="coord hide-mobile"><label>SIMULATION</label><strong id="simReadout">T + 00:01:42</strong></div></div></section>
 <aside class="panel" id="panel"><div class="panel-head"><h2>داشبورد سیاره</h2><span class="micro-label">PLANET OS · 0.1</span></div>
 <div class="section"><div class="section-title"><span><span class="ico">◉</span> وضعیت محیطی زمین</span><span class="status">پایدار</span></div><div class="metrics"><div class="metric"><div class="metric-top"><span>میانگین دما</span><span>♨</span></div><div class="metric-value" id="tempValue">15.0<small>°C</small></div><div class="metric-foot"><span class="up">●</span><span>در محدودهٔ مرجع</span></div></div><div class="metric"><div class="metric-top"><span>فشار سطح دریا</span><span>◌</span></div><div class="metric-value">101.3<small>kPa</small></div><div class="metric-foot"><span class="up">●</span><span>استاندارد زمین</span></div></div><div class="metric"><div class="metric-top"><span>پوشش ابر</span><span>☁</span></div><div class="metric-value" id="cloudValue">64<small>%</small></div><div class="metric-foot"><span class="down">↗</span><span>در حال تغییر</span></div></div><div class="metric"><div class="metric-top"><span>آب مایع سطحی</span><span>≈</span></div><div class="metric-value">71<small>%</small></div><div class="metric-foot"><span class="up">●</span><span>اقیانوس‌ها و دریاها</span></div></div></div></div>
@@ -33,14 +33,14 @@
 <div class="section"><div class="section-title"><span><span class="ico">🧬</span> تکامل قابل مشاهدهٔ حیات</span><span class="status" id="lifeStatus">خاموش</span></div><div class="life-lab"><div class="life-stage" id="lifeStage">زمین آغازین · بدون حیات</div><div class="life-desc" id="lifeDesc">با آغاز آزمایش، نخستین موجودات ساده ظاهر می‌شوند و در گذر زمان به جانداران پیچیده‌تر می‌رسند. نشانه‌ها به‌صورت دیداری روی کره نمایش داده می‌شوند.</div><div class="life-progress"><i id="lifeProgress"></i></div><div class="life-stats"><span>مرحله: <b id="lifeStageNum">۰ / ۶</b></span><span>زمان تکامل: <b id="lifeTime">۰ سال مدل</b></span></div><div class="life-actions" style="margin-top:10px"><button class="primary" id="lifeStart">▶ آغاز تکامل</button><button id="lifeReset">↺ از ابتدا</button></div><div class="slider-wrap"><div class="slider-head"><span>سرعت تکامل</span><b id="lifeSpeedLabel">×8</b></div><input id="lifeSpeed" type="range" min="1" max="30" value="8" step="1" aria-label="سرعت تکامل حیات"></div><div class="tiny-note">این یک مدل آموزشی ساده‌شده است؛ مراحل و زمان‌بندی برای نمایش سریع طراحی شده‌اند و تاریخ واقعی پیدایش حیات را بازسازی نمی‌کنند.</div></div></div><div class="section"><div class="section-title"><span><span class="ico">⌬</span> زیست‌کرهٔ میکروسکوپی</span><span class="status">شبیه‌سازی</span></div><div class="bio-box"><div class="petri" id="petri"><i class="cell" style="left:12px;top:12px;width:8px;height:4px;transform:rotate(28deg)"></i><i class="cell" style="left:29px;top:9px;width:5px;height:7px;transform:rotate(-30deg);background:#8fcdf0"></i><i class="cell" style="left:22px;top:29px;width:10px;height:4px;transform:rotate(70deg)"></i><i class="cell" style="left:9px;top:35px;width:5px;height:5px;background:#b6ec9c"></i><i class="cell" style="left:36px;top:30px;width:7px;height:3px;transform:rotate(-24deg)"></i></div><div class="bio-main"><b id="microbeCount">12,480</b><span>واحد جمعیت میکروبی مدل</span><div class="bio-rate" id="microbeRate">+0.8% / cycle</div></div></div><div class="range-line"><span>شاخص مناسب‌بودن محیط</span><strong id="habitability">96 / 100</strong></div><div class="tiny-note">جمعیت تک‌سلولی، رشد و تغییراتش به‌صورت ریاضی مدل می‌شود. این موجودات داده‌ای داخل شبیه‌سازی‌اند و حیات واقعی تولید نمی‌شود.</div></div>
 <div class="section"><div class="section-title"><span><span class="ico">ⓘ</span> مشخصات مرجع</span></div><div class="range-line"><span>شعاع سیاره</span><strong>6,371 km</strong></div><div class="range-line"><span>جرم</span><strong>5.972 × 10²⁴ kg</strong></div><div class="range-line"><span>گرانش سطح</span><strong>9.81 m/s²</strong></div><div class="range-line"><span>دورهٔ مداری مرجع</span><strong>365.256 days</strong></div><div class="footer-note">Planet 0.1 · مدل دیداری و آموزشی. هندسه، مقیاس فاصله‌ها و چرخهٔ زمان برای نمایش قابل‌فهم ساده‌سازی شده‌اند؛ شبیه‌ساز جایگزین مدل عددی کامل اقلیم یا اخترفیزیک نیست.</div></div>
 </aside></main>
-<div class="bottom-bar"><div class="bottom-chip">SYSTEM <strong id="bottomSystem">SOL / EARTH</strong></div><div class="bottom-chip">TIME SCALE <strong id="bottomScale">ORBIT ×60</strong></div><div class="bottom-chip">FPS <strong id="fps">60</strong></div><div class="bottom-chip hide-mobile">SURFACE <strong id="mapSource">procedural fallback</strong></div></div><button class="help-btn" id="resetView">↺ بازنشانی زاویهٔ دید</button><div class="toast" id="toast"></div>
+<div class="bottom-bar"><div class="bottom-chip">SYSTEM <strong id="bottomSystem">SOL / EARTH</strong></div><div class="bottom-chip">TIME SCALE <strong id="bottomScale">ORBIT ×60</strong></div><div class="bottom-chip">FPS <strong id="fps">60</strong></div><div class="bottom-chip hide-mobile">SURFACE <strong id="mapSource">procedural fallback</strong></div></div><button class="life-zoom-btn" id="lifeZoomBtn" type="button" aria-label="Zoom in on life">🔎 <span>زوم روی حیات</span></button><button class="help-btn" id="resetView">↺ بازنشانی زاویهٔ دید</button><div class="toast" id="toast"></div>
 <div class="overlay" id="helpOverlay"><div class="modal"><h3>راهنمای آزمایشگاه Planet</h3><p>این نسخه یک شبیه‌سازی تعاملی مستقل از سرور است. روی صفحه بکشید تا زاویهٔ دید تغییر کند؛ با چرخ ماوس یا ژست دو انگشتی، فاصلهٔ دوربین را تنظیم کنید.</p><ul><li>هر چرخهٔ چرخش زمین ۴ دقیقه است: ۲ دقیقه روشنایی و ۲ دقیقه تاریکی؛ نور خورشید پیوسته روی کره حرکت می‌کند.</li><li>در نمای «منظومه»، خورشید و مدارهای سیاره‌ها با دوره‌های نسبی عطارد، زهره، زمین، مریخ، مشتری و زحل نمایش داده می‌شوند. اندازه‌ها و فاصله‌ها برای خوانایی بصری تغییر مقیاس دارند.</li><li>سرعت مداری مستقل است؛ ×1 نسبت زمانی دقیق‌تری میان روز و سال دارد، و ×60 یا ×365 حرکت مدارها را سریع‌تر نشان می‌دهد.</li><li>اقلیم و جمعیت میکروبی مدل‌های آموزشی ساده‌شده‌اند، نه پیش‌بینی علمی معتبر یا موجودات واقعی.</li></ul><button class="view-btn active" id="closeHelp">متوجه شدم</button></div></div>
 </div>
 <script>
 (()=>{'use strict';
 const canvas=document.getElementById('space'), gl=canvas.getContext('webgl',{alpha:true,antialias:true,preserveDrawingBuffer:false});
 if(!gl){document.getElementById('viewDesc').textContent='مرورگر شما از WebGL پشتیبانی نمی‌کند. لطفاً در Chrome به‌روز باز کنید.';return;}
-const $=id=>document.getElementById(id);let paused=false,systemView=false,cloudsOn=true,atmosOn=true,orbitsOn=true,starsOn=true,orbitSpeed=60,elapsed=0,last=performance.now(),fpsFrames=0,fpsStart=performance.now(),drag=false,lastX=0,lastY=0,yaw=-.42,pitch=.12,zoom=1.0,targetYaw=yaw,targetPitch=pitch,zoomTarget=zoom,toastTimer;
+const $=id=>document.getElementById(id);let paused=false,systemView=false,cloudsOn=true,atmosOn=true,orbitsOn=true,starsOn=true,orbitSpeed=60,elapsed=0,last=performance.now(),fpsFrames=0,fpsStart=performance.now(),drag=false,lastX=0,lastY=0,yaw=-.42,pitch=.12,zoom=1.0,targetYaw=yaw,targetPitch=pitch,zoomTarget=zoom,toastTimer,lifeFocusMode=false,savedFocus=null;
 function toast(s){$('toast').textContent=s;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2100)}
 const vert=`attribute vec3 aPos; attribute vec3 aNorm; attribute vec2 aUV; uniform mat4 uMVP; uniform mat4 uModel; varying vec2 vUV; varying vec3 vN; varying vec3 vP; void main(){vec4 wp=uModel*vec4(aPos,1.0);vP=wp.xyz;vN=normalize(mat3(uModel)*aNorm);vUV=aUV;gl_Position=uMVP*vec4(aPos,1.0);}`;
 const frag=`precision mediump float; uniform sampler2D uTex; uniform vec3 uLight; uniform vec3 uEye; uniform float uKind; uniform float uAlpha; uniform float uTime; varying vec2 vUV; varying vec3 vN; varying vec3 vP; void main(){vec4 tex=texture2D(uTex,vUV);vec3 N=normalize(vN);vec3 L=normalize(uLight-vP);vec3 V=normalize(uEye-vP);float ndl=dot(N,L);if(uKind<0.5){float day=smoothstep(-0.18,0.16,ndl);float light=0.10+0.95*max(ndl,0.0);vec3 base=tex.rgb*light;float night=1.0-smoothstep(-0.22,0.06,ndl);vec3 col=base;float spec=pow(max(dot(reflect(-L,N),V),0.0),28.0)*0.16*day;col+=vec3(.47,.72,1.0)*spec;float haze=pow(1.0-max(dot(N,V),0.0),4.0);col=mix(col,col+vec3(.025,.09,.17),.35*haze);gl_FragColor=vec4(col,1.0);}else if(uKind<1.5){float alpha=tex.a*uAlpha;float light=.5+.5*max(ndl,0.0);gl_FragColor=vec4(tex.rgb*light,alpha);}else if(uKind<2.5){float fres=pow(1.0-max(dot(N,V),0.0),2.4);float day=.35+.65*max(ndl,0.0);vec3 c=mix(vec3(.09,.27,.72),vec3(.28,.77,1.0),fres);gl_FragColor=vec4(c, fres*.52*day*uAlpha);}else{gl_FragColor=vec4(tex.rgb,1.0);}}`;
@@ -106,8 +106,8 @@ const lifeStages=[
 {name:'۵ · گیاهان و جانوران',desc:'پوشش سبز خشکی‌ها و نشانه‌های کوچک جانداران روی سطح ظاهر می‌شوند.',years:4100},
 {name:'۶ · زیست‌کرهٔ پیچیده',desc:'تنوع دیداری حیات به بیشترین سطح این مدل می‌رسد؛ این پایان مدل نمایشی است، نه پیش‌بینی علمی.',years:4600}
 ];
-function drawLife(t){const dpr=Math.min(devicePixelRatio||1,1.75),w=Math.floor(innerWidth*dpr),h=Math.floor(innerHeight*dpr);if(lifeCanvas.width!==w||lifeCanvas.height!==h){lifeCanvas.width=w;lifeCanvas.height=h;}lifeCtx.clearRect(0,0,w,h);if(!lifeStarted||systemView){requestAnimationFrame(drawLife);return;}const stage=Math.min(6,1+Math.floor(lifeAge/28));const cx=w*.5,cy=h*.5,R=Math.min(h*.382,w*.32)*1.0;const rot=elapsed*Math.PI*2/240;const count=[0,18,36,56,72,95,125][stage];
-for(let i=0;i<count;i++){const lat=Math.asin(Math.sin(i*12.9898+1)*.88),lon=i*2.399963+Math.sin(i*4.123)*.4+rot;let x=Math.cos(lat)*Math.sin(lon),y=Math.sin(lat),z=Math.cos(lat)*Math.cos(lon);const xx=x*Math.cos(.04)+y*Math.sin(.04),yy=-x*Math.sin(.04)+y*Math.cos(.04);x=xx;y=yy;const camYaw=typeof yaw==='number'?yaw:0,camPitch=typeof pitch==='number'?pitch:0;const rx=x*Math.cos(camYaw)-z*Math.sin(camYaw),rz=x*Math.sin(camYaw)+z*Math.cos(camYaw),ry=y*Math.cos(camPitch)-rz*Math.sin(camPitch),front=rz*Math.cos(camPitch)+y*Math.sin(camPitch);if(front<-.08)continue;const px=cx+rx*R,py=cy-ry*R,scale=.45+.55*Math.max(0,front);const s=(1.4+(i%4)*.45)*dpr*scale;let color='#72e8ba';if(stage===1)color='#9de9ed';else if(stage===2)color=i%3?'#65e6b0':'#b4f18b';else if(stage===3)color=i%2?'#4fe0b0':'#56cfe6';else if(stage===4)color=i%3?'#72dca3':'#7cc9ed';else if(stage>=5)color=i%3?'#75db8b':'#f2d17a';lifeCtx.globalAlpha=.42+.55*scale;lifeCtx.fillStyle=color;lifeCtx.shadowColor=color;lifeCtx.shadowBlur=(stage>=3?7:4)*dpr;lifeCtx.beginPath();if(stage<3){lifeCtx.ellipse(px,py,s*1.5,s*.7,(i%6)*.5,0,Math.PI*2);}else if(stage===3){lifeCtx.arc(px,py,s*1.5,0,Math.PI*2);}else{lifeCtx.moveTo(px,py-s*1.7);lifeCtx.lineTo(px+s,py+s);lifeCtx.lineTo(px-s,py+s);lifeCtx.closePath();}lifeCtx.fill();if(stage>=5&&i%5===0){lifeCtx.strokeStyle=color;lifeCtx.lineWidth=.8*dpr;lifeCtx.beginPath();lifeCtx.moveTo(px,py);lifeCtx.lineTo(px+s*2,py-s*2);lifeCtx.stroke();}}
+function drawLife(t){const dpr=Math.min(devicePixelRatio||1,1.75),w=Math.floor(innerWidth*dpr),h=Math.floor(innerHeight*dpr);if(lifeCanvas.width!==w||lifeCanvas.height!==h){lifeCanvas.width=w;lifeCanvas.height=h;}lifeCtx.clearRect(0,0,w,h);if(!lifeStarted||systemView){requestAnimationFrame(drawLife);return;}const stage=Math.min(6,1+Math.floor(lifeAge/28));const cx=w*.5,cy=h*.5,R=h*.382*zoom;const rot=elapsed*Math.PI*2/240;const count=[0,18,36,56,72,95,125][stage];
+for(let i=0;i<count;i++){const lat=Math.asin(Math.sin(i*12.9898+1)*.88),lon=i*2.399963+Math.sin(i*4.123)*.4+rot;let x=Math.cos(lat)*Math.sin(lon),y=Math.sin(lat),z=Math.cos(lat)*Math.cos(lon);const xx=x*Math.cos(.04)+y*Math.sin(.04),yy=-x*Math.sin(.04)+y*Math.cos(.04);x=xx;y=yy;const camYaw=typeof yaw==='number'?yaw:0,camPitch=typeof pitch==='number'?pitch:0;const rx=x*Math.cos(camYaw)-z*Math.sin(camYaw),rz=x*Math.sin(camYaw)+z*Math.cos(camYaw),ry=y*Math.cos(camPitch)-rz*Math.sin(camPitch),front=rz*Math.cos(camPitch)+y*Math.sin(camPitch);if(front<-.08)continue;const px=cx+rx*R,py=cy-ry*R,scale=.45+.55*Math.max(0,front);const s=(1.4+(i%4)*.45)*dpr*scale*Math.max(.8,zoom);let color='#72e8ba';if(stage===1)color='#9de9ed';else if(stage===2)color=i%3?'#65e6b0':'#b4f18b';else if(stage===3)color=i%2?'#4fe0b0':'#56cfe6';else if(stage===4)color=i%3?'#72dca3':'#7cc9ed';else if(stage>=5)color=i%3?'#75db8b':'#f2d17a';lifeCtx.globalAlpha=.42+.55*scale;lifeCtx.fillStyle=color;lifeCtx.shadowColor=color;lifeCtx.shadowBlur=(stage>=3?7:4)*dpr;lifeCtx.beginPath();if(stage<3){lifeCtx.ellipse(px,py,s*1.5,s*.7,(i%6)*.5,0,Math.PI*2);}else if(stage===3){lifeCtx.arc(px,py,s*1.5,0,Math.PI*2);}else{lifeCtx.moveTo(px,py-s*1.7);lifeCtx.lineTo(px+s,py+s);lifeCtx.lineTo(px-s,py+s);lifeCtx.closePath();}lifeCtx.fill();if(stage>=5&&i%5===0){lifeCtx.strokeStyle=color;lifeCtx.lineWidth=.8*dpr;lifeCtx.beginPath();lifeCtx.moveTo(px,py);lifeCtx.lineTo(px+s*2,py-s*2);lifeCtx.stroke();}}
 lifeCtx.shadowBlur=0;lifeCtx.globalAlpha=1;requestAnimationFrame(drawLife);}
 function updateLifeUI(){const stage=lifeStarted?Math.min(6,1+Math.floor(lifeAge/28)):0;const data=lifeStages[stage];document.getElementById('lifeStage').textContent=data.name;document.getElementById('lifeDesc').textContent=data.desc;document.getElementById('lifeStageNum').textContent=stage+' / 6';document.getElementById('lifeTime').textContent=Math.round(lifeAge*100)+' میلیون سال (مدل)';document.getElementById('lifeProgress').style.width=(stage/6*100)+'%';document.getElementById('lifeStatus').textContent=lifeStarted?(stage===6?'مرحلهٔ نهایی':'در حال تکامل'):'خاموش';document.getElementById('lifeStart').textContent=lifeStarted?'Ⅱ توقف تکامل':'▶ آغاز تکامل';}
 document.getElementById('lifeStart').addEventListener('click',()=>{lifeStarted=!lifeStarted;lifeLast=performance.now();updateLifeUI();});document.getElementById('lifeReset').addEventListener('click',()=>{lifeStarted=false;lifeAge=0;updateLifeUI();});document.getElementById('lifeSpeed').addEventListener('input',e=>{lifeSpeed=+e.target.value;document.getElementById('lifeSpeedLabel').textContent='×'+lifeSpeed;});
@@ -126,11 +126,13 @@ updateReadouts(now,rot);if(now-fpsStart>1000){$('fps').textContent=Math.round(fp
 // separate starfield layer for consistent crisp points, below controls.
 const starCanvas=document.createElement('canvas');starCanvas.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0';$('app').insertBefore(starCanvas,canvas);const sctx=starCanvas.getContext('2d');let starList=[];function seedStars(){starList=[];for(let i=0;i<460;i++)starList.push({x:Math.random(),y:Math.random(),r:Math.random()*1.25+.15,a:Math.random()*.6+.15,tw:Math.random()*5});}seedStars();function drawStars(t){const dpr=Math.min(devicePixelRatio||1,1.75),w=Math.floor(innerWidth*dpr),h=Math.floor(innerHeight*dpr);if(starCanvas.width!==w||starCanvas.height!==h){starCanvas.width=w;starCanvas.height=h;}sctx.clearRect(0,0,w,h);if(starsOn){for(const s of starList){const a=s.a*(.75+.25*Math.sin(t*.0006+s.tw));sctx.fillStyle=`rgba(174,213,255,${a})`;sctx.beginPath();sctx.arc(s.x*w,s.y*h,s.r*dpr,0,Math.PI*2);sctx.fill();}}requestAnimationFrame(drawStars);}requestAnimationFrame(drawStars);
 function updateReadouts(now,rot){const cycle=(elapsed%240),m=Math.floor(cycle/60),s=Math.floor(cycle%60),pad=n=>String(n).padStart(2,'0');$('rotationReadout').textContent=`${pad(m)}:${pad(s)} / 04:00`;$('phaseReadout').textContent=`${((elapsed*2*Math.PI/(365.256*240)*orbitSpeed*180/Math.PI+142.8)%360).toFixed(1)}°`;$('simReadout').textContent=`T + ${pad(Math.floor(elapsed/3600))}:${pad(Math.floor(elapsed/60)%60)}:${pad(Math.floor(elapsed%60))}`;$('cloudValue').innerHTML=`${Math.round(58+7*Math.sin(elapsed/41)+3*Math.sin(elapsed/17))}<small>%</small>`;$('tempValue').innerHTML=`${(15+.7*Math.sin(elapsed/100)).toFixed(1)}<small>°C</small>`;const population=12480*Math.exp(elapsed/30000);$('microbeCount').textContent=Math.round(population).toLocaleString('en-US');$('microbeRate').textContent=`+${(.4+.5*Math.max(0,Math.sin(elapsed/40))).toFixed(1)}% / cycle`;const hab=Math.round(94+2*Math.sin(elapsed/65));$('habitability').textContent=`${hab} / 100`;const phase=cycle<120?'روز':'شب';$('runLabel').textContent=paused?'مکث‌شده':`شبیه‌سازی فعال · ${phase}`;$('runDot').style.background=paused?'#f5c56a':'#6ae0b0';$('bottomScale').textContent=`ORBIT ×${orbitSpeed}`;}
-function reset(){yaw=-.42;pitch=.12;zoom=1;zoomTarget=1;toast('زاویهٔ دید بازنشانی شد.');}function toggleView(sys){systemView=sys;$('earthView').classList.toggle('active',!sys);$('systemView').classList.toggle('active',sys);$('viewKicker').textContent=sys?'SOLAR SYSTEM / 06 BODIES':'PLANETARY ENVIRONMENT / 01';$('viewTitle').textContent=sys?'SOLAR SYSTEM':'EARTH';$('viewDesc').textContent=sys?'شش سیاره با دوره‌های مداری متفاوت به دور خورشید؛ فاصله و اندازه برای مشاهده، مقیاس‌گذاری شده‌اند.':'جهانی آبی با اقیانوس‌ها، ابرهای پویا و جو محافظ؛ یک مدل زنده از شرایط زمین.';$('bottomSystem').textContent=sys?'SOL / SIX PLANETS':'SOL / EARTH';toast(sys?'نمای منظومهٔ شمسی':'نمای نزدیک زمین');}
-canvas.addEventListener('pointerdown',e=>{drag=true;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(!drag)return;let dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;yaw+=dx*.006;pitch=Math.max(-1.1,Math.min(1.1,pitch+dy*.006));});canvas.addEventListener('pointerup',()=>drag=false);canvas.addEventListener('pointercancel',()=>drag=false);canvas.addEventListener('wheel',e=>{e.preventDefault();zoomTarget=Math.max(.55,Math.min(1.75,zoomTarget*Math.exp(-e.deltaY*.001)));},{passive:false});let touchDistance=0;canvas.addEventListener('touchstart',e=>{if(e.touches.length===2)touchDistance=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);},{passive:true});canvas.addEventListener('touchmove',e=>{if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);zoomTarget=Math.max(.55,Math.min(1.75,zoomTarget*(d/(touchDistance||d))));touchDistance=d;}},{passive:true});
+function updateLifeZoomLabel(){const b=$('lifeZoomBtn');if(b)b.innerHTML=lifeFocusMode?'<span>↩ بازگشت به نمای زمین</span>':'<span>🔎 زوم روی حیات</span>';}
+function toggleLifeZoom(){if(!lifeFocusMode){if(systemView)toggleView(false);savedFocus={yaw,pitch,zoomTarget};if(!lifeStarted)lifeStarted=true;if(lifeAge<28)lifeAge=28;updateLifeUI();const i=12,lat=Math.asin(Math.sin(i*12.9898+1)*.88),lon=i*2.399963+Math.sin(i*4.123)*.4+elapsed*Math.PI*2/240;yaw=lon;pitch=Math.max(-1.05,Math.min(1.05,lat));zoomTarget=1.78;lifeFocusMode=true;toast('نمای نزدیک نشانه‌های حیات فعال شد.');}else{lifeFocusMode=false;if(savedFocus){yaw=savedFocus.yaw;pitch=savedFocus.pitch;zoomTarget=savedFocus.zoomTarget;}savedFocus=null;toast('به نمای قبلی سیاره برگشتی.');}updateLifeZoomLabel();}
+function reset(){yaw=-.42;pitch=.12;zoom=1;zoomTarget=1;lifeFocusMode=false;savedFocus=null;updateLifeZoomLabel();toast('زاویهٔ دید بازنشانی شد.');}function toggleView(sys){systemView=sys;if(sys&&lifeFocusMode){lifeFocusMode=false;savedFocus=null;updateLifeZoomLabel();}$('earthView').classList.toggle('active',!sys);$('systemView').classList.toggle('active',sys);$('viewKicker').textContent=sys?'SOLAR SYSTEM / 06 BODIES':'PLANETARY ENVIRONMENT / 01';$('viewTitle').textContent=sys?'SOLAR SYSTEM':'EARTH';$('viewDesc').textContent=sys?'شش سیاره با دوره‌های مداری متفاوت به دور خورشید؛ فاصله و اندازه برای مشاهده، مقیاس‌گذاری شده‌اند.':'جهانی آبی با اقیانوس‌ها، ابرهای پویا و جو محافظ؛ یک مدل زنده از شرایط زمین.';$('bottomSystem').textContent=sys?'SOL / SIX PLANETS':'SOL / EARTH';toast(sys?'نمای منظومهٔ شمسی':'نمای نزدیک زمین');}
+canvas.addEventListener('pointerdown',e=>{drag=true;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(!drag)return;let dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;yaw+=dx*.006;pitch=Math.max(-1.1,Math.min(1.1,pitch+dy*.006));});canvas.addEventListener('pointerup',()=>drag=false);canvas.addEventListener('pointercancel',()=>drag=false);canvas.addEventListener('wheel',e=>{e.preventDefault();zoomTarget=Math.max(.40,Math.min(2.1,zoomTarget*Math.exp(-e.deltaY*.001)));},{passive:false});let touchDistance=0;canvas.addEventListener('touchstart',e=>{if(e.touches.length===2)touchDistance=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);},{passive:true});canvas.addEventListener('touchmove',e=>{if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);zoomTarget=Math.max(.40,Math.min(2.1,zoomTarget*(d/(touchDistance||d))));touchDistance=d;}},{passive:true});
 // Smooth view controls used by the perspective setup.
 const originalBody=body;body=function(model,tex,kind=0,alpha=1){const isSystem=systemView;const eye=isSystem?[0,9/zoom,21/zoom]:[Math.sin(yaw)*4.2/zoom,Math.sin(pitch)*4.2/zoom,Math.cos(yaw)*4.2/zoom];let view=lookAt(eye,[0,0,0],[0,1,0]),proj=perspective(isSystem?.74:.72,canvas.width/canvas.height,.04,150),mvp=mul(mul(proj,view),model);gl.uniformMatrix4fv(loc.model,false,model);gl.uniformMatrix4fv(loc.mvp,false,mvp);gl.uniform3f(loc.eye,...eye);gl.uniform3f(loc.light,isSystem?0:-3.5,isSystem?0:1.6,isSystem?0:4.0);gl.uniform1f(loc.kind,kind);gl.uniform1f(loc.alpha,alpha);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);gl.uniform1i(loc.tex,0);gl.drawElements(gl.TRIANGLES,mesh.count,gl.UNSIGNED_SHORT,0);};
-$('earthView').onclick=()=>toggleView(false);$('systemView').onclick=()=>toggleView(true);$('pauseBtn').onclick=()=>{paused=!paused;$('pauseBtn').textContent=paused?'▶ ادامه':'Ⅱ مکث';$('pauseBtn').classList.toggle('active',paused);toast(paused?'زمان متوقف شد':'زمان ادامه یافت');};$('orbitSpeed').oninput=e=>{orbitSpeed=+e.target.value;$('orbitSpeedLabel').textContent='×'+orbitSpeed;};$('cloudsToggle').onchange=e=>cloudsOn=e.target.checked;$('atmosToggle').onchange=e=>atmosOn=e.target.checked;$('orbitsToggle').onchange=e=>{orbitsOn=e.target.checked;toast(orbitsOn?'مدارها روشن شدند':'مدارها خاموش شدند');};$('starsToggle').onchange=e=>starsOn=e.target.checked;$('resetView').onclick=reset;$('helpBtn').onclick=()=>$('helpOverlay').classList.add('open');$('closeHelp').onclick=()=>$('helpOverlay').classList.remove('open');$('helpOverlay').onclick=e=>{if(e.target===$('helpOverlay'))$('helpOverlay').classList.remove('open');};$('panelToggle').onclick=()=>$('panel').classList.toggle('closed');
+$('earthView').onclick=()=>toggleView(false);$('systemView').onclick=()=>toggleView(true);$('pauseBtn').onclick=()=>{paused=!paused;$('pauseBtn').textContent=paused?'▶ ادامه':'Ⅱ مکث';$('pauseBtn').classList.toggle('active',paused);toast(paused?'زمان متوقف شد':'زمان ادامه یافت');};$('orbitSpeed').oninput=e=>{orbitSpeed=+e.target.value;$('orbitSpeedLabel').textContent='×'+orbitSpeed;};$('cloudsToggle').onchange=e=>cloudsOn=e.target.checked;$('atmosToggle').onchange=e=>atmosOn=e.target.checked;$('orbitsToggle').onchange=e=>{orbitsOn=e.target.checked;toast(orbitsOn?'مدارها روشن شدند':'مدارها خاموش شدند');};$('starsToggle').onchange=e=>starsOn=e.target.checked;$('resetView').onclick=reset;$('lifeZoomBtn').onclick=toggleLifeZoom;updateLifeZoomLabel();$('helpBtn').onclick=()=>$('helpOverlay').classList.add('open');$('closeHelp').onclick=()=>$('helpOverlay').classList.remove('open');$('helpOverlay').onclick=e=>{if(e.target===$('helpOverlay'))$('helpOverlay').classList.remove('open');};$('panelToggle').onclick=()=>$('panel').classList.toggle('closed');
 // Reset canvas dimensions on resize. Avoid resizing every frame once dimensions are stable.
 let resized=0;const oldRender=render;const _render=render;window.addEventListener('resize',()=>{const nextW=Math.floor(innerWidth*Math.min(devicePixelRatio||1,1.75)),nextH=Math.floor(innerHeight*Math.min(devicePixelRatio||1,1.75));if(canvas.width!==nextW||canvas.height!==nextH){canvas.width=nextW;canvas.height=nextH;gl.viewport(0,0,canvas.width,canvas.height);}});
 // Preserve canvas dimensions; they are recomputed here at low cost on each frame.
@@ -139,55 +141,209 @@ $('bottomSystem').textContent='SOL / EARTH';requestAnimationFrame(render);reques
 </script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script>
 
+
+
+
 <style>
-#languageToggle{min-width:66px;font:700 11px system-ui,sans-serif;letter-spacing:.4px}
+#languageToggle{min-width:54px;font:700 11px system-ui,sans-serif;letter-spacing:.4px}
+.life-zoom-btn{position:absolute;z-index:5;right:365px;bottom:64px;display:flex;align-items:center;gap:7px;color:#c9efff;background:rgba(7,20,37,.9);border:1px solid #5bcce17d;border-radius:12px;padding:10px 13px;font-size:11px;box-shadow:0 8px 28px #0004;backdrop-filter:blur(12px)}
+.life-zoom-btn:active{transform:scale(.97);background:#14364a}
 html[lang="en"] body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-html[lang="en"] .brand-sub,html[lang="en"] .scene-title p{text-align:left;direction:ltr}
+html[lang="en"] .brand-sub,html[lang="en"] .scene-title p{direction:ltr;text-align:left}
 html[lang="en"] .panel{direction:ltr}
 html[lang="en"] .panel-head,html[lang="en"] .section-title,html[lang="en"] .metric-top,html[lang="en"] .metric-foot,html[lang="en"] .range-line,html[lang="en"] .slider-head{direction:ltr}
 html[lang="en"] .metric-value{text-align:left}
 html[lang="en"] .gas-row{direction:ltr}
 html[lang="en"] .gas-name{text-align:left}
 html[lang="en"] .life-stats{direction:ltr}
+html[lang="en"] .scene-title{direction:ltr;text-align:left}
+html[lang="en"] .scene-coords{direction:ltr}
+@media(max-width:900px){.life-zoom-btn{right:12px;bottom:60px;padding:9px 11px;font-size:10px}.top-actions{gap:5px}#languageToggle{min-width:43px;padding:7px 9px}}
 </style>
 <script>
 (function(){
- const translations = [
- ['آزمایشگاه جهان‌های زنده','Living Worlds Lab'],['شبیه‌سازی فعال','Simulation running'],['شبیه‌سازی فعال · روز','Simulation running · Day'],['شبیه‌سازی فعال · شب','Simulation running · Night'],['مکث‌شده','Paused'],
- ['راهنما ؟','Help ?'],['پنل','Panel'],['داشبورد سیاره','Planet dashboard'],['وضعیت محیطی زمین','Earth environment'],['پایدار','Stable'],
- ['میانگین دما','Average temperature'],['در محدودهٔ مرجع','Within reference range'],['فشار سطح دریا','Sea-level pressure'],['استاندارد زمین','Earth standard'],['پوشش ابر','Cloud cover'],['در حال تغییر','Changing'],['آب مایع سطحی','Surface liquid water'],['اقیانوس‌ها و دریاها','Oceans and seas'],
- ['ترکیب مدل‌شدهٔ جو','Modelled atmosphere'],['مقادیر جو نزدیک به هوای خشک زمین‌اند؛ بخار آب متغیر است. این پنل داده‌های مدل را نشان می‌دهد، نه اندازه‌گیری زنده از زمین واقعی.','Atmospheric values approximate dry Earth air; water vapour varies. This panel shows model data, not live measurements from Earth.'],['ابر: بافت رویه‌ای','Clouds: procedural texture'],
- ['زمان و حرکت','Time and motion'],['نمای زمین','Earth view'],['منظومه','Solar system'],['مکث','Pause'],['ادامه','Resume'],['سرعت گردش مداری','Orbital speed'],['واقعی ×1','Realistic ×1'],['شتاب‌داده‌شده','accelerated'],['چرخهٔ محلی ثابت است: ۲ دقیقه روز + ۲ دقیقه شب. سرعت مدار جداگانه تنظیم می‌شود تا حرکت منظومه قابل مشاهده باشد. برای نسبت زمانی نزدیک‌تر به واقعیت، سرعت مدار را ×1 کن.','The local cycle is fixed: 2 minutes of day + 2 minutes of night. Orbital speed is separate so the system motion is visible. Set orbital speed to ×1 for a closer time ratio.'],
- ['لایه‌های دید','Visual layers'],['ابرهای جوی','Atmospheric clouds'],['هالهٔ جو','Atmosphere glow'],['خطوط مدار','Orbit lines'],['ستاره‌ها','Stars'],
- ['تکامل قابل مشاهدهٔ حیات','Visible life evolution'],['خاموش','Off'],['زمین آغازین · بدون حیات','Early Earth · No life'],['با آغاز آزمایش، نخستین موجودات ساده ظاهر می‌شوند و در گذر زمان به جانداران پیچیده‌تر می‌رسند. نشانه‌ها به‌صورت دیداری روی کره نمایش داده می‌شوند.','Start the experiment to see simple early life appear and gradually develop into more complex organisms. Life indicators are shown on the globe.'],
- ['مرحله:','Stage:'],['زمان تکامل:','Evolution time:'],['سال مدل','model years'],['آغاز تکامل','Start evolution'],['توقف تکامل','Pause evolution'],['از ابتدا','Reset'],['سرعت تکامل','Evolution speed'],
- ['این یک مدل آموزشی ساده‌شده است؛ مراحل و زمان‌بندی برای نمایش سریع طراحی شده‌اند و تاریخ واقعی پیدایش حیات را بازسازی نمی‌کنند.','This is a simplified educational model. Its stages and timing are designed for quick viewing and do not reconstruct the actual history of life.'],
- ['زیست‌کرهٔ میکروسکوپی','Microscopic biosphere'],['شبیه‌سازی','Simulation'],['زاویهٔ دید بازنشانی شد.','View reset.'],['نمای منظومهٔ شمسی','Solar system view'],['زمان متوقف شد','Time paused'],['زمان ادامه یافت','Time resumed'],['مدارها روشن شدند','Orbits enabled'],['مدارها خاموش شدند','Orbits disabled'],
- ['جهانی آبی با اقیانوس‌ها، ابرهای پویا و جو محافظ؛ یک مدل زنده از شرایط زمین.','A blue world with oceans, dynamic clouds and a protective atmosphere—a living model of Earth conditions.'],['شش سیاره با دوره‌های مداری متفاوت به دور خورشید؛ فاصله و اندازه برای مشاهده، مقیاس‌گذاری شده‌اند.','Six planets orbit the Sun at different periods; distances and sizes are scaled for visibility.'],
- ['عطارد','Mercury'],['زهره','Venus'],['زمین','Earth'],['مریخ','Mars'],['مشتری','Jupiter'],['زحل','Saturn'],['روز','Day'],['شب','Night'],['میکروب','Microbes'],
- ['زمین آغازین · بدون حیات','Early Earth · No life'],['۱ · مولکول‌های خودتکثیرشونده','1 · Self-replicating molecules'],['۲ · میکروب‌های تک‌سلولی','2 · Single-celled microbes'],['۳ · فتوسنتز و جلبک‌ها','3 · Photosynthesis and algae'],['۴ · حیات چندسلولی','4 · Multicellular life'],['۵ · گیاهان و جانوران','5 · Plants and animals'],['۶ · زیست‌کرهٔ پیچیده','6 · Complex biosphere'],
- ['هنوز هیچ جانداری نمایش داده نمی‌شود؛ تکامل را آغاز کن.','No organisms are shown yet. Start evolution.'],['نخستین ساختارهای سادهٔ شیمیایی؛ نقاط ریز در محیط‌های آبی ظاهر می‌شوند.','Early simple chemical structures; tiny points appear in aquatic environments.'],['سلول‌های ساده گسترش می‌یابند و در اقیانوس‌ها لکه‌های میکروبی می‌سازند.','Simple cells spread and form microbial patches in the oceans.'],['لایه‌های سبز و فیروزه‌ای در آب‌های کم‌عمق گسترش پیدا می‌کنند.','Green and turquoise layers spread through shallow waters.'],['کلونی‌ها و جانداران دریایی پیچیده‌تر در نقاط مناسب زمین دیده می‌شوند.','Colonies and more complex marine organisms appear in suitable regions.'],['پوشش سبز خشکی‌ها و نشانه‌های کوچک جانداران روی سطح ظاهر می‌شوند.','Green land cover and small signs of organisms appear on the surface.'],['تنوع دیداری حیات به بیشترین سطح این مدل می‌رسد؛ این پایان مدل نمایشی است، نه پیش‌بینی علمی.','Visible biodiversity reaches the model maximum. This ends the visual model; it is not a scientific prediction.'],
- ['زاویهٔ دید بازنشانی شد.','View reset.'],['نمای نزدیک زمین','Earth close-up'],['نمای منظومه','System view']
+ 'use strict';
+ const pairs = [
+ ['آزمایشگاه جهان‌های زنده','Living Worlds Lab'],
+ ['شبیه‌سازی فعال · روز','Simulation running · Day'],
+ ['شبیه‌سازی فعال · شب','Simulation running · Night'],
+ ['شبیه‌سازی فعال','Simulation running'],
+ ['شبیه‌سازی متوقف‌شده','Simulation paused'],
+ ['مکث‌شده','Paused'],
+ ['راهنمای آزمایشگاه Planet','Planet Lab Guide'],
+ ['نمای نزدیک نشانه‌های حیات فعال شد.','Life zoom activated.'],
+ ['به نمای قبلی سیاره برگشتی.','Returned to the previous planet view.'],
+ ['زاویهٔ دید بازنشانی شد.','View reset.'],
+ ['مدارها روشن شدند','Orbits enabled'],
+ ['مدارها خاموش شدند','Orbits disabled'],
+ ['زمان متوقف شد','Time paused'],
+ ['زمان ادامه یافت','Time resumed'],
+ ['نمای منظومهٔ شمسی','Solar system view'],
+ ['نمای نزدیک زمین','Earth close-up'],
+ ['نمای منظومه','System view'],
+ ['بازنشانی زاویهٔ دید','Reset view'],
+ ['زوم روی حیات','Zoom to life'],
+ ['بازگشت به نمای زمین','Return to Earth view'],
+ ['آزمایشگاه جهان‌های زنده','Living Worlds Lab'],
+ ['جهانی آبی با اقیانوس‌ها، ابرهای پویا و جو محافظ؛ یک مدل زنده از شرایط زمین.','A blue world of oceans, dynamic clouds and a protective atmosphere—a live model of Earth-like conditions.'],
+ ['شش سیاره با دوره‌های مداری متفاوت به دور خورشید؛ فاصله و اندازه برای مشاهده، مقیاس‌گذاری شده‌اند.','Six planets orbit the Sun at different periods. Distances and sizes are scaled for visibility.'],
+ ['داشبورد سیاره','Planet Dashboard'],
+ ['وضعیت محیطی زمین','Earth Environment'],
+ ['پایدار','Stable'],
+ ['میانگین دما','Average Temperature'],
+ ['در محدودهٔ مرجع','Within reference range'],
+ ['فشار سطح دریا','Sea-level Pressure'],
+ ['استاندارد زمین','Earth standard'],
+ ['پوشش ابر','Cloud Cover'],
+ ['در حال تغییر','Changing'],
+ ['آب مایع سطحی','Surface Liquid Water'],
+ ['اقیانوس‌ها و دریاها','Oceans and Seas'],
+ ['ترکیب مدل‌شدهٔ جو','Modelled Atmospheric Composition'],
+ ['مقادیر جو نزدیک به هوای خشک زمین‌اند؛ بخار آب متغیر است. این پنل داده‌های مدل را نشان می‌دهد، نه اندازه‌گیری زنده از زمین واقعی.','Atmospheric values approximate dry Earth air; water vapour varies. This panel shows model data, not live measurements from Earth.'],
+ ['ابر: بافت رویه‌ای','Clouds: procedural texture'],
+ ['زمان و حرکت','Time and Motion'],
+ ['نمای زمین','Earth View'],
+ ['منظومه','Solar System'],
+ ['مکث','Pause'],
+ ['ادامه','Resume'],
+ ['سرعت گردش مداری','Orbital Speed'],
+ ['واقعی ×1','Realistic ×1'],
+ ['شتاب‌داده‌شده','accelerated'],
+ ['چرخهٔ محلی ثابت است: ۲ دقیقه روز + ۲ دقیقه شب. سرعت مدار جداگانه تنظیم می‌شود تا حرکت منظومه قابل مشاهده باشد. برای نسبت زمانی نزدیک‌تر به واقعیت، سرعت مدار را ×1 کن.','The local cycle is fixed: 2 minutes of day plus 2 minutes of night. Orbital speed is separate so the motion is visible. Set it to ×1 for a closer time ratio.'],
+ ['لایه‌های دید','Visual Layers'],
+ ['ابرهای جوی','Clouds'],
+ ['هالهٔ جو','Atmosphere Glow'],
+ ['خطوط مدار','Orbit Lines'],
+ ['ستاره‌ها','Stars'],
+ ['تکامل قابل مشاهدهٔ حیات','Visible Life Evolution'],
+ ['خاموش','Off'],
+ ['زمین آغازین · بدون حیات','Early Earth · No Life'],
+ ['با آغاز آزمایش، نخستین موجودات ساده ظاهر می‌شوند و در گذر زمان به جانداران پیچیده‌تر می‌رسند. نشانه‌ها به‌صورت دیداری روی کره نمایش داده می‌شوند.','Start the experiment to see simple early organisms appear and gradually develop into more complex life. Markers are shown on the globe.'],
+ ['مرحله:','Stage:'],
+ ['زمان تکامل:','Evolution Time:'],
+ ['سال مدل','model years'],
+ ['آغاز تکامل','Start Evolution'],
+ ['توقف تکامل','Pause Evolution'],
+ ['از ابتدا','Reset'],
+ ['سرعت تکامل','Evolution Speed'],
+ ['این یک مدل آموزشی ساده‌شده است؛ مراحل و زمان‌بندی برای نمایش سریع طراحی شده‌اند و تاریخ واقعی پیدایش حیات را بازسازی نمی‌کنند.','This is a simplified educational model. The stages and timing are designed for quick viewing and do not reconstruct the actual history of life.'],
+ ['زیست‌کرهٔ میکروسکوپی','Microscopic Biosphere'],
+ ['شبیه‌سازی','Simulation'],
+ ['واحد جمعیت میکروبی مدل','modelled microbial population units'],
+ ['شاخص مناسب‌بودن محیط','Environmental Suitability Index'],
+ ['جمعیت تک‌سلولی، رشد و تغییراتش به‌صورت ریاضی مدل می‌شود. این موجودات داده‌ای داخل شبیه‌سازی‌اند و حیات واقعی تولید نمی‌شود.','The single-cell population and its changes are mathematical models. These are simulated data, not real organisms.'],
+ ['مشخصات مرجع','Reference Specifications'],
+ ['شعاع سیاره','Planet Radius'],
+ ['جرم','Mass'],
+ ['گرانش سطح','Surface Gravity'],
+ ['دورهٔ مداری مرجع','Reference Orbital Period'],
+ ['مدل دیداری و آموزشی. هندسه، مقیاس فاصله‌ها و چرخهٔ زمان برای نمایش قابل‌فهم ساده‌سازی شده‌اند؛ شبیه‌ساز جایگزین مدل عددی کامل اقلیم یا اخترفیزیک نیست.','Educational visual model. Geometry, distances and time cycles are simplified for clarity; this is not a full numerical climate or astrophysics model.'],
+ ['راهنما ؟','Help ?'],
+ ['پنل','Panel'],
+ ['متوجه شدم','Got it'],
+ ['این نسخه یک شبیه‌سازی تعاملی مستقل از سرور است. روی صفحه بکشید تا زاویهٔ دید تغییر کند؛ با چرخ ماوس یا ژست دو انگشتی، فاصلهٔ دوربین را تنظیم کنید.','This is an interactive simulation that does not require a server. Drag to change the view; use the mouse wheel or a two-finger gesture to adjust camera distance.'],
+ ['هر چرخهٔ چرخش زمین ۴ دقیقه است: ۲ دقیقه روشنایی و ۲ دقیقه تاریکی؛ نور خورشید پیوسته روی کره حرکت می‌کند.','Each Earth rotation cycle lasts 4 minutes: 2 minutes of daylight and 2 minutes of darkness. Sunlight moves continuously across the globe.'],
+ ['در نمای «منظومه»، خورشید و مدارهای سیاره‌ها با دوره‌های نسبی عطارد، زهره، زمین، مریخ، مشتری و زحل نمایش داده می‌شوند. اندازه‌ها و فاصله‌ها برای خوانایی بصری تغییر مقیاس دارند.','In Solar System view, the Sun and the orbits of Mercury, Venus, Earth, Mars, Jupiter and Saturn are shown with relative periods. Sizes and distances are scaled for visual clarity.'],
+ ['سرعت مداری مستقل است؛ ×1 نسبت زمانی دقیق‌تری میان روز و سال دارد، و ×60 یا ×365 حرکت مدارها را سریع‌تر نشان می‌دهد.','Orbital speed is independent. ×1 gives a closer day/year time ratio; ×60 or ×365 makes orbital motion faster.'],
+ ['اقلیم و جمعیت میکروبی مدل‌های آموزشی ساده‌شده‌اند، نه پیش‌بینی علمی معتبر یا موجودات واقعی.','Climate and microbial population are simplified educational models, not validated scientific forecasts or real organisms.'],
+ ['در حال تکامل','Evolving'],
+ ['مرحلهٔ نهایی','Final Stage'],
+ ['پایان مدل نمایشی','End of visual model'],
+ ['مولکول‌های خودتکثیرشونده','Self-replicating molecules'],
+ ['میکروب‌های تک‌سلولی','Single-celled microbes'],
+ ['فتوسنتز و جلبک‌ها','Photosynthesis and Algae'],
+ ['حیات چندسلولی','Multicellular Life'],
+ ['گیاهان و جانوران','Plants and Animals'],
+ ['زیست‌کرهٔ پیچیده','Complex Biosphere'],
+ ['هنوز هیچ جانداری نمایش داده نمی‌شود؛ تکامل را آغاز کن.','No organisms are shown yet. Start evolution.'],
+ ['نخستین ساختارهای سادهٔ شیمیایی؛ نقاط ریز در محیط‌های آبی ظاهر می‌شوند.','Early simple chemical structures; tiny markers appear in aquatic environments.'],
+ ['سلول‌های ساده گسترش می‌یابند و در اقیانوس‌ها لکه‌های میکروبی می‌سازند.','Simple cells spread and form microbial patches in the oceans.'],
+ ['لایه‌های سبز و فیروزه‌ای در آب‌های کم‌عمق گسترش پیدا می‌کنند.','Green and turquoise layers spread through shallow waters.'],
+ ['کلونی‌ها و جانداران دریایی پیچیده‌تر در نقاط مناسب زمین دیده می‌شوند.','Colonies and more complex marine life appear in suitable regions.'],
+ ['پوشش سبز خشکی‌ها و نشانه‌های کوچک جانداران روی سطح ظاهر می‌شوند.','Green land cover and small signs of organisms appear on the surface.'],
+ ['تنوع دیداری حیات به بیشترین سطح این مدل می‌رسد؛ این پایان مدل نمایشی است، نه پیش‌بینی علمی.','Visible diversity reaches the maximum in this model. This is the end of the visual model, not a scientific prediction.'],
+ ['دقیقهٔ روز','minutes of daylight'],
+ ['روز','Day'],
+ ['شب','Night'],
+ ['مليون سال','million years'],
+ ['میلیون سال (مدل)','million years (model)'],
+ ['زمین','Earth'],
+ ['عطارد','Mercury'],
+ ['زهره','Venus'],
+ ['مریخ','Mars'],
+ ['مشتری','Jupiter'],
+ ['زحل','Saturn']
  ];
- translations.sort((a,b)=>b[0].length-a[0].length);
- let current='fa', busy=false;
- function translateText(s){let out=s;for(const [fa,en] of translations)out=out.split(fa).join(en);return out;}
- function walk(root){if(!root)return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode())){if(n.parentElement&&n.parentElement.closest('#languageToggle'))continue;const v=translateText(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v;}}
- function apply(lang){
-  current=lang;document.documentElement.lang=lang;document.documentElement.dir=lang==='fa'?'rtl':'ltr';
-  const b=document.getElementById('languageToggle');if(b)b.textContent=lang==='fa'?'EN':'FA';
-  if(lang==='en'){walk(document.body);document.title='PLANET — Planet Simulator';}
-  else{location.reload();}
+ const enFrom = pairs.slice().sort((a,b)=>b[0].length-a[0].length);
+ const faFrom = pairs.slice().sort((a,b)=>b[1].length-a[1].length);
+ let lang = 'fa';
+ const $ = id => document.getElementById(id);
+ function transform(s, to) {
+   let out = s;
+   const list = to === 'en' ? enFrom : faFrom;
+   for (const p of list) out = out.split(to === 'en' ? p[0] : p[1]).join(to === 'en' ? p[1] : p[0]);
+   return out;
  }
- function init(){
-  const actions=document.querySelector('.top-actions');if(!actions)return;
-  const b=document.createElement('button');b.id='languageToggle';b.className='icon-btn';b.type='button';b.textContent='EN';b.setAttribute('aria-label','Switch language to English');actions.insertBefore(b,actions.firstChild);
-  b.addEventListener('click',()=>{if(current==='fa')apply('en');else location.reload();});
-  const params=new URLSearchParams(location.search);if(params.get('lang')==='en')apply('en');
-  const observer=new MutationObserver(records=>{if(current!=='en'||busy)return;busy=true;for(const r of records){if(r.type==='characterData'){r.target.nodeValue=translateText(r.target.nodeValue);}else r.addedNodes.forEach(n=>{if(n.nodeType===Node.TEXT_NODE)n.nodeValue=translateText(n.nodeValue);else if(n.nodeType===Node.ELEMENT_NODE)walk(n);});}busy=false;});
-  observer.observe(document.body,{subtree:true,childList:true,characterData:true});
+ function translateTree(root) {
+   if (!root) return;
+   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+   let n;
+   while ((n = walker.nextNode())) {
+     if (n.parentElement && n.parentElement.closest('#languageToggle')) continue;
+     const before = n.nodeValue, after = transform(before, lang);
+     if (before !== after) n.nodeValue = after;
+   }
+   if (root.querySelectorAll) {
+     root.querySelectorAll('[aria-label],[title],[placeholder]').forEach(el => {
+       for (const attr of ['aria-label','title','placeholder']) {
+         const val = el.getAttribute(attr);
+         if (val) el.setAttribute(attr, transform(val, lang));
+       }
+     });
+   }
  }
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+ function setLanguage(next) {
+   lang = next === 'en' ? 'en' : 'fa';
+   document.documentElement.lang = lang;
+   document.documentElement.dir = lang === 'fa' ? 'rtl' : 'ltr';
+   const button = $('languageToggle');
+   if (button) {
+     button.textContent = lang === 'fa' ? 'EN' : 'FA';
+     button.setAttribute('aria-label', lang === 'fa' ? 'Switch language to English' : 'تغییر زبان به فارسی');
+   }
+   document.title = lang === 'en' ? 'PLANET — Planet Simulator' : 'PLANET — شبیه‌ساز سیاره';
+   const description = document.querySelector('meta[name="description"]');
+   if (description) description.content = lang === 'en' ? 'PLANET — interactive planet simulation, atmosphere, orbital motion and visible life evolution.' : 'Planet — شبیه‌سازی تعاملی سیاره زمین، جو، چرخه آب‌وهوا، مدارها و حیات میکروسکوپی';
+   translateTree(document.body);
+   try { localStorage.setItem('planet-language', lang); } catch(e) {}
+ }
+ function init() {
+   const button = $('languageToggle');
+   if (!button) return;
+   button.addEventListener('click', () => setLanguage(lang === 'fa' ? 'en' : 'fa'));
+   try { lang = localStorage.getItem('planet-language') === 'en' ? 'en' : 'fa'; } catch(e) { lang = 'fa'; }
+   setLanguage(lang);
+   const observer = new MutationObserver(records => {
+     for (const record of records) {
+       if (record.type === 'characterData') {
+         const node = record.target;
+         if (node.parentElement && node.parentElement.closest('#languageToggle')) continue;
+         const translated = transform(node.nodeValue, lang);
+         if (translated !== node.nodeValue) node.nodeValue = translated;
+       } else {
+         record.addedNodes.forEach(node => {
+           if (node.nodeType === Node.TEXT_NODE) {
+             const translated = transform(node.nodeValue, lang);
+             if (translated !== node.nodeValue) node.nodeValue = translated;
+           } else if (node.nodeType === Node.ELEMENT_NODE) translateTree(node);
+         });
+       }
+     }
+   });
+   observer.observe(document.body, {subtree:true, childList:true, characterData:true});
+ }
+ if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+ else init();
 })();
 </script>
 
