@@ -138,4 +138,57 @@ $('bottomSystem').textContent='SOL / EARTH';requestAnimationFrame(render);reques
 })();
 </script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script>
+
+<style>
+#languageToggle{min-width:66px;font:700 11px system-ui,sans-serif;letter-spacing:.4px}
+html[lang="en"] body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+html[lang="en"] .brand-sub,html[lang="en"] .scene-title p{text-align:left;direction:ltr}
+html[lang="en"] .panel{direction:ltr}
+html[lang="en"] .panel-head,html[lang="en"] .section-title,html[lang="en"] .metric-top,html[lang="en"] .metric-foot,html[lang="en"] .range-line,html[lang="en"] .slider-head{direction:ltr}
+html[lang="en"] .metric-value{text-align:left}
+html[lang="en"] .gas-row{direction:ltr}
+html[lang="en"] .gas-name{text-align:left}
+html[lang="en"] .life-stats{direction:ltr}
+</style>
+<script>
+(function(){
+ const translations = [
+ ['آزمایشگاه جهان‌های زنده','Living Worlds Lab'],['شبیه‌سازی فعال','Simulation running'],['شبیه‌سازی فعال · روز','Simulation running · Day'],['شبیه‌سازی فعال · شب','Simulation running · Night'],['مکث‌شده','Paused'],
+ ['راهنما ؟','Help ?'],['پنل','Panel'],['داشبورد سیاره','Planet dashboard'],['وضعیت محیطی زمین','Earth environment'],['پایدار','Stable'],
+ ['میانگین دما','Average temperature'],['در محدودهٔ مرجع','Within reference range'],['فشار سطح دریا','Sea-level pressure'],['استاندارد زمین','Earth standard'],['پوشش ابر','Cloud cover'],['در حال تغییر','Changing'],['آب مایع سطحی','Surface liquid water'],['اقیانوس‌ها و دریاها','Oceans and seas'],
+ ['ترکیب مدل‌شدهٔ جو','Modelled atmosphere'],['مقادیر جو نزدیک به هوای خشک زمین‌اند؛ بخار آب متغیر است. این پنل داده‌های مدل را نشان می‌دهد، نه اندازه‌گیری زنده از زمین واقعی.','Atmospheric values approximate dry Earth air; water vapour varies. This panel shows model data, not live measurements from Earth.'],['ابر: بافت رویه‌ای','Clouds: procedural texture'],
+ ['زمان و حرکت','Time and motion'],['نمای زمین','Earth view'],['منظومه','Solar system'],['مکث','Pause'],['ادامه','Resume'],['سرعت گردش مداری','Orbital speed'],['واقعی ×1','Realistic ×1'],['شتاب‌داده‌شده','accelerated'],['چرخهٔ محلی ثابت است: ۲ دقیقه روز + ۲ دقیقه شب. سرعت مدار جداگانه تنظیم می‌شود تا حرکت منظومه قابل مشاهده باشد. برای نسبت زمانی نزدیک‌تر به واقعیت، سرعت مدار را ×1 کن.','The local cycle is fixed: 2 minutes of day + 2 minutes of night. Orbital speed is separate so the system motion is visible. Set orbital speed to ×1 for a closer time ratio.'],
+ ['لایه‌های دید','Visual layers'],['ابرهای جوی','Atmospheric clouds'],['هالهٔ جو','Atmosphere glow'],['خطوط مدار','Orbit lines'],['ستاره‌ها','Stars'],
+ ['تکامل قابل مشاهدهٔ حیات','Visible life evolution'],['خاموش','Off'],['زمین آغازین · بدون حیات','Early Earth · No life'],['با آغاز آزمایش، نخستین موجودات ساده ظاهر می‌شوند و در گذر زمان به جانداران پیچیده‌تر می‌رسند. نشانه‌ها به‌صورت دیداری روی کره نمایش داده می‌شوند.','Start the experiment to see simple early life appear and gradually develop into more complex organisms. Life indicators are shown on the globe.'],
+ ['مرحله:','Stage:'],['زمان تکامل:','Evolution time:'],['سال مدل','model years'],['آغاز تکامل','Start evolution'],['توقف تکامل','Pause evolution'],['از ابتدا','Reset'],['سرعت تکامل','Evolution speed'],
+ ['این یک مدل آموزشی ساده‌شده است؛ مراحل و زمان‌بندی برای نمایش سریع طراحی شده‌اند و تاریخ واقعی پیدایش حیات را بازسازی نمی‌کنند.','This is a simplified educational model. Its stages and timing are designed for quick viewing and do not reconstruct the actual history of life.'],
+ ['زیست‌کرهٔ میکروسکوپی','Microscopic biosphere'],['شبیه‌سازی','Simulation'],['زاویهٔ دید بازنشانی شد.','View reset.'],['نمای منظومهٔ شمسی','Solar system view'],['زمان متوقف شد','Time paused'],['زمان ادامه یافت','Time resumed'],['مدارها روشن شدند','Orbits enabled'],['مدارها خاموش شدند','Orbits disabled'],
+ ['جهانی آبی با اقیانوس‌ها، ابرهای پویا و جو محافظ؛ یک مدل زنده از شرایط زمین.','A blue world with oceans, dynamic clouds and a protective atmosphere—a living model of Earth conditions.'],['شش سیاره با دوره‌های مداری متفاوت به دور خورشید؛ فاصله و اندازه برای مشاهده، مقیاس‌گذاری شده‌اند.','Six planets orbit the Sun at different periods; distances and sizes are scaled for visibility.'],
+ ['عطارد','Mercury'],['زهره','Venus'],['زمین','Earth'],['مریخ','Mars'],['مشتری','Jupiter'],['زحل','Saturn'],['روز','Day'],['شب','Night'],['میکروب','Microbes'],
+ ['زمین آغازین · بدون حیات','Early Earth · No life'],['۱ · مولکول‌های خودتکثیرشونده','1 · Self-replicating molecules'],['۲ · میکروب‌های تک‌سلولی','2 · Single-celled microbes'],['۳ · فتوسنتز و جلبک‌ها','3 · Photosynthesis and algae'],['۴ · حیات چندسلولی','4 · Multicellular life'],['۵ · گیاهان و جانوران','5 · Plants and animals'],['۶ · زیست‌کرهٔ پیچیده','6 · Complex biosphere'],
+ ['هنوز هیچ جانداری نمایش داده نمی‌شود؛ تکامل را آغاز کن.','No organisms are shown yet. Start evolution.'],['نخستین ساختارهای سادهٔ شیمیایی؛ نقاط ریز در محیط‌های آبی ظاهر می‌شوند.','Early simple chemical structures; tiny points appear in aquatic environments.'],['سلول‌های ساده گسترش می‌یابند و در اقیانوس‌ها لکه‌های میکروبی می‌سازند.','Simple cells spread and form microbial patches in the oceans.'],['لایه‌های سبز و فیروزه‌ای در آب‌های کم‌عمق گسترش پیدا می‌کنند.','Green and turquoise layers spread through shallow waters.'],['کلونی‌ها و جانداران دریایی پیچیده‌تر در نقاط مناسب زمین دیده می‌شوند.','Colonies and more complex marine organisms appear in suitable regions.'],['پوشش سبز خشکی‌ها و نشانه‌های کوچک جانداران روی سطح ظاهر می‌شوند.','Green land cover and small signs of organisms appear on the surface.'],['تنوع دیداری حیات به بیشترین سطح این مدل می‌رسد؛ این پایان مدل نمایشی است، نه پیش‌بینی علمی.','Visible biodiversity reaches the model maximum. This ends the visual model; it is not a scientific prediction.'],
+ ['زاویهٔ دید بازنشانی شد.','View reset.'],['نمای نزدیک زمین','Earth close-up'],['نمای منظومه','System view']
+ ];
+ translations.sort((a,b)=>b[0].length-a[0].length);
+ let current='fa', busy=false;
+ function translateText(s){let out=s;for(const [fa,en] of translations)out=out.split(fa).join(en);return out;}
+ function walk(root){if(!root)return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode())){if(n.parentElement&&n.parentElement.closest('#languageToggle'))continue;const v=translateText(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v;}}
+ function apply(lang){
+  current=lang;document.documentElement.lang=lang;document.documentElement.dir=lang==='fa'?'rtl':'ltr';
+  const b=document.getElementById('languageToggle');if(b)b.textContent=lang==='fa'?'EN':'FA';
+  if(lang==='en'){walk(document.body);document.title='PLANET — Planet Simulator';}
+  else{location.reload();}
+ }
+ function init(){
+  const actions=document.querySelector('.top-actions');if(!actions)return;
+  const b=document.createElement('button');b.id='languageToggle';b.className='icon-btn';b.type='button';b.textContent='EN';b.setAttribute('aria-label','Switch language to English');actions.insertBefore(b,actions.firstChild);
+  b.addEventListener('click',()=>{if(current==='fa')apply('en');else location.reload();});
+  const params=new URLSearchParams(location.search);if(params.get('lang')==='en')apply('en');
+  const observer=new MutationObserver(records=>{if(current!=='en'||busy)return;busy=true;for(const r of records){if(r.type==='characterData'){r.target.nodeValue=translateText(r.target.nodeValue);}else r.addedNodes.forEach(n=>{if(n.nodeType===Node.TEXT_NODE)n.nodeValue=translateText(n.nodeValue);else if(n.nodeType===Node.ELEMENT_NODE)walk(n);});}busy=false;});
+  observer.observe(document.body,{subtree:true,childList:true,characterData:true});
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+
 </body></html>
