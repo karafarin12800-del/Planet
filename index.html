@@ -231,7 +231,7 @@ function actAgent(agent,s,env,neighbors,context){
  learnFromOutcome(agent);
  agent.previousEnergy=agent.energy;agent.previousHealth=agent.health;agent.previousOffspring=agent.offspring;
  agent.age++;agent.cooldown=Math.max(0,agent.cooldown-1);
- const t=agent.traits;agent.maturity=clamp(agent.age/Math.max(5,agent.lifeSpan*.60),0,1);if(agent.energy>54)agent.growth=clamp(agent.growth+(.002+Math.max(0,agent.energy-54)*.00012)*(.45+t.replication*.75),.1,1);else if(agent.energy<15)agent.growth=Math.max(.10,agent.growth-.006);const decision=decideAction(agent,s,env,neighbors);
+ const t=agent.traits;agent.maturity=clamp(agent.age/Math.max(5,agent.lifeSpan*.60),0,1);if(agent.energy>54)agent.growth=clamp(agent.growth+(.006+Math.max(0,agent.energy-54)*.00020)*(.45+t.replication*.75),.1,1);else if(agent.energy<15)agent.growth=Math.max(.10,agent.growth-.006);const decision=decideAction(agent,s,env,neighbors);
  agent.action=decision.action;agent.decisions++;agent.stress=decision.danger;
  let births=0;
  const basal=1.05+(t.size*.48)+(t.motility*.18);
