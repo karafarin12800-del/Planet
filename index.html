@@ -156,7 +156,7 @@ function currentLifeStageIndex(age){let idx=0;for(let i=0;i<lifeStages.length;i+
 function currentHabitat(age){if(age<1700)return 'ocean';if(age<3900)return 'ocean';if(age<4250)return 'shore';return 'land';}
 function randomGene(){let out='ATG';for(let i=0;i<5;i++)out+=SENSE_CODONS[Math.floor(Math.random()*SENSE_CODONS.length)];return out+['TAA','TAG','TGA'][Math.floor(Math.random()*3)];}
 function randomGenome(){let out='';for(let i=0;i<GENE_COUNT;i++)out+=randomGene();return out;}
-function normalizeGenome(dna){if(typeof dna!=='string'||!/^[ACGT]+$/.test(dna))return null;if(dna.length===GENOME_LENGTH)return dna;if(dna.length===GENE_LENGTH*6)return dna+randomGene()+randomGene();return null;}
+function normalizeGenome(dna){if(typeof dna!=='string'||!/^[ACGT]+$/.test(dna))return null;if(dna.length===GENOME_LENGTH)return dna;if(dna.length===GENE_LENGTH*6){const firstBody=dna.slice(3,18),lastBody=dna.slice(dna.length-18,dna.length-3);return dna+'ATG'+firstBody+'TAA'+'ATG'+lastBody+'TAG';}return null;}
 function translateGene(dna){let protein='';for(let i=0;i+2<dna.length;i+=3){const aa=GENETIC_CODE[dna.slice(i,i+3)]||'?';if(aa==='*')break;protein+=aa;}return protein;}
 function translateGenome(dna){const genes=[];for(let i=0;i<GENE_COUNT;i++)genes.push(translateGene(dna.slice(i*GENE_LENGTH,(i+1)*GENE_LENGTH)));return genes;}
 function proteinSignal(protein,geneIndex){if(!protein)return .05;let total=0;for(let i=0;i<protein.length;i++){let n=AA_ORDER.indexOf(protein[i]);if(n<0)n=0;total+=((n+1)*(((i+3)*(geneIndex+5))%17+1));}return (total%997)/996;}
@@ -329,7 +329,7 @@ function evolutionaryStep(){
  for(let i=living.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[living[i],living[j]]=[living[j],living[i]];}
  for(const s of living){
   if(!activeSpecies().includes(s))continue;
-  simulateSpeciesEcology(s);if(s.extinctAtMa!==null&&s.extinctAtMa!==undefined)continue;
+  simulateSpeciesEcology(s);if(Number.isFinite(s.extinctAtMa)&&s.extinctAtMa<=lifeAgeMa)continue;
   attemptHabitatShift(s);s.generation++;
   const divergence=geneticDistance(s.dna,s.lineageDNA);
   const livingNow=activeSpecies().length;
