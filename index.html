@@ -22,6 +22,24 @@
 
 .clock-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.clock-card{min-width:0;border:1px solid rgba(121,160,206,.18);background:rgba(21,39,65,.48);border-radius:12px;padding:10px}.clock-card span,.clock-card small{display:block;font-size:10px;color:#9db4d0}.clock-card strong{display:block;font:600 21px/1.55 system-ui,sans-serif;color:#8be7f2;direction:ltr;text-align:left;font-variant-numeric:tabular-nums}.species-modal{width:min(680px,100%)}.species-list{display:grid;gap:9px;margin-top:14px;max-height:46vh;overflow:auto;padding:2px;scrollbar-width:thin}.species-item{display:grid;grid-template-columns:12px minmax(0,1fr) auto;align-items:center;gap:10px;border:1px solid var(--line);background:#0b2138;border-radius:12px;padding:10px}.species-dot{width:10px;height:32px;border-radius:99px}.species-info{min-width:0}.species-info b{display:block;font-size:12px;overflow-wrap:anywhere}.species-info small{display:block;color:#90a8c5;font-size:10px;line-height:1.7}.species-item button{border:1px solid #4ec9b555;background:#123b45;border-radius:9px;padding:8px;font-size:10px;white-space:nowrap}.habitat-modal{width:min(900px,100%)}#habitatCanvas{display:block;width:100%;height:min(38vh,300px);min-height:190px;border:1px solid var(--line);border-radius:14px;background:#071a28;margin:10px 0;touch-action:none}.habitat-data{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.habitat-data>div{border:1px solid var(--line);background:#0b1f34;border-radius:10px;padding:9px;min-width:0}.habitat-data span{display:block;font-size:10px;color:#90a8c5;margin-bottom:5px}.habitat-data code,.habitat-data strong{display:block;color:#c8f6e2;direction:ltr;text-align:left;overflow-wrap:anywhere;font:11px/1.7 ui-monospace,monospace}.habitat-data code{max-height:75px;overflow:auto}.species-empty{padding:14px;color:#9ab1ca;border:1px dashed var(--line);border-radius:12px;font-size:12px;line-height:1.8}
 @media(max-width:900px){.clock-card{padding:8px}.clock-card strong{font-size:19px}.species-item{grid-template-columns:8px minmax(0,1fr);}.species-item button{grid-column:2;justify-self:start}.habitat-data{grid-template-columns:1fr 1fr}.species-list{max-height:40vh}}
+
+/* Stable mobile fallback: tiny launcher centered at the bottom */
+#planet-ai-assistant{
+  left:50% !important;right:auto !important;top:auto !important;bottom:10px !important;
+  transform:translateX(-50%) !important;width:max-content !important;
+}
+#planet-ai-launch{
+  width:34px !important;height:34px !important;min-width:34px !important;
+  max-width:34px !important;padding:0 !important;border-radius:50% !important;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0 !important;line-height:1 !important;
+  box-shadow:0 2px 8px #0007 !important;cursor:pointer !important;
+}
+#planet-ai-launch::before{content:"✦";font-size:17px;line-height:1}
+@media(max-width:480px){
+  #planet-ai-assistant{left:50% !important;right:auto !important;top:auto !important;bottom:10px !important}
+  #planet-ai-launch{width:32px !important;height:32px !important;min-width:32px !important;max-width:32px !important}
+}
 </style>
 
 <style id="gp-genome-lab-styles">
