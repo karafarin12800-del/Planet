@@ -247,26 +247,40 @@
    return {text:decoded.text,format:decoded.format};
  }
  async function fetchNucleotideNCBI(acc){
-   // Try the accession.version directly first; this preserves the exact reference version.
+   // RefSeq accession IDs such as NC_000913.3 belong to NCBI; keep this route authoritative.
+   const baseAcc=acc.replace(/\\.\\d+$/,'');
+   const errors=[];
+   const validFasta=(value)=>{
+     const t=String(value||'').trim();
+     return /^>/m.test(t)&&!/^<!doctype|^<html|^\\s*\\{/i.test(t)&&/[ACGTUNRYKMSWBDHVX]/i.test(t.replace(/^>[^\\n]*(?:\\n|$)/gm,'').replace(/\\s/g,''));
+   };
+   const fetchFasta=async(url,label)=>{
+     const response=await fetch(url);
+     const body=await response.text();
+     if(!response.ok)throw new Error(label+' HTTP '+response.status+(body?': '+body.slice(0,180).replace(/\\s+/g,' '):''));
+     if(!validFasta(body))throw new Error(label+' پاسخ FASTA معتبر برنگرداند.');
+     return body;
+   };
    const directUrl='https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id='+encodeURIComponent(acc)+'&rettype=fasta&retmode=text';
-   let directError=null;
    try{
-     const direct=await fetch(directUrl);
-     if(direct.ok){
-       const text=await direct.text();
-       if(/^\\s*>/m.test(text)&&!/^\\s*<!doctype|^\\s*<html/i.test(text))return {text,format:'FASTA · NCBI nuccore accession'};
-       directError=new Error('NCBI پاسخ مستقیم را به شکل FASTA برنگرداند.');
-     }else directError=new Error('دریافت مستقیم NCBI: HTTP '+direct.status);
-   }catch(e){directError=e;}
-   // Fallback through ESearch for accessions that cannot be resolved directly.
-   const sUrl='https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nuccore&term='+encodeURIComponent(acc+'[Accession]')+'&retmode=json';
-   const sr=await fetch(sUrl);if(!sr.ok)throw new Error('دریافت مستقیم ناموفق بود ('+(directError?directError.message:'خطای نامشخص')+')؛ جست‌وجوی NCBI: HTTP '+sr.status);
-   const sj=await sr.json(),uid=sj&&sj.esearchresult&&sj.esearchresult.idlist&&sj.esearchresult.idlist[0];
-   if(!uid)throw new Error('توالی با این شناسه در NCBI nuccore پیدا نشد. خطای دریافت مستقیم: '+(directError?directError.message:'نامشخص'));
-   const url='https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id='+encodeURIComponent(uid)+'&rettype=fasta&retmode=text';
-   const fr=await fetch(url);if(!fr.ok)throw new Error('دریافت توالی NCBI: HTTP '+fr.status);
-   const text=await fr.text();if(!/^\\s*>/m.test(text))throw new Error('پاسخ NCBI توالی FASTA معتبر نیست.');
-   return {text,format:'FASTA · NCBI nuccore via accession search'};
+     const text=await fetchFasta(directUrl,'NCBI EFetch مستقیم');
+     return {text,format:'FASTA · NCBI nuccore accession'};
+   }catch(e){errors.push(e.message);}
+   // Search exact accession first, then the accession without version as a compatibility fallback.
+   for(const term of [acc+'[Accession]',baseAcc+'[Accession]']){
+     try{
+       const searchUrl='https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nuccore&term='+encodeURIComponent(term)+'&retmode=json';
+       const sr=await fetch(searchUrl);
+       if(!sr.ok)throw new Error('NCBI ESearch HTTP '+sr.status);
+       const sj=await sr.json();
+       const uid=sj&&sj.esearchresult&&sj.esearchresult.idlist&&sj.esearchresult.idlist[0];
+       if(!uid)throw new Error('برای '+term+' رکوردی پیدا نشد.');
+       const url='https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id='+encodeURIComponent(uid)+'&rettype=fasta&retmode=text';
+       const text=await fetchFasta(url,'NCBI EFetch پس از جست‌وجو');
+       return {text,format:'FASTA · NCBI nuccore via accession search'};
+     }catch(e){errors.push(e.message);}
+   }
+   throw new Error('دریافت از NCBI برای شناسهٔ '+acc+' ناموفق بود. جزئیات: '+errors.join(' | '));
  }
  async function fetchENA(acc){
    const url='https://www.ebi.ac.uk/ena/browser/api/fasta/'+encodeURIComponent(acc)+'?download=true';
@@ -289,9 +303,15 @@
          try{result=await fetchENA(acc);source='ENA Browser API';}
          catch(enaError){throw new Error('دریافت اسمبلی کامل ناموفق بود. خطای NCBI: '+datasetError.message+'؛ خطای ENA: '+enaError.message+' . راه جایگزین: فایل genomic.fna یا ZIP اصلی اسمبلی را وارد کن.');}
        }
+     }else if(/^(NC_|NZ_|NR_|NM_|XM_|XR_|NG_|NT_|NW_|CP|CM|AP|LR)[A-Za-z0-9_.-]*$/i.test(acc)){
+       // RefSeq/INSDC accessions: do not mask an NCBI failure with ENA's unrelated 400 response.
+       result=await fetchNucleotideNCBI(acc);source='NCBI Entrez nuccore';
      }else{
        try{result=await fetchNucleotideNCBI(acc);source='NCBI Entrez nuccore';}
-       catch(ncbiError){result=await fetchENA(acc);source='ENA Browser API';}
+       catch(ncbiError){
+         try{result=await fetchENA(acc);source='ENA Browser API';}
+         catch(enaError){throw new Error('دریافت از NCBI و ENA ناموفق بود. NCBI: '+ncbiError.message+'؛ ENA: '+enaError.message);}
+       }
      }
      await loadText(result.text,acc,result.format,source);
    }catch(e){setStatus('دریافت خودکار انجام نشد: '+e.message+'\nممکن است اتصال، محدودیت سرویس یا دسترسی مرورگر مانع باشد. فایل FASTA/GenBank دانلودشده را می‌توانی از بخش فایل وارد کنی.');}
