@@ -40,6 +40,35 @@
   #planet-ai-assistant{left:50% !important;right:auto !important;top:auto !important;bottom:10px !important}
   #planet-ai-launch{width:32px !important;height:32px !important;min-width:32px !important;max-width:32px !important}
 }
+
+/* FIX: stable tiny bottom-center launcher; no transform on ancestor of fixed panel */
+#planet-ai-assistant{
+  position:fixed !important;
+  left:calc(50% - 16px) !important;
+  right:auto !important;
+  top:auto !important;
+  bottom:10px !important;
+  width:32px !important;
+  height:32px !important;
+  transform:none !important;
+  z-index:99990 !important;
+}
+#planet-ai-launch{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:32px !important;
+  height:32px !important;
+  min-width:32px !important;
+  max-width:32px !important;
+  padding:0 !important;
+  border-radius:50% !important;
+  font-size:0 !important;
+  line-height:1 !important;
+  cursor:pointer !important;
+}
+#planet-ai-launch::before{content:"✦";font-size:16px;line-height:1}
+#planet-ai-panel{z-index:99991 !important}
 </style>
 
 <style id="gp-genome-lab-styles">
@@ -1353,7 +1382,7 @@ html[lang="en"] .scene-coords{direction:ltr}
  launcher.addEventListener('pointerup',endDrag);launcher.addEventListener('pointercancel',endDrag);
  launcher.addEventListener('click',e=>{
    if(dragged){e.preventDefault();e.stopImmediatePropagation();dragged=false;return;}
-   placePanel();panel.classList.add('open');launcher.style.display='none';
+   placePanel();panel.classList.add('open');
  });
  $('planet-ai-close').addEventListener('click',()=>{panel.classList.remove('open');launcher.style.display='';});
  $('planet-ai-config-toggle').addEventListener('click',()=>{$('planet-ai-settings').classList.toggle('open');$('planet-ai-endpoint').value=endpoint();});
