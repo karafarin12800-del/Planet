@@ -918,6 +918,31 @@ html[lang="en"] .life-stats{direction:ltr}
 html[lang="en"] .scene-title{direction:ltr;text-align:left}
 html[lang="en"] .scene-coords{direction:ltr}
 @media(max-width:900px){.life-zoom-btn{right:12px;bottom:60px;padding:9px 11px;font-size:10px}.top-actions{gap:5px}#languageToggle{min-width:43px;padding:7px 9px}}
+
+/* PLANET AI assistant */
+#planet-ai-assistant{position:fixed;z-index:99990;bottom:18px;left:16px;font-family:inherit;color:#eaf2ff}
+#planet-ai-assistant *{box-sizing:border-box}
+#planet-ai-launch{border:1px solid #6da8ff;background:linear-gradient(135deg,#2463eb,#6d42d8);color:white;border-radius:999px;padding:12px 16px;box-shadow:0 8px 28px #0008;font-weight:700;cursor:pointer}
+#planet-ai-panel{display:none;position:fixed;left:12px;bottom:74px;width:min(390px,calc(100vw - 24px));height:min(590px,calc(100dvh - 100px));background:#091426;border:1px solid #29466f;border-radius:18px;box-shadow:0 18px 55px #000b;overflow:hidden;flex-direction:column;direction:rtl}
+#planet-ai-panel.open{display:flex}
+#planet-ai-head{padding:13px 14px;background:#102341;border-bottom:1px solid #29466f;display:flex;align-items:center;gap:8px}
+#planet-ai-head strong{font-size:15px;flex:1}
+#planet-ai-head button,#planet-ai-settings button{background:#1c3457;color:#eaf2ff;border:1px solid #35557f;border-radius:9px;padding:7px 10px}
+#planet-ai-state{font-size:11px;color:#a9c7ee;padding:0 14px 9px;background:#102341}
+#planet-ai-messages{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:9px}
+.planet-ai-msg{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;font-size:13px;padding:10px 12px;border-radius:12px;max-width:94%}
+.planet-ai-msg.bot{align-self:flex-start;background:#142944;border:1px solid #274568}
+.planet-ai-msg.user{align-self:flex-end;background:#243f78;border:1px solid #426ab0}
+#planet-ai-compose{padding:10px;border-top:1px solid #29466f;display:flex;gap:7px;background:#0d1b30}
+#planet-ai-input{flex:1;min-width:0;min-height:42px;max-height:110px;resize:vertical;background:#07101e;color:#f1f6ff;border:1px solid #35557f;border-radius:10px;padding:9px;font:inherit;font-size:13px}
+#planet-ai-send{background:#2875e8;color:white;border:0;border-radius:10px;padding:0 14px;font-weight:700}
+#planet-ai-tools{display:flex;gap:6px;padding:0 10px 10px;background:#0d1b30;flex-wrap:wrap}
+#planet-ai-tools button{font-size:11px;background:#172b48;color:#d7e7ff;border:1px solid #35557f;border-radius:8px;padding:7px 9px}
+#planet-ai-settings{display:none;padding:10px;background:#0d1b30;border-top:1px solid #29466f}
+#planet-ai-settings.open{display:block}
+#planet-ai-endpoint{width:100%;direction:ltr;text-align:left;background:#07101e;color:#fff;border:1px solid #35557f;border-radius:8px;padding:9px;margin:7px 0;font-size:12px}
+@media(max-width:480px){#planet-ai-assistant{left:10px;bottom:12px}#planet-ai-launch{padding:11px 13px}#planet-ai-panel{left:8px;bottom:65px;width:calc(100vw - 16px);height:min(620px,calc(100dvh - 85px))}}
+
 </style>
 <script>
 (function(){
@@ -1229,5 +1254,51 @@ html[lang="en"] .scene-coords{direction:ltr}
 </script>
 
 
+
+
+<div id="planet-ai-assistant" aria-live="polite">
+ <button id="planet-ai-launch" type="button">✦ دستیار هوشمند</button>
+ <section id="planet-ai-panel" aria-label="دستیار هوشمند PLANET">
+  <header id="planet-ai-head"><strong>✦ دستیار هوشمند PLANET</strong><button id="planet-ai-config-toggle" type="button">تنظیمات</button><button id="planet-ai-close" type="button" aria-label="بستن">×</button></header>
+  <div id="planet-ai-state">آماده‌سازی دستیار؛ برای پاسخ واقعی باید سرور امن OpenAI تنظیم شود.</div>
+  <div id="planet-ai-messages"><div class="planet-ai-msg bot">سلام! می‌تونم دربارهٔ شبیه‌سازی، آزمایشگاه ژنوم و خطاهای برنامه کمک کنم. برای شروع، نشانی سرور امن دستیار را در «تنظیمات» وارد کن. کلید OpenAI را اینجا یا داخل برنامه وارد نکن.</div></div>
+  <div id="planet-ai-tools"><button id="planet-ai-health" type="button">بررسی سلامت برنامه</button><button id="planet-ai-suggest" type="button">پیشنهاد بهبود</button></div>
+  <form id="planet-ai-compose"><textarea id="planet-ai-input" rows="2" maxlength="2000" placeholder="سؤالت را بنویس..." aria-label="پیام به دستیار"></textarea><button id="planet-ai-send" type="submit">ارسال</button></form>
+  <div id="planet-ai-settings"><label for="planet-ai-endpoint">نشانی Worker امن (بدون کلید API)</label><input id="planet-ai-endpoint" type="url" placeholder="https://your-worker.workers.dev"><button id="planet-ai-save" type="button">ذخیره نشانی</button><p style="font-size:11px;line-height:1.6;color:#a9c7ee">کلید API فقط باید به‌صورت Secret در سرور تنظیم شود. این قسمت فقط نشانی سرور را ذخیره می‌کند.</p></div>
+ </section>
+</div>
+<script>
+(function(){
+ 'use strict';
+ const $ = id => document.getElementById(id);
+ const panel=$('planet-ai-panel'), messages=$('planet-ai-messages'), input=$('planet-ai-input'), state=$('planet-ai-state');
+ const errors=[];
+ window.addEventListener('error',e=>{errors.push({type:'error',message:String(e.message||'Unknown error').slice(0,240),source:String(e.filename||'').split('/').pop(),line:e.lineno||0,time:new Date().toISOString()});if(errors.length>20)errors.shift();});
+ window.addEventListener('unhandledrejection',e=>{errors.push({type:'promise',message:String(e.reason&&e.reason.message||e.reason||'Unhandled rejection').slice(0,240),time:new Date().toISOString()});if(errors.length>20)errors.shift();});
+ function add(text,who){const el=document.createElement('div');el.className='planet-ai-msg '+who;el.textContent=text;messages.appendChild(el);messages.scrollTop=messages.scrollHeight;return el;}
+ function endpoint(){try{return (localStorage.getItem('planet-ai-endpoint')||'').trim().replace(/\/+$/,'');}catch(e){return '';}}
+ function setState(s){state.textContent=s;}
+ function diagnostics(){return {app:'PLANET',language:document.documentElement.lang||'fa',readyState:document.readyState,online:navigator.onLine,viewport:{width:innerWidth,height:innerHeight},genomeLabPresent:!!document.querySelector('input[type=file],#genomeLab,#genome-lab'),recentErrors:errors.slice(-10),timestamp:new Date().toISOString()};}
+ async function ask(message,el){
+   const base=endpoint();
+   if(!base){$('planet-ai-settings').classList.add('open');setState('ابتدا نشانی سرور امن را در تنظیمات وارد کن.');add('هنوز سرور هوش مصنوعی وصل نشده است. باید Worker را مستقر و کلید API را به‌صورت Secret روی سرور تنظیم کنیم.','bot');return;}
+   if(!/^https:\/\//i.test(base)){add('نشانی سرور باید با https:// شروع شود.','bot');return;}
+   const pending=el||add('در حال بررسی…','bot');pending.textContent='در حال بررسی…';setState('در حال اتصال امن به دستیار…');
+   try{
+     const response=await fetch(base+'/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:String(message).slice(0,2000),context:diagnostics()}),signal:AbortSignal.timeout(45000)});
+     const data=await response.json().catch(()=>({}));
+     if(!response.ok)throw new Error(data.error||('خطای سرور HTTP '+response.status));
+     pending.textContent=String(data.reply||'پاسخی دریافت نشد.').slice(0,12000);setState('پاسخ دریافت شد');
+   }catch(e){pending.textContent='اتصال به دستیار ناموفق بود: '+String(e.message||e)+'\n\nنشانی سرور، تنظیم Secret کلید OpenAI و وضعیت اینترنت را بررسی کن.';setState('اتصال برقرار نشد');}
+ }
+ $('planet-ai-launch').addEventListener('click',()=>{panel.classList.add('open');$('planet-ai-launch').style.display='none';});
+ $('planet-ai-close').addEventListener('click',()=>{panel.classList.remove('open');$('planet-ai-launch').style.display='';});
+ $('planet-ai-config-toggle').addEventListener('click',()=>{$('planet-ai-settings').classList.toggle('open');$('planet-ai-endpoint').value=endpoint();});
+ $('planet-ai-save').addEventListener('click',()=>{const v=$('planet-ai-endpoint').value.trim().replace(/\/+$/,'');if(v&&!/^https:\/\//i.test(v)){setState('نشانی معتبر نیست؛ https:// لازم است.');return;}try{localStorage.setItem('planet-ai-endpoint',v);}catch(e){}setState(v?'نشانی ذخیره شد؛ اتصال را با یک پیام آزمایش کن.':'نشانی پاک شد.');});
+ $('planet-ai-compose').addEventListener('submit',e=>{e.preventDefault();const q=input.value.trim();if(!q)return;add(q,'user');input.value='';const p=add('در حال بررسی…','bot');ask(q,p);});
+ $('planet-ai-health').addEventListener('click',()=>{add('درخواست بررسی سلامت برنامه','user');const d=diagnostics();ask('وضعیت فنی برنامه را بر اساس داده‌های تشخیصی زیر بررسی کن. خطاهای قطعی را از احتمال‌ها جدا کن، برای هر مشکل راهکار امن و قابل‌آزمایش پیشنهاد بده و ادعا نکن که کد را تغییر داده‌ای.\nتشخیص: '+JSON.stringify(d),null);});
+ $('planet-ai-suggest').addEventListener('click',()=>{add('پیشنهادهای بهبود برنامه','user');ask('با توجه به اینکه PLANET یک شبیه‌ساز سیاره و آزمایشگاه ژنوم آموزشی است، 3 پیشنهاد اولویت‌بندی‌شده برای بهبود قابلیت اطمینان، دقت علمی و تجربه کاربر ارائه کن. هر پیشنهاد باید عملی، کم‌خطر و قابل‌آزمایش باشد. وضعیت فعلی: '+JSON.stringify(diagnostics()),null);});
+})();
+</script>
 
 </body></html>
