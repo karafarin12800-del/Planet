@@ -920,7 +920,9 @@ html[lang="en"] .scene-coords{direction:ltr}
 @media(max-width:900px){.life-zoom-btn{right:12px;bottom:60px;padding:9px 11px;font-size:10px}.top-actions{gap:5px}#languageToggle{min-width:43px;padding:7px 9px}}
 
 /* PLANET AI assistant */
-#planet-ai-assistant{position:fixed;z-index:99990;bottom:18px;left:16px;font-family:inherit;color:#eaf2ff}
+#planet-ai-assistant{position:fixed;z-index:99990;bottom:38%;right:14px;left:auto;font-family:inherit;color:#eaf2ff}
+#planet-ai-launch{writing-mode:horizontal-tb;max-width:calc(100vw - 24px)}
+#planet-ai-panel{left:auto;right:14px;bottom:calc(38% + 58px);width:min(390px,calc(100vw - 28px));height:min(590px,calc(100dvh - 110px))}
 #planet-ai-assistant *{box-sizing:border-box}
 #planet-ai-launch{border:1px solid #6da8ff;background:linear-gradient(135deg,#2463eb,#6d42d8);color:white;border-radius:999px;padding:12px 16px;box-shadow:0 8px 28px #0008;font-weight:700;cursor:pointer}
 #planet-ai-panel{display:none;position:fixed;left:12px;bottom:74px;width:min(390px,calc(100vw - 24px));height:min(590px,calc(100dvh - 100px));background:#091426;border:1px solid #29466f;border-radius:18px;box-shadow:0 18px 55px #000b;overflow:hidden;flex-direction:column;direction:rtl}
@@ -941,7 +943,7 @@ html[lang="en"] .scene-coords{direction:ltr}
 #planet-ai-settings{display:none;padding:10px;background:#0d1b30;border-top:1px solid #29466f}
 #planet-ai-settings.open{display:block}
 #planet-ai-endpoint{width:100%;direction:ltr;text-align:left;background:#07101e;color:#fff;border:1px solid #35557f;border-radius:8px;padding:9px;margin:7px 0;font-size:12px}
-@media(max-width:480px){#planet-ai-assistant{left:10px;bottom:12px}#planet-ai-launch{padding:11px 13px}#planet-ai-panel{left:8px;bottom:65px;width:calc(100vw - 16px);height:min(620px,calc(100dvh - 85px))}}
+@media(max-width:480px){#planet-ai-assistant{right:8px;left:auto;bottom:36%}#planet-ai-launch{padding:10px 12px;font-size:12px}#planet-ai-panel{right:8px;left:auto;bottom:calc(36% + 52px);width:calc(100vw - 16px);height:min(620px,calc(100dvh - 85px))}}
 
 </style>
 <script>
