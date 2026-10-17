@@ -1308,13 +1308,14 @@ html[lang="en"] .scene-coords{direction:ltr}
  <button id="planet-ai-launch" type="button">✦ دستیار هوشمند</button>
  <section id="planet-ai-panel" aria-label="دستیار هوشمند PLANET">
   <header id="planet-ai-head"><strong>✦ دستیار هوشمند PLANET</strong><button id="planet-ai-config-toggle" type="button">تنظیمات</button><button id="planet-ai-close" type="button" aria-label="بستن">×</button></header>
-  <div id="planet-ai-state">آماده‌سازی دستیار؛ برای پاسخ واقعی باید سرور امن OpenAI تنظیم شود.</div>
-  <div id="planet-ai-messages"><div class="planet-ai-msg bot">سلام! می‌تونم دربارهٔ شبیه‌سازی، آزمایشگاه ژنوم و خطاهای برنامه کمک کنم. برای شروع، نشانی سرور امن دستیار را در «تنظیمات» وارد کن. کلید OpenAI را اینجا یا داخل برنامه وارد نکن.</div></div>
+  <div id="planet-ai-state">موتور هوشمند آفلاین آماده است؛ تحلیل‌ها روی همین دستگاه انجام می‌شوند.</div>
+  <div id="planet-ai-messages"><div class="planet-ai-msg bot">سلام! من دستیار تخصصی آفلاین PLANET هستم. بدون اینترنت می‌توانم خطاهای قابل‌مشاهده را بررسی کنم، دربارهٔ ژنوم و تکامل راهنمایی بدهم و پیشنهادهای قابل‌آزمایش ارائه کنم. داده‌ها برای پاسخ‌گویی به سرور ارسال نمی‌شوند.</div></div>
   <div id="planet-ai-tools"><button id="planet-ai-health" type="button">بررسی سلامت برنامه</button><button id="planet-ai-suggest" type="button">پیشنهاد بهبود</button></div>
   <form id="planet-ai-compose"><textarea id="planet-ai-input" rows="2" maxlength="2000" placeholder="سؤالت را بنویس..." aria-label="پیام به دستیار"></textarea><button id="planet-ai-send" type="submit">ارسال</button></form>
-  <div id="planet-ai-settings"><label for="planet-ai-endpoint">نشانی Worker امن (بدون کلید API)</label><input id="planet-ai-endpoint" type="url" placeholder="https://your-worker.workers.dev"><button id="planet-ai-save" type="button">ذخیره نشانی</button><p style="font-size:11px;line-height:1.6;color:#a9c7ee">کلید API فقط باید به‌صورت Secret در سرور تنظیم شود. این قسمت فقط نشانی سرور را ذخیره می‌کند.</p></div>
+  <div id="planet-ai-settings"><p style="font-size:12px;line-height:1.8;color:#c8dcf5;margin:0 0 8px">حالت پیش‌فرض کاملاً آفلاین است. موتور داخلی بدون اینترنت کار می‌کند و پیام‌ها را ارسال نمی‌کند.</p><button id="planet-ai-clear-memory" type="button">پاک‌کردن حافظهٔ محلی</button> <button id="planet-ai-export-report" type="button">گرفتن گزارش سلامت JSON</button><p style="font-size:11px;line-height:1.7;color:#a9c7ee">این موتور تخصصی مبتنی بر قواعد داخلی است، نه مدل زبانی بزرگ. پاسخ‌های احتمالاتی فقط با فرضیات و داده‌های مشخص معتبرند.</p></div>
  </section>
 </div>
+<script src="./offline-ai.js"></script>
 <script>
 (function(){
  'use strict';
@@ -1328,16 +1329,18 @@ html[lang="en"] .scene-coords{direction:ltr}
  function setState(s){state.textContent=s;}
  function diagnostics(){return {app:'PLANET',language:document.documentElement.lang||'fa',readyState:document.readyState,online:navigator.onLine,viewport:{width:innerWidth,height:innerHeight},genomeLabPresent:!!document.querySelector('input[type=file],#genomeLab,#genome-lab'),recentErrors:errors.slice(-10),timestamp:new Date().toISOString()};}
  async function ask(message,el){
-   const base=endpoint();
-   if(!base){$('planet-ai-settings').classList.add('open');setState('ابتدا نشانی سرور امن را در تنظیمات وارد کن.');add('هنوز سرور هوش مصنوعی وصل نشده است. باید Worker را مستقر و کلید API را به‌صورت Secret روی سرور تنظیم کنیم.','bot');return;}
-   if(!/^https:\/\//i.test(base)){add('نشانی سرور باید با https:// شروع شود.','bot');return;}
-   const pending=el||add('در حال بررسی…','bot');pending.textContent='در حال بررسی…';setState('در حال اتصال امن به دستیار…');
+   const pending=el||add('در حال تحلیل آفلاین…','bot');
+   pending.textContent='در حال تحلیل آفلاین…';
+   setState('تحلیل روی همین دستگاه انجام می‌شود؛ اتصال شبکه لازم نیست.');
    try{
-     const response=await fetch(base+'/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:String(message).slice(0,2000),context:diagnostics()}),signal:AbortSignal.timeout(45000)});
-     const data=await response.json().catch(()=>({}));
-     if(!response.ok)throw new Error(data.error||('خطای سرور HTTP '+response.status));
-     pending.textContent=String(data.reply||'پاسخی دریافت نشد.').slice(0,12000);setState('پاسخ دریافت شد');
-   }catch(e){pending.textContent='اتصال به دستیار ناموفق بود: '+String(e.message||e)+'\n\nنشانی سرور، تنظیم Secret کلید OpenAI و وضعیت اینترنت را بررسی کن.';setState('اتصال برقرار نشد');}
+     if(!window.PlanetOfflineAI)throw new Error('موتور آفلاین بارگذاری نشده است. صفحه را تازه‌سازی کن و مطمئن شو فایل offline-ai.js در نسخهٔ نصب‌شده وجود دارد.');
+     const result=window.PlanetOfflineAI.respond(String(message||'').slice(0,2000),diagnostics());
+     pending.textContent=String(result.text||'برای این سؤال پاسخ محلی آماده نشد.');
+     setState('تحلیل محلی انجام شد • بدون اینترنت');
+   }catch(e){
+     pending.textContent='موتور آفلاین نتوانست این درخواست را پردازش کند.\n'+String(e.message||e)+'\n\nصفحه را تازه‌سازی کن؛ اگر ادامه داشت گزارش سلامت را بررسی کن.';
+     setState('خطا در موتور محلی');
+   }
  }
  const launcher=$('planet-ai-launch'), dock=$('planet-ai-assistant');
  let dragState=null, dragged=false;
@@ -1385,10 +1388,11 @@ html[lang="en"] .scene-coords{direction:ltr}
    placePanel();panel.classList.add('open');
  });
  $('planet-ai-close').addEventListener('click',()=>{panel.classList.remove('open');launcher.style.display='';});
- $('planet-ai-config-toggle').addEventListener('click',()=>{$('planet-ai-settings').classList.toggle('open');$('planet-ai-endpoint').value=endpoint();});
- $('planet-ai-save').addEventListener('click',()=>{const v=$('planet-ai-endpoint').value.trim().replace(/\/+$/,'');if(v&&!/^https:\/\//i.test(v)){setState('نشانی معتبر نیست؛ https:// لازم است.');return;}try{localStorage.setItem('planet-ai-endpoint',v);}catch(e){}setState(v?'نشانی ذخیره شد؛ اتصال را با یک پیام آزمایش کن.':'نشانی پاک شد.');});
+ $('planet-ai-config-toggle').addEventListener('click',()=>{$('planet-ai-settings').classList.toggle('open');});
+ $('planet-ai-clear-memory').addEventListener('click',()=>{if(!window.PlanetOfflineAI){setState('موتور آفلاین در دسترس نیست.');return;}window.PlanetOfflineAI.clearMemory();setState('حافظهٔ گفت‌وگوی محلی پاک شد.');add('حافظهٔ ذخیره‌شدهٔ دستیار روی این دستگاه پاک شد.','bot');});
+ $('planet-ai-export-report').addEventListener('click',()=>{try{const report=window.PlanetOfflineAI.exportHealthReport(diagnostics());const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='planet-offline-health-report.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);setState('گزارش سلامت ساخته شد؛ مرورگر دانلود را بررسی کن.');}catch(e){setState('ساخت گزارش ناموفق بود: '+String(e.message||e));}});
  $('planet-ai-compose').addEventListener('submit',e=>{e.preventDefault();const q=input.value.trim();if(!q)return;add(q,'user');input.value='';const p=add('در حال بررسی…','bot');ask(q,p);});
- $('planet-ai-health').addEventListener('click',()=>{add('درخواست بررسی سلامت برنامه','user');const d=diagnostics();ask('وضعیت فنی برنامه را بر اساس داده‌های تشخیصی زیر بررسی کن. خطاهای قطعی را از احتمال‌ها جدا کن، برای هر مشکل راهکار امن و قابل‌آزمایش پیشنهاد بده و ادعا نکن که کد را تغییر داده‌ای.\nتشخیص: '+JSON.stringify(d),null);});
+ $('planet-ai-health').addEventListener('click',()=>{add('درخواست بررسی سلامت برنامه','user');const d=diagnostics();ask('بررسی سلامت برنامه و خطاهای ثبت‌شده؛ تشخیص‌های در دسترس: '+JSON.stringify(d),null);});
  $('planet-ai-suggest').addEventListener('click',()=>{add('پیشنهادهای بهبود برنامه','user');ask('با توجه به اینکه PLANET یک شبیه‌ساز سیاره و آزمایشگاه ژنوم آموزشی است، 3 پیشنهاد اولویت‌بندی‌شده برای بهبود قابلیت اطمینان، دقت علمی و تجربه کاربر ارائه کن. هر پیشنهاد باید عملی، کم‌خطر و قابل‌آزمایش باشد. وضعیت فعلی: '+JSON.stringify(diagnostics()),null);});
 })();
 </script>
