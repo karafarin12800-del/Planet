@@ -919,31 +919,30 @@ html[lang="en"] .scene-title{direction:ltr;text-align:left}
 html[lang="en"] .scene-coords{direction:ltr}
 @media(max-width:900px){.life-zoom-btn{right:12px;bottom:60px;padding:9px 11px;font-size:10px}.top-actions{gap:5px}#languageToggle{min-width:43px;padding:7px 9px}}
 
-/* PLANET AI assistant */
-#planet-ai-assistant{position:fixed;z-index:99990;bottom:38%;right:14px;left:auto;font-family:inherit;color:#eaf2ff}
-#planet-ai-launch{writing-mode:horizontal-tb;max-width:calc(100vw - 24px)}
-#planet-ai-panel{left:auto;right:14px;bottom:calc(38% + 58px);width:min(390px,calc(100vw - 28px));height:min(590px,calc(100dvh - 110px))}
+/* PLANET AI assistant: draggable launcher + viewport-safe panel */
+#planet-ai-assistant{position:fixed;z-index:99990;top:62%;right:14px;left:auto;bottom:auto;font-family:inherit;color:#eaf2ff;touch-action:none}
 #planet-ai-assistant *{box-sizing:border-box}
-#planet-ai-launch{border:1px solid #6da8ff;background:linear-gradient(135deg,#2463eb,#6d42d8);color:white;border-radius:999px;padding:12px 16px;box-shadow:0 8px 28px #0008;font-weight:700;cursor:pointer}
-#planet-ai-panel{display:none;position:fixed;left:12px;bottom:74px;width:min(390px,calc(100vw - 24px));height:min(590px,calc(100dvh - 100px));background:#091426;border:1px solid #29466f;border-radius:18px;box-shadow:0 18px 55px #000b;overflow:hidden;flex-direction:column;direction:rtl}
+#planet-ai-launch{writing-mode:horizontal-tb;max-width:calc(100vw - 24px);border:1px solid #6da8ff;background:linear-gradient(135deg,#2463eb,#6d42d8);color:white;border-radius:999px;padding:12px 16px;box-shadow:0 8px 28px #0008;font-weight:700;cursor:grab;touch-action:none;user-select:none}
+#planet-ai-launch:active{cursor:grabbing}
+#planet-ai-panel{display:none;position:fixed;z-index:99991;left:8px;top:8px;right:auto;bottom:auto;width:min(390px,calc(100vw - 16px));height:min(620px,calc(100dvh - 16px));max-height:calc(100dvh - 16px);background:#091426;border:1px solid #29466f;border-radius:18px;box-shadow:0 18px 55px #000b;overflow:hidden;flex-direction:column;direction:rtl}
 #planet-ai-panel.open{display:flex}
-#planet-ai-head{padding:13px 14px;background:#102341;border-bottom:1px solid #29466f;display:flex;align-items:center;gap:8px}
+#planet-ai-head{flex:0 0 auto;padding:13px 14px;background:#102341;border-bottom:1px solid #29466f;display:flex;align-items:center;gap:8px}
 #planet-ai-head strong{font-size:15px;flex:1}
 #planet-ai-head button,#planet-ai-settings button{background:#1c3457;color:#eaf2ff;border:1px solid #35557f;border-radius:9px;padding:7px 10px}
-#planet-ai-state{font-size:11px;color:#a9c7ee;padding:0 14px 9px;background:#102341}
-#planet-ai-messages{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:9px}
+#planet-ai-state{flex:0 0 auto;font-size:11px;color:#a9c7ee;padding:0 14px 9px;background:#102341;overflow-wrap:anywhere}
+#planet-ai-messages{flex:1 1 auto;min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:9px}
 .planet-ai-msg{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;font-size:13px;padding:10px 12px;border-radius:12px;max-width:94%}
 .planet-ai-msg.bot{align-self:flex-start;background:#142944;border:1px solid #274568}
 .planet-ai-msg.user{align-self:flex-end;background:#243f78;border:1px solid #426ab0}
-#planet-ai-compose{padding:10px;border-top:1px solid #29466f;display:flex;gap:7px;background:#0d1b30}
+#planet-ai-compose{flex:0 0 auto;padding:10px;border-top:1px solid #29466f;display:flex;gap:7px;background:#0d1b30}
 #planet-ai-input{flex:1;min-width:0;min-height:42px;max-height:110px;resize:vertical;background:#07101e;color:#f1f6ff;border:1px solid #35557f;border-radius:10px;padding:9px;font:inherit;font-size:13px}
 #planet-ai-send{background:#2875e8;color:white;border:0;border-radius:10px;padding:0 14px;font-weight:700}
-#planet-ai-tools{display:flex;gap:6px;padding:0 10px 10px;background:#0d1b30;flex-wrap:wrap}
+#planet-ai-tools{flex:0 0 auto;display:flex;gap:6px;padding:0 10px 10px;background:#0d1b30;flex-wrap:wrap}
 #planet-ai-tools button{font-size:11px;background:#172b48;color:#d7e7ff;border:1px solid #35557f;border-radius:8px;padding:7px 9px}
-#planet-ai-settings{display:none;padding:10px;background:#0d1b30;border-top:1px solid #29466f}
+#planet-ai-settings{display:none;flex:0 0 auto;max-height:30vh;overflow-y:auto;overscroll-behavior:contain;padding:10px;background:#0d1b30;border-top:1px solid #29466f}
 #planet-ai-settings.open{display:block}
 #planet-ai-endpoint{width:100%;direction:ltr;text-align:left;background:#07101e;color:#fff;border:1px solid #35557f;border-radius:8px;padding:9px;margin:7px 0;font-size:12px}
-@media(max-width:480px){#planet-ai-assistant{right:8px;left:auto;bottom:36%}#planet-ai-launch{padding:10px 12px;font-size:12px}#planet-ai-panel{right:8px;left:auto;bottom:calc(36% + 52px);width:calc(100vw - 16px);height:min(620px,calc(100dvh - 85px))}}
+@media(max-width:480px){#planet-ai-assistant{right:8px}#planet-ai-launch{padding:10px 12px;font-size:12px}#planet-ai-panel{width:calc(100vw - 16px);height:min(620px,calc(100dvh - 16px));max-height:calc(100dvh - 16px)}}
 
 </style>
 <script>
@@ -1293,8 +1292,52 @@ html[lang="en"] .scene-coords{direction:ltr}
      pending.textContent=String(data.reply||'پاسخی دریافت نشد.').slice(0,12000);setState('پاسخ دریافت شد');
    }catch(e){pending.textContent='اتصال به دستیار ناموفق بود: '+String(e.message||e)+'\n\nنشانی سرور، تنظیم Secret کلید OpenAI و وضعیت اینترنت را بررسی کن.';setState('اتصال برقرار نشد');}
  }
- $('planet-ai-launch').addEventListener('click',()=>{panel.classList.add('open');$('planet-ai-launch').style.display='none';});
- $('planet-ai-close').addEventListener('click',()=>{panel.classList.remove('open');$('planet-ai-launch').style.display='';});
+ const launcher=$('planet-ai-launch'), dock=$('planet-ai-assistant');
+ let dragState=null, dragged=false;
+ function clamp(n,min,max){return Math.max(min,Math.min(max,n));}
+ function restoreLauncher(){
+   let saved=null;try{saved=JSON.parse(localStorage.getItem('planet-ai-position')||'null');}catch(e){}
+   const r=launcher.getBoundingClientRect();
+   const x=saved&&Number.isFinite(saved.x)?saved.x:innerWidth-r.width-14;
+   const y=saved&&Number.isFinite(saved.y)?saved.y:Math.round(innerHeight*.62);
+   dock.style.left=clamp(x,4,Math.max(4,innerWidth-r.width-4))+'px';
+   dock.style.top=clamp(y,4,Math.max(4,innerHeight-r.height-4))+'px';
+   dock.style.right='auto';dock.style.bottom='auto';
+ }
+ function placePanel(){
+   const b=launcher.getBoundingClientRect(),w=Math.min(390,innerWidth-16),h=Math.min(620,innerHeight-16);
+   let left=clamp(b.left+b.width-w,8,Math.max(8,innerWidth-w-8));
+   let top=b.top-h-10;
+   if(top<8)top=b.bottom+10;
+   top=clamp(top,8,Math.max(8,innerHeight-h-8));
+   panel.style.left=left+'px';panel.style.top=top+'px';panel.style.right='auto';panel.style.bottom='auto';
+ }
+ launcher.addEventListener('pointerdown',e=>{
+   if(e.button!==undefined&&e.button!==0)return;
+   const r=launcher.getBoundingClientRect();dragged=false;
+   dragState={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top,startX:e.clientX,startY:e.clientY};
+   try{launcher.setPointerCapture(e.pointerId);}catch(_){}
+ });
+ launcher.addEventListener('pointermove',e=>{
+   if(!dragState||dragState.id!==e.pointerId)return;
+   if(Math.hypot(e.clientX-dragState.startX,e.clientY-dragState.startY)>6)dragged=true;
+   if(!dragged)return;
+   const r=launcher.getBoundingClientRect();
+   const x=clamp(e.clientX-dragState.dx,4,Math.max(4,innerWidth-r.width-4));
+   const y=clamp(e.clientY-dragState.dy,4,Math.max(4,innerHeight-r.height-4));
+   dock.style.left=x+'px';dock.style.top=y+'px';dock.style.right='auto';dock.style.bottom='auto';
+ });
+ function endDrag(e){
+   if(!dragState||dragState.id!==e.pointerId)return;
+   if(dragged){const r=launcher.getBoundingClientRect();try{localStorage.setItem('planet-ai-position',JSON.stringify({x:r.left,y:r.top}));}catch(_){}}
+   dragState=null;
+ }
+ launcher.addEventListener('pointerup',endDrag);launcher.addEventListener('pointercancel',endDrag);
+ launcher.addEventListener('click',e=>{
+   if(dragged){e.preventDefault();e.stopImmediatePropagation();dragged=false;return;}
+   placePanel();panel.classList.add('open');launcher.style.display='none';
+ });
+ $('planet-ai-close').addEventListener('click',()=>{panel.classList.remove('open');launcher.style.display='';});
  $('planet-ai-config-toggle').addEventListener('click',()=>{$('planet-ai-settings').classList.toggle('open');$('planet-ai-endpoint').value=endpoint();});
  $('planet-ai-save').addEventListener('click',()=>{const v=$('planet-ai-endpoint').value.trim().replace(/\/+$/,'');if(v&&!/^https:\/\//i.test(v)){setState('نشانی معتبر نیست؛ https:// لازم است.');return;}try{localStorage.setItem('planet-ai-endpoint',v);}catch(e){}setState(v?'نشانی ذخیره شد؛ اتصال را با یک پیام آزمایش کن.':'نشانی پاک شد.');});
  $('planet-ai-compose').addEventListener('submit',e=>{e.preventDefault();const q=input.value.trim();if(!q)return;add(q,'user');input.value='';const p=add('در حال بررسی…','bot');ask(q,p);});
