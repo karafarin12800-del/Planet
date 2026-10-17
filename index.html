@@ -71,7 +71,7 @@
         <label for="gpAccession">شناسهٔ توالی یا اسمبلی</label>
         <input id="gpAccession" type="text" autocomplete="off" placeholder="NC_000913.3 یا GCF_000005845.2">
         <div class="gp-muted">برای یک توالی NCBI از شناسه‌ای مانند NC_… یا CP… استفاده کن. برای اسمبلی کامل از GCF_… یا GCA_… استفاده کن. دریافت اسمبلی به اتصال اینترنت وابسته است.</div>
-        <div class="gp-actions"><button id="gpFetch" class="gp-btn primary" type="button">دریافت از NCBI / ENA</button></div>
+        <div class="gp-actions"><button id="gpFetch" class="gp-btn primary" type="button">دریافت از NCBI / ENA</button><button id="gpExample" class="gp-btn" type="button">نمونه: E. coli K-12</button></div>
       </section>
       <section class="gp-card">
         <h3>۲) وارد کردن فایل ژنوم</h3>
@@ -247,13 +247,26 @@
    return {text:decoded.text,format:decoded.format};
  }
  async function fetchNucleotideNCBI(acc){
+   // Try the accession.version directly first; this preserves the exact reference version.
+   const directUrl='https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id='+encodeURIComponent(acc)+'&rettype=fasta&retmode=text';
+   let directError=null;
+   try{
+     const direct=await fetch(directUrl);
+     if(direct.ok){
+       const text=await direct.text();
+       if(/^\\s*>/m.test(text)&&!/^\\s*<!doctype|^\\s*<html/i.test(text))return {text,format:'FASTA · NCBI nuccore accession'};
+       directError=new Error('NCBI پاسخ مستقیم را به شکل FASTA برنگرداند.');
+     }else directError=new Error('دریافت مستقیم NCBI: HTTP '+direct.status);
+   }catch(e){directError=e;}
+   // Fallback through ESearch for accessions that cannot be resolved directly.
    const sUrl='https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nuccore&term='+encodeURIComponent(acc+'[Accession]')+'&retmode=json';
-   const sr=await fetch(sUrl);if(!sr.ok)throw new Error('جست‌وجوی NCBI: HTTP '+sr.status);
+   const sr=await fetch(sUrl);if(!sr.ok)throw new Error('دریافت مستقیم ناموفق بود ('+(directError?directError.message:'خطای نامشخص')+')؛ جست‌وجوی NCBI: HTTP '+sr.status);
    const sj=await sr.json(),uid=sj&&sj.esearchresult&&sj.esearchresult.idlist&&sj.esearchresult.idlist[0];
-   if(!uid)throw new Error('توالی با این شناسه در NCBI nuccore پیدا نشد.');
+   if(!uid)throw new Error('توالی با این شناسه در NCBI nuccore پیدا نشد. خطای دریافت مستقیم: '+(directError?directError.message:'نامشخص'));
    const url='https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id='+encodeURIComponent(uid)+'&rettype=fasta&retmode=text';
    const fr=await fetch(url);if(!fr.ok)throw new Error('دریافت توالی NCBI: HTTP '+fr.status);
-   return {text:await fr.text(),format:'FASTA · NCBI nuccore'};
+   const text=await fr.text();if(!/^\\s*>/m.test(text))throw new Error('پاسخ NCBI توالی FASTA معتبر نیست.');
+   return {text,format:'FASTA · NCBI nuccore via accession search'};
  }
  async function fetchENA(acc){
    const url='https://www.ebi.ac.uk/ena/browser/api/fasta/'+encodeURIComponent(acc)+'?download=true';
@@ -262,6 +275,7 @@
    if(!txt.trim().startsWith('>'))throw new Error('پاسخ ENA به شکل FASTA نیست.');
    return {text:txt,format:'FASTA · ENA Browser API'};
  }
+ $('gpExample').addEventListener('click',()=>{ $('gpAccession').value='NC_000913.3'; $('gpFetch').click(); });
  $('gpFetch').addEventListener('click',async()=>{
    if(busy)return;const acc=$('gpAccession').value.trim();
    if(!acc){setStatus('یک accession معتبر وارد کن؛ مثلاً NC_000913.3 یا GCF_000005845.2.');return;}
