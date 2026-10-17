@@ -53,6 +53,20 @@ jobs:
           mkdir -p app/src/main/assets
           cp index.html manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
 
+      - name: Validate full-genome lab JavaScript syntax
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib, re
+          source = pathlib.Path("index.html").read_text(encoding="utf-8")
+          match = re.search(r'<script id="gp-genome-lab-script">(.*?)</script>', source, re.S | re.I)
+          if not match:
+              raise SystemExit("Full-genome lab script was not found in index.html")
+          pathlib.Path("/tmp/planet-genome-lab.js").write_text(match.group(1), encoding="utf-8")
+          print("Extracted full-genome lab script for Node.js syntax validation.")
+          PY
+          node --check /tmp/planet-genome-lab.js
+
       - name: Build installable APK and Google Play App Bundle
         shell: bash
         env:
