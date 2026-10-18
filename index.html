@@ -644,13 +644,13 @@ function actAgent(agent,s,env,neighbors,context){
  const t=agent.traits;agent.maturity=clamp(agent.age/Math.max(5,agent.lifeSpan*.60),0,1);if(agent.energy>54)agent.growth=clamp(agent.growth+(.006+Math.max(0,agent.energy-54)*.00020)*(.45+t.replication*.75),.1,1);else if(agent.energy<15)agent.growth=Math.max(.10,agent.growth-.006);const decision=decideAction(agent,s,env,neighbors);
  agent.action=decision.action;agent.decisions++;agent.stress=decision.danger;
  let births=0;
- const basal=1.05+(t.size*.48)+(t.motility*.18);
+ const basal=.58+(t.size*.20)+(t.motility*.08);
  agent.energy-=basal;
  if(t.photosynthetic)agent.energy+=(s.habitat==='ocean'?.42:.75)*t.replication;
  if(agent.action==='forage'){
   if(decision.food&&decision.food.distance<.052&&decision.food.item.amount>.015){
    const p=decision.food.item,take=Math.min(p.amount,.09+t.sensing*.12);p.amount-=take;
-   agent.energy+=take*(t.metabolism==='photosynthetic'?84:t.metabolism==='chemosynthetic'?69:58);
+   agent.energy+=take*(t.metabolism==='photosynthetic'?118:t.metabolism==='chemosynthetic'?102:92);
   }else if(decision.food)moveAgent(agent,decision.food.item.x,decision.food.item.y,.018+.030*t.motility);
   else{agent.x=clamp(agent.x+(Math.random()-.5)*.04,.025,.975);agent.y=clamp(agent.y+(Math.random()-.5)*.04,.025,.975);}
   agent.energy-=.38;
@@ -660,7 +660,7 @@ function actAgent(agent,s,env,neighbors,context){
   else{const a=Math.random()*Math.PI*2,step=.025+.032*t.motility;agent.x=clamp(agent.x+Math.cos(a)*step,.025,.975);agent.y=clamp(agent.y+Math.sin(a)*step,.025,.975);}
   agent.energy-=.70;
  }else if(agent.action==='rest'){
-  agent.energy+=4.0+1.2*t.protection;agent.health=Math.min(100,agent.health+.45+t.protection*.55);
+  agent.energy+=6.5+1.8*t.protection;agent.health=Math.min(100,agent.health+.45+t.protection*.55);
  }else if(agent.action==='avoid'){
   if(decision.hazard){moveAgent(agent,agent.x+(agent.x-decision.hazard.item.x)*2.1,agent.y+(agent.y-decision.hazard.item.y)*2.1,.018+.045*t.motility);}else{agent.x=clamp(agent.x+(Math.random()-.5)*.025,.025,.975);agent.y=clamp(agent.y+(Math.random()-.5)*.025,.025,.975);}
   agent.energy-=.95;
@@ -710,7 +710,7 @@ function simulateSpeciesEcology(s){
  const baseFitness=calculateFitness(s,lifeAgeMa);
  s.fitness=clamp(baseFitness*.32+sampledFitness*.58+clamp((avgEnergy-35)/100,0,.10),.02,1);
  const peerCount=Math.max(1,activeSpecies().filter(x=>x.habitat===s.habitat).length);
- const baseK=s.habitat==='ocean'?16000:s.habitat==='shore'?8500:11000;
+ const baseK=s.habitat==='ocean'?26000:s.habitat==='shore'?14000:18000;
  const resourceMean=env.food.reduce((sum,p)=>sum+p.amount,0)/Math.max(1,env.food.length);
  const carryingCapacity=Math.max(45,baseK*(.22+.92*resourceMean)/Math.sqrt(peerCount));
  const logistic=.095*(.35+s.fitness)*(1-s.population/carryingCapacity);
@@ -720,7 +720,7 @@ function simulateSpeciesEcology(s){
  s.population=Math.max(0,Math.min(1000000000,Math.round(s.population*(1+direction))));
  s.lineageDNA=populationConsensus(s.agents,s.lineageDNA||s.dna);
  s.traits=phenotypeFromDNA(s.lineageDNA);s.proteins=s.traits.proteins;
- if(s.population<8||(!s.agents.length&&Math.random()<.65)){s.extinctAtMa=lifeAgeMa;s.active=false;}
+ if(s.population<8&&s.agents.length===0){s.extinctAtMa=lifeAgeMa;s.active=false;}
 }
 function actionLabel(action){const row=ACTION_TEXT[action]||ACTION_TEXT.explore;return isEnglishLife()?row.en:row.fa;}
 
@@ -731,7 +731,7 @@ else if(hab==='shore'){f+=t.motility*.13+t.protection*.13;if(t.metabolism==='pho
 else{f+=t.motility*.16+t.protection*.12+t.sensing*.08;if(t.thermalTolerance<.25)f-=.12;}
 f+=t.replication*.12;f-=Math.abs(t.thermalTolerance-(hab==='ocean'?.52:hab==='shore'?.60:.68))*.22;return Math.max(.05,Math.min(1,f));}
 function activeSpecies(){return speciesCatalog.filter(s=>s.firstAppearanceMa<=lifeAgeMa&&(!Number.isFinite(s.extinctAtMa)||s.extinctAtMa>lifeAgeMa));}
-function ensureFirstLineage(){const natural=speciesCatalog.find(s=>!s.artificial&&s.parentId===null);if(!natural&&lifeAgeMa>=1000&&speciesCatalog.length<MAX_SPECIES){makeSpecies(randomGenome(),{firstAppearanceMa:1000,habitat:'ocean',population:900});}}
+function ensureFirstLineage(){const natural=activeSpecies().find(s=>!s.artificial&&s.parentId===null);if(!natural&&lifeAgeMa>=1000&&speciesCatalog.length<MAX_SPECIES){makeSpecies(randomGenome(),{firstAppearanceMa:lifeAgeMa,habitat:'ocean',population:900});}}
 function evolutionaryStep(){
  if(lifeAgeMa<1000){const experiments=activeSpecies().filter(s=>s.artificial);if(!experiments.length)return;regrowResources();for(const s of experiments){if(!activeSpecies().includes(s))continue;simulateSpeciesEcology(s);s.generation++;}updateLifeUI();if($('speciesOverlay').classList.contains('open'))renderSpeciesCatalog();return;}
  ensureFirstLineage();evolutionGeneration++;regrowResources();
@@ -774,7 +774,7 @@ function restoreLifeState(){try{const raw=localStorage.getItem('planet-life-stat
  }catch(e){console.warn('Life state could not be restored:',e);}
 }
 
-function catchUpEvolution(targetAge){if(targetAge<1000)return;ensureFirstLineage();const initial=Math.max(1000,Math.min(lifeSeekStartAge||1000,targetAge));const span=Math.max(0,targetAge-initial);const steps=Math.min(42,Math.max(1,Math.floor(span/70)));for(let i=0;i<steps;i++){lifeAgeMa=initial+(span*(i+1)/steps);evolutionaryStep();}lifeAgeMa=targetAge;ensureFirstLineage();updateLifeUI();renderSpeciesCatalog();persistLifeState();}
+function catchUpEvolution(targetAge){if(targetAge<1000)return;ensureFirstLineage();const initial=Math.max(1000,Math.min(lifeSeekStartAge||1000,targetAge));const span=Math.max(0,targetAge-initial);const steps=Math.min(240,Math.max(1,Math.floor(span/15)));for(let i=0;i<steps;i++){lifeAgeMa=initial+(span*(i+1)/steps);evolutionaryStep();}lifeAgeMa=targetAge;ensureFirstLineage();updateLifeUI();renderSpeciesCatalog();persistLifeState();}
 
 function lifeTimeLabel(age){const lang=isEnglishLife();if(age>=1000)return (age/1000).toFixed(2)+(lang?' billion years after Earth formed':' میلیارد سال پس از شکل‌گیری زمین');return Math.round(age).toLocaleString(lang?'en-US':'fa-IR')+(lang?' million years after Earth formed':' میلیون سال پس از شکل‌گیری زمین');}
 function aaDescription(s){const t=s.traits,lang=isEnglishLife();let m=t.metabolism;if(lang){m={anaerobic:'anaerobic',fermentative:'fermentative',chemosynthetic:'chemosynthetic',photosynthetic:'photosynthetic'}[m];}else{m={anaerobic:'بی‌هوازی',fermentative:'تخمیری',chemosynthetic:'شیمی‌پرور',photosynthetic:'نورپرور'}[m];}return lang?'Metabolism: '+m+' · Motility: '+Math.round(t.motility*100)+'% · Protection: '+Math.round(t.protection*100)+'%':'سوخت‌وساز: '+m+' · حرکت: '+Math.round(t.motility*100)+'٪ · حفاظت: '+Math.round(t.protection*100)+'٪';}
