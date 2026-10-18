@@ -323,9 +323,11 @@
       ['binary glTF magic',dv.getUint32(0,true)===0x46546c67],
       ['binary glTF version 2',dv.getUint32(4,true)===2],
       ['binary container length',dv.getUint32(8,true)===glb.byteLength],
-      ['embedded glTF metadata',json.asset.version==='2.0'&&json.extras===undefined&&!!json.asset.extras.scientificCaveat],
+      ['embedded glTF metadata',json.asset.version==='2.0'&&!!json.asset.extras&&!!json.asset.extras.scientificCaveat],
       ['nonempty indexed triangles',json.meshes[0].primitives.length>0&&a.triangles>100],
-      ['different body plans',a.triangles!==b.triangles||a.groups.length!==b.groups.length],
+      ['different digital genomes',a.triangles!==b.triangles||a.groups.length!==b.groups.length],
+      ['no taxon-specific template',a.provenance.method==='implicit tissue field + marching tetrahedra; no taxon-specific mesh template selected'],
+      ['genome/environment provenance',a.provenance.digitalSequenceUsedAsSimulationInput===true&&a.provenance.realGenomeDecodedAsPhenotype===false],
       ['bounded coordinates',a.bounds.min.every(Number.isFinite)&&a.bounds.max.every(Number.isFinite)]
     ];
     return {ok:checks.every(x=>x[1]),version:VERSION,checks:checks.map(x=>({name:x[0],passed:x[1]})),example:{vertices:a.vertices,triangles:a.triangles,glbBytes:glb.byteLength}};
