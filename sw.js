@@ -1,4 +1,4 @@
-const CACHE_NAME = "planet-pwa-v9";
+const CACHE_NAME = "planet-pwa-v10-organism-renderer";
 const APP_SHELL = ["./index.html", "./evolution-engine.js", "./offline-ai.js", "./manifest.webmanifest", "./icon.svg", "./privacy.html"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));

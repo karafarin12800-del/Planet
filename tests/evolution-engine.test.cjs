@@ -1,5 +1,7 @@
 "use strict";
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const engine = require("../evolution-engine.js");
 
 const gene = "ATGGCTGACGTTCCAAAGTAA";
@@ -43,5 +45,32 @@ assert.equal(proxy.evidence.verifiedBiologicalPhenotype, false);
 assert.equal(proxy.evidence.sourceSequenceUsedAsFullGenotype, false);
 
 assert.ok(["sauropod", "theropod", "armoredDino"].includes(engine.inferForm(p1, 4310, "land")), "dinosaur-era terrestrial genomes must select a modeled dinosaur body plan");
+
+const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+assert.match(html, /function renderSpeciesArtworks\(container\)/, "species cards must use the procedural renderer");
+assert.match(html, /renderSpeciesArtworks\(box\)/, "species cards must draw canvas thumbnails after DOM creation");
+const habitatStartForTest = html.indexOf("function drawHabitatScene(time)");
+const habitatEndForTest = html.indexOf("function drawLife(t)", habitatStartForTest);
+assert.ok(habitatStartForTest >= 0 && habitatEndForTest > habitatStartForTest, "habitat and globe renderer functions must be present");
+assert.match(html.slice(habitatStartForTest, habitatEndForTest), /PlanetEvolutionModel\.drawOrganism/, "habitat agents must render their form, not a shared cell ellipse");
+
+function rendererCounts(form) {
+  const counts = {};
+  const methods = ["beginPath","closePath","ellipse","fill","lineTo","moveTo","quadraticCurveTo","rotate","save","restore","stroke","translate"];
+  const ctx = {};
+  for (const method of methods) ctx[method] = () => { counts[method] = (counts[method] || 0) + 1; };
+  const agent = { traits: p1, angle: 0 };
+  engine.drawOrganism(ctx, { form, traits: p1, appearance: p1.appearance }, agent, 40, 40, 12, 1, 1);
+  return counts;
+}
+const visualForms = ["microbe","fish","amphibian","bird","sauropod","theropod","armoredDino","mammal","humanoid","insect","tree","fungus"];
+const visualSignatures = visualForms.map(form => {
+  const counts = rendererCounts(form);
+  assert.ok((counts.beginPath || 0) > 0, form + " must produce visible paths");
+  assert.ok((counts.fill || 0) > 0 || (counts.stroke || 0) > 0, form + " must draw non-empty shapes");
+  return JSON.stringify(counts);
+});
+assert.ok(new Set(visualSignatures).size >= 7, "distinct body plans must render as different shapes rather than one generic cell");
+
 assert.equal(engine.selfTest().ok, true);
 console.log("Planet evolution engine tests passed:", engine.selfTest());

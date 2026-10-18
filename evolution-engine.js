@@ -127,6 +127,11 @@
       pattern: Math.floor(hashUnit(seq + "|pattern") * 5),
       surface: Math.floor(surfaceSignal * 4),
       symmetry: 0.72 + 0.27 * hashUnit(seq + "|symmetry"),
+      crestHeight: 0.04 + 0.78 * hashUnit(seq + "|crest") + 0.18 * v[7],
+      frillSize: 0.08 + 0.82 * hashUnit(seq + "|frill") * (0.35 + 0.65 * v[3]),
+      jawLength: 0.35 + 0.95 * ((v[2] * 0.58) + (hashUnit(seq + "|jaw") * 0.42)),
+      legSpread: 0.72 + 0.56 * hashUnit(seq + "|stance"),
+      stripeCount: 1 + Math.floor(hashUnit(seq + "|stripes") * 5),
       model: "synthetic-educational",
       evidence: "hypothesis-only; not a real-organism phenotype prediction"
     };
@@ -317,6 +322,13 @@
     const body = clamp(a.bodyLength, 0.72, 1.48);
     const width = clamp(a.bodyWidth, 0.66, 1.32);
     const head = clamp(a.headSize, 0.42, 1.30);
+    const bodyHeight = clamp(a.bodyHeight, 0.42, 1.36);
+    const eye = clamp(a.eyeSize, 0.30, 1.14);
+    const crest = clamp(a.crestHeight, 0.04, 1.25);
+    const frill = clamp(a.frillSize, 0.08, 1.00);
+    const jaw = clamp(a.jawLength, 0.35, 1.30);
+    const legSpread = clamp(a.legSpread, 0.72, 1.28);
+    const stripeCount = Math.round(clamp(a.stripeCount, 1, 5));
     const limb = clamp(a.limbLength, 0.35, 1.50);
     const tail = clamp(a.tailLength, 0.22, 1.80);
     const neck = clamp(a.neckLength, 0.18, 1.66);
@@ -409,11 +421,11 @@
       ctx.restore();
     } else if (/fish|aquatic|earlyFish/i.test(form)) {
       path([[-1.05 * body, 0], [-1.42 * body, -0.46 * fin], [-1.40 * body, 0.45 * fin], [-1.05 * body, 0]], dark, true);
-      ellipse(-0.08, 0, 0.97 * body, 0.46 * width, fill);
+      ellipse(-0.08, 0, 0.97 * body, 0.46 * width * bodyHeight, fill);
       path([[0.02, -0.34 * width], [0.32, -0.80 * fin], [0.56, -0.27 * width]], light, true);
       path([[-0.08, 0.30 * width], [0.25, 0.70 * fin], [0.47, 0.28 * width]], dark, true);
-      ellipse(0.57 * body, -0.13, 0.08 * head, 0.08 * head, "#f5ffff");
-      ellipse(0.59 * body, -0.13, 0.035, 0.035, "#14243a");
+      ellipse(0.57 * body, -0.13, 0.08 * head * eye, 0.08 * head * eye, "#f5ffff");
+      ellipse(0.59 * body, -0.13, 0.035 * eye, 0.035 * eye, "#14243a");
       for (let i = 0; i < 4; i++) line([[-0.48 + i * 0.24, -0.18], [-0.38 + i * 0.24, 0.17]], "rgba(240,255,255,.42)", lw * 0.7);
     } else if (/insect/i.test(form)) {
       ellipse(0.38, 0, 0.30 * body, 0.28 * width, dark);
@@ -426,16 +438,16 @@
         line([[side * (0.02 + i * 0.15), 0.14], [side * (0.25 + i * 0.18), 0.45 + i * 0.10], [side * (0.48 + i * 0.20), 0.55 + i * 0.11]], stroke);
       }
     } else if (/bird/i.test(form)) {
-      ellipse(-0.05, 0.05, 0.72 * body, 0.50 * width, fill);
+      ellipse(-0.05, 0.05, 0.72 * body, 0.50 * width * bodyHeight, fill);
       path([[0.35 * body, -0.04], [0.90 * head, -0.16], [0.42 * body, 0.10]], "#e7c777", true);
       ellipse(0.40 * body, -0.36 * head, 0.28 * head, 0.27 * head, light);
       path([[-0.52, 0.03], [-0.72 * wing, -0.64 * wing], [0.10, -0.20]], dark, true);
       path([[-0.58, 0.13], [-1.0 * body, 0.25], [-0.78 * body, -0.02]], light, true);
       line([[-0.16, 0.40], [-0.20, 0.78], [-0.40, 0.82]], "#e7c777");
       line([[0.15, 0.40], [0.20, 0.78], [0.38, 0.82]], "#e7c777");
-      ellipse(0.48 * body, -0.40 * head, 0.045, 0.045, "#122238");
+      ellipse(0.48 * body, -0.40 * head, 0.045 * eye, 0.045 * eye, "#122238");
     } else if (/amphibian/i.test(form)) {
-      ellipse(-0.02, 0.12, 0.76 * body, 0.43 * width, fill);
+      ellipse(-0.02, 0.12, 0.76 * body, 0.43 * width * bodyHeight, fill);
       ellipse(0.45 * body, -0.19, 0.30 * head, 0.27 * head, light);
       ellipse(0.33 * body, -0.39 * head, 0.12, 0.13, light);
       ellipse(0.52 * body, -0.41 * head, 0.12, 0.13, light);
@@ -454,28 +466,31 @@
       }
     } else if (/theropod|armoredDino|dinosaur|reptile/i.test(form)) {
       const biped = /theropod|dinosaur/.test(form);
-      ellipse(-0.04, 0.02, 0.92 * body, 0.42 * width, fill);
+      ellipse(-0.04, 0.02, 0.92 * body, 0.42 * width * bodyHeight, fill);
       line([[-0.74 * body, 0.00], [-1.22 * tail, 0.16], [-1.82 * tail, 0.05]], dark, 1.3 * lw);
       line([[0.45 * body, -0.10], [0.72 * body, -0.37 * neck], [0.95 * body, -0.43 * neck]], fill, 1.7 * lw);
       path([[0.79 * body, -0.47 * neck], [1.10 * body, -0.48 * neck], [1.00 * body, -0.20 * neck]], light, true);
-      ellipse(0.94 * body, -0.43 * neck, 0.035, 0.035, "#102238");
+      ellipse(0.94 * body, -0.43 * neck, 0.035 * eye, 0.035 * eye, "#102238");
       if (biped) {
         line([[-0.08, 0.27 * width], [-0.12, 0.72 * limb], [0.06, 0.75 * limb]], dark, Math.max(lw, legWidth * lw));
         line([[0.38, 0.25 * width], [0.46, 0.72 * limb], [0.62, 0.75 * limb]], dark, Math.max(lw, legWidth * lw));
         line([[0.20, -0.08], [0.38, 0.20], [0.50, 0.08]], stroke);
       } else {
         for (const lx of [-0.62, -0.25, 0.36, 0.70]) {
-          line([[lx * body, 0.23 * width], [lx * body, 0.63 * limb], [lx * body + 0.07, 0.65 * limb]], dark, Math.max(lw, legWidth * lw));
+          line([[lx * body * legSpread, 0.23 * width * bodyHeight], [lx * body * legSpread, 0.63 * limb], [lx * body * legSpread + 0.07, 0.65 * limb]], dark, Math.max(lw, legWidth * lw));
         }
       }
       if (/armoredDino/.test(form) || armor > 0.50) {
         for (let i = -2; i <= 2; i++) {
           const x = i * 0.30 * body;
-          path([[x - 0.14, -0.28 * width], [x, -0.32 * width - 0.18 - armor * 0.22], [x + 0.14, -0.28 * width]], dark, true);
+          path([[x - 0.14 * body, -0.28 * width * bodyHeight], [x, -0.32 * width * bodyHeight - 0.10 - armor * (0.10 + crest * 0.22)], [x + 0.14 * body, -0.28 * width * bodyHeight]], dark, true);
         }
       }
       if (Number(a.hornLength) > 0.42) {
-        path([[0.62 * body, -0.37 * neck], [0.74 * body, -0.62 * neck], [0.80 * body, -0.35 * neck]], light, true);
+        path([[0.62 * body, -0.37 * neck], [0.74 * body, -(0.42 + crest * 0.28) * neck], [0.80 * body, -0.35 * neck]], light, true);
+      }
+      if (frill > 0.52 && biped) {
+        path([[0.55 * body, -0.28 * neck], [0.72 * body, -(0.42 + frill * 0.28) * neck], [0.90 * body, -0.28 * neck]], dark, true);
       }
     } else if (/mammal|dog|cat|horse|elephant|humanoid|human/i.test(form)) {
       if (/humanoid|human/i.test(form)) {
@@ -488,7 +503,7 @@
         ellipse(-0.09, -0.77, 0.025, 0.03, "#102238");
         ellipse(0.09, -0.77, 0.025, 0.03, "#102238");
       } else {
-        ellipse(-0.08, 0.02, 0.90 * body, 0.44 * width, fill);
+        ellipse(-0.08, 0.02, 0.90 * body, 0.44 * width * bodyHeight, fill);
         ellipse(0.68 * body, -0.30 * head, 0.30 * head, 0.29 * head, light);
         line([[-0.72, 0.28 * width], [-0.72, 0.72 * limb], [-0.58, 0.75 * limb]], dark, Math.max(lw, legWidth * lw));
         line([[-0.28, 0.30 * width], [-0.28, 0.70 * limb], [-0.12, 0.73 * limb]], dark, Math.max(lw, legWidth * lw));
@@ -499,7 +514,7 @@
         if (/dog|cat/i.test(form)) {
           path([[0.52 * body, -0.47 * head], [0.56 * body, -0.77 * head], [0.71 * body, -0.48 * head]], dark, true);
         }
-        ellipse(0.77 * body, -0.34 * head, 0.035, 0.035, "#102238");
+        ellipse(0.77 * body, -0.34 * head, 0.035 * eye, 0.035 * eye, "#102238");
       }
     } else {
       ellipse(0, 0, 0.82 * body, 0.62 * width, fill);
@@ -508,9 +523,10 @@
       line([[-0.55, 0.18], [-0.83 * limb, 0.53]], stroke);
       line([[0.45, 0.18], [0.78 * limb, 0.48]], stroke);
     }
-    if (Number(a.pattern) > 0 && /dinosaur|theropod|sauropod|armoredDino|reptile|mammal|dog|cat|horse/i.test(form)) {
-      for (let i = 0; i < Math.min(4, Number(a.pattern)); i++) {
-        ellipse(-0.52 + i * 0.31, -0.10, 0.055 + (Number(a.surface) || 0) * 0.01, 0.055, light);
+    if (Number(a.pattern) > 0 && /dinosaur|theropod|sauropod|armoredDino|reptile|mammal|dog|cat|horse|amphibian|bird/i.test(form)) {
+      for (let i = 0; i < Math.min(5, Math.max(1, Number(a.pattern))); i++) {
+        const sx = -0.52 + i * (0.22 + stripeCount * 0.012);
+        ellipse(sx, -0.10 * bodyHeight, 0.045 + (Number(a.surface) || 0) * 0.012, 0.055 * bodyHeight, light);
       }
     }
     ctx.globalAlpha = 1;
@@ -537,10 +553,10 @@
     if (!Number.isFinite(first.appearance.tailLength) || first.appearance.tailLength <= 0) problems.push("morphology");
     if (proxy.proxyDNA.length !== GENOME_LENGTH) problems.push("reference proxy length");
     if (!proxy.evidence || proxy.evidence.verifiedBiologicalPhenotype !== false) problems.push("scientific provenance");
-    return { ok: problems.length === 0, problems: problems, checks: 7, engine: "PlanetEvolutionModel-v1" };
+    return { ok: problems.length === 0, problems: problems, checks: 7, engine: "PlanetEvolutionModel-v1.1.0" };
   }
   return {
-    version: "1.0.0",
+    version: "1.1.0",
     geneLength: GENE_LENGTH,
     geneCount: GENE_COUNT,
     genomeLength: GENOME_LENGTH,
