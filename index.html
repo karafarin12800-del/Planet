@@ -1131,6 +1131,22 @@ let resized=0;const oldRender=render;const _render=render;window.addEventListene
 // Preserve canvas dimensions; they are recomputed here at low cost on each frame.
 $('bottomSystem').textContent='SOL / EARTH';requestAnimationFrame(render);requestAnimationFrame(drawLife);
 window.PlanetLifeAPI={
+ getSpeciesSnapshot:function(){
+  const now=lifeAgeMa;
+  return speciesCatalog.map(function(s){
+   const projected=!!s.genomeProjectionEvidence||s.genomeStatus==='reference-proxy';
+   const accession=s.referenceGenome&&s.referenceGenome.accession||s.referenceSequence&&s.referenceSequence.sourceName||null;
+   return {
+    id:s.id,nameFa:s.nameFa||'',nameEn:s.nameEn||'',name:s.nameEn||s.nameFa||('Species '+s.id),
+    dna:String(s.dna||s.lineageDNA||''),form:String(s.form||'microbe'),habitat:String(s.habitat||'unknown'),
+    generation:Number(s.generation)||0,population:Number(s.population)||0,ageMa:Number(now)||0,
+    extinct:Number.isFinite(s.extinctAtMa)&&s.extinctAtMa<=now,
+    referenceGenome:accession?{accession:accession,note:String(s.genomeModelNote||s.referenceGenome&&s.referenceGenome.note||'')}:(s.referenceGenome||null),
+    scientificEvidence:projected?(s.genomeProjectionEvidence||s.referenceSequence||null):(s.animalGeneticEvidence||s.geneticEvidence||null),
+    genomeStatus:projected?'reference-proxy':(s.genomeStatus||'digital-simulation-genome')
+   };
+  }).reverse();
+ },
  createProxyFromGenome:function(data,formHint){
   if(!data||!Array.isArray(data.records)||!data.records.length)return{ok:false,message:'ابتدا توالی را در آزمایشگاه ژنوم وارد کن.'};
   if(speciesCatalog.length>=MAX_SPECIES)return{ok:false,message:'بایگانی به سقف ظرفیت رسیده است؛ ابتدا یک اجرای جدید بساز.'};
@@ -1604,4 +1620,5 @@ html[lang="en"] .scene-coords{direction:ltr}
 })();
 </script>
 
+<script src="./procedural-organism-3d.js"></script>
 </body></html>
