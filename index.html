@@ -1086,8 +1086,6 @@ function drawHabitatScene(time){
  for(let k=0;k<9;k++){c.globalAlpha=.10;c.strokeStyle=s.habitat==='ocean'?'#a9edff':'#cde7a8';c.lineWidth=1*dpr;c.beginPath();let yy=(k/9*h)+(Math.sin(time*.0007+k)*7*dpr);c.moveTo(0,yy);for(let x=0;x<=w;x+=w/16)c.lineTo(x,yy+Math.sin(x*.015+k+time*.0006)*4*dpr);c.stroke();}
  c.globalAlpha=1;
 
- for(const p of env.food){if(p.amount<=.02)continue;const x=p.x*w,y=p.y*h,r=(2+p.amount*5)*dpr;c.globalAlpha=.25+p.amount*.60;c.fillStyle='#9cf3a6';c.beginPath();c.arc(x,y,r*1.8,0,Math.PI*2);c.fill();c.globalAlpha=1;c.fillStyle='#b9ffc1';c.beginPath();c.arc(x,y,r*.65,0,Math.PI*2);c.fill();}
- for(const z of env.hazards){const x=z.x*w,y=z.y*h,r=(z.radius+z.intensity*.035)*Math.min(w,h);c.globalAlpha=.12+z.intensity*.20;c.strokeStyle='#ffc07e';c.lineWidth=1.4*dpr;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.stroke();c.fillStyle='#f28c67';c.beginPath();c.arc(x,y,2.2*dpr,0,Math.PI*2);c.fill();}
  c.globalAlpha=1;
  const agents=(s.agents||[]).filter(a=>a.alive),chosen=getSelectedAgent(s);
  habitatDisplayPositions=[];
