@@ -21,214 +21,228 @@
     const q=l<.5?l*(1+s):l+s-l*s,p=2*l-q;
     return [hue(p,q,h+1/3),hue(p,q,h),hue(p,q,h-1/3)];
   }
+  function sequenceSignal(dna, offset, span) {
+    const seq=String(dna||'').toUpperCase().replace(/[^ACGT]/g,'');
+    if(!seq.length)return 0.5;
+    const n=Math.min(span,seq.length),start=((offset%seq.length)+seq.length)%seq.length;
+    let value=0,weight=0;
+    for(let i=0;i<n;i++){
+      const b=seq[(start+i)%seq.length];
+      const v=b==='A'?0.12:b==='C'?0.39:b==='G'?0.67:0.91;
+      const w=1+((i%7)*.07);
+      value+=v*w;weight+=w;
+    }
+    return weight?value/weight:.5;
+  }
   function resolvePhenotype(specimen) {
     specimen=specimen||{};
-    const dna=String(specimen.dna||specimen.lineageDNA||'');
-    let phenotype=specimen.phenotype||specimen.traits||{};
+    const dna=String(specimen.dna||specimen.lineageDNA||'').toUpperCase().replace(/[^ACGT]/g,'');
+    let decoded=null;
     if(root.PlanetEvolutionModel&&dna.length===root.PlanetEvolutionModel.genomeLength){
-      try { phenotype=root.PlanetEvolutionModel.phenotypeFromDNA(dna,{ageMa:Number(specimen.ageMa)||0}); } catch(_) {}
+      try{decoded=root.PlanetEvolutionModel.phenotypeFromDNA(dna,{ageMa:Number(specimen.ageMa)||0});}catch(_){}
     }
-    const appearance=phenotype.appearance||specimen.appearance||{};
+    const supplied=specimen.phenotype||specimen.traits||{};
+    const appearance=supplied.appearance||decoded&&decoded.appearance||specimen.appearance||{};
+    const signal=(i)=>sequenceSignal(dna,i* Math.max(1,Math.floor(dna.length/8)),Math.max(1,Math.floor(dna.length/8)));
+    const v=Array.from({length:8},(_,i)=>signal(i));
+    const env=specimen.environment||specimen.conditions||{};
+    const temperature=clamp(env.temperatureC===undefined?env.temperature:env.temperatureC,-80,100);
+    const moisture=clamp(env.moisture===undefined?(env.waterAvailability===undefined?.5:env.waterAvailability):env.moisture,0,1);
+    const oxygen=clamp(env.oxygen===undefined?.21:env.oxygen,0,1);
+    const aquatic=/water|ocean|river|lake|aquatic|marine/i.test(String(specimen.habitat||''));
+    const photosynthetic=!!(decoded&&decoded.photosynthetic||supplied.photosynthetic);
     const rnd=rngFor(dna+'|'+(specimen.id||specimen.nameEn||specimen.nameFa||'organism'));
-    const trait=(key, fallback, lo, hi)=>clamp(appearance[key]===undefined?fallback:appearance[key],lo,hi);
-    const forms=new Set(['microbe','bacterium','aquatic','fish','amphibian','reptile','plant','tree','fungus','dinosaur','sauropod','theropod','armoredDino','mammal','dog','cat','horse','elephant','bird','insect','humanoid','human']);
-    let form=String(specimen.form||phenotype.form||'');
-    if(!forms.has(form)){
-      const inferred=phenotype.form||'microbe'; form=forms.has(String(inferred))?String(inferred):'microbe';
-    }
-    const hue=trait('hue',Math.round(rnd()*359),0,359);
+    const trait=(key,fallback,lo,hi)=>clamp(appearance[key]===undefined?fallback:appearance[key],lo,hi);
+    const form=String(specimen.form||decoded&&decoded.form||'digital-organism');
+    const bodyLength=trait('bodyLength',.72+.95*v[1],.45,2.2);
+    const bodyWidth=trait('bodyWidth',.38+.95*v[3],.25,1.6);
+    const bodyHeight=trait('bodyHeight',.32+1.0*v[4],.2,1.65);
+    const headSize=trait('headSize',.25+1.15*v[2],.12,1.5);
+    const limbCount=Math.round(trait('limbCount',v[1]<.18?0:1+Math.floor(v[1]*6),0,6));
+    const limbLength=trait('limbLength',.18+1.5*v[1],.08,1.8);
+    const limbThickness=trait('limbThickness',.08+.65*v[3],.04,.9);
+    const tailLength=trait('tailLength',.04+1.65*v[5],0,2.0);
+    const neckLength=trait('neckLength',.04+1.35*v[2],0,1.8);
+    const appendageSpan=trait('wingSpan',.05+1.4*v[6],0,1.8);
+    const surfaceRoughness=trait('surfaceRoughness',v[7],0,1);
+    const hue=trait('hue',Math.round(360*v[0]),0,359);
     return {
       id:specimen.id==null?null:specimen.id,
       name:String(specimen.nameFa||specimen.nameEn||specimen.name||'Planet organism'),
-      form, dna,
-      generation:Number(specimen.generation)||0,
-      habitat:String(specimen.habitat||'unknown'),
-      population:Math.max(0,Number(specimen.population)||0),
-      ageMa:Number(specimen.ageMa)||0,
+      form,dna,generation:Number(specimen.generation)||0,habitat:String(specimen.habitat||'unknown'),
+      population:Math.max(0,Number(specimen.population)||0),ageMa:Number(specimen.ageMa)||0,
+      environment:{temperatureC:temperature,moisture,oxygen,aquatic},
+      digitalSignals:v,
       appearance:{
-        bodyLength:trait('bodyLength',.9+rnd()*.5,.55,1.8),
-        bodyWidth:trait('bodyWidth',.7+rnd()*.45,.4,1.45),
-        bodyHeight:trait('bodyHeight',.68+rnd()*.45,.4,1.5),
-        headSize:trait('headSize',.65+rnd()*.5,.3,1.4),
-        limbLength:trait('limbLength',.65+rnd()*.5,.2,1.6),
-        limbThickness:trait('limbThickness',.45+rnd()*.5,.18,1.35),
-        tailLength:trait('tailLength',.65+rnd()*.8,.05,1.9),
-        neckLength:trait('neckLength',.45+rnd()*.6,.08,1.8),
-        wingSpan:trait('wingSpan',.45+rnd()*.7,.05,1.7),
-        finSize:trait('finSize',.6+rnd()*.6,.1,1.5),
-        armorCoverage:trait('armorCoverage',rnd()*.6,0,1),
-        crestHeight:trait('crestHeight',rnd()*.5,0,1.4),
-        eyeSize:trait('eyeSize',.55+rnd()*.4,.2,1.2),
-        hue, pattern:trait('pattern',1+rnd()*4,0,5),
-        symmetry:trait('symmetry',.8+rnd()*.2,.2,1)
+        bodyLength,bodyWidth,bodyHeight,headSize,limbCount,limbLength,limbThickness,
+        tailLength,neckLength,wingSpan:appendageSpan,finSize:.1+1.3*v[6],
+        armorCoverage:v[3]*v[7],crestHeight:v[7]*.9,eyeSize:.12+.8*v[2],
+        hue,pattern:Math.floor(v[7]*6),symmetry:.5+.5*v[6],
+        surfaceRoughness,photosynthetic,developmentalActivity:.15+.85*v[4],
+        aquaticAdaptation:aquatic?.2+.8*v[6]:.15+.65*v[1],
+        oxygenTolerance:.1+.85*v[0],temperatureTolerance:.1+.85*v[5]
       },
       referenceGenome:specimen.referenceGenome||null,
       scientificEvidence:specimen.scientificEvidence||null,
-      caveat:'Procedural visual hypothesis. It is not a validated prediction of anatomy from a natural genome.',
-      confidence:'illustrative'
+      caveat:'Developmental-field hypothesis driven by digital sequence signals and supplied environment. The 168-base Planet genome is a toy model, not a validated biological genome-to-anatomy predictor.',
+      confidence:'hypothesis-only'
     };
   }
   function buildMesh(input) {
-    const s=resolvePhenotype(input), a=s.appearance, f=s.form;
-    const L=clamp(a.bodyLength, .55,1.8)*1.55, W=clamp(a.bodyWidth,.4,1.45)*.82, H=clamp(a.bodyHeight,.4,1.5)*1.15;
-    const head=clamp(a.headSize,.3,1.4), limb=clamp(a.limbLength,.2,1.6), thick=clamp(a.limbThickness,.18,1.35);
-    const tail=clamp(a.tailLength,.05,1.9), neck=clamp(a.neckLength,.08,1.8), wing=clamp(a.wingSpan,.05,1.7), fin=clamp(a.finSize,.1,1.5);
-    const bodyColor=hsl(a.hue,.52,.45), accent=hsl(a.hue+27,.60,.61), dark=hsl(a.hue+205,.36,.23), pale=hsl(a.hue+38,.40,.77), green=hsl(112+a.hue*.12,.48,.37);
+    const s=resolvePhenotype(input),a=s.appearance;
+    const dna=s.dna||'';
+    const L=clamp(a.bodyLength,.45,2.2)*.78;
+    const W=clamp(a.bodyWidth,.25,1.6)*.46;
+    const H=clamp(a.bodyHeight,.2,1.65)*.50;
+    const head=clamp(a.headSize,.12,1.5);
+    const limbCount=Math.round(clamp(a.limbCount,0,6));
+    const limb=clamp(a.limbLength,.08,1.8);
+    const thick=clamp(a.limbThickness,.04,.9);
+    const tail=clamp(a.tailLength,0,2);
+    const neck=clamp(a.neckLength,0,1.8);
+    const span=clamp(a.wingSpan,0,1.8);
+    const rough=clamp(a.surfaceRoughness,0,1);
+    const moisture=s.environment.moisture, aquatic=s.environment.aquatic;
+    const activity=clamp(a.developmentalActivity,.15,1);
+    const rnd=rngFor(dna+'|development-field-v2');
+    const bodyColor=hsl(a.hue,.38,.43),accent=hsl(a.hue+31,.47,.59),dark=hsl(a.hue+196,.30,.24);
     const materials=[
-      {name:'body',color:bodyColor,metallic:0,roughness:.82},
-      {name:'accent',color:accent,metallic:0,roughness:.72},
-      {name:'dark',color:dark,metallic:0,roughness:.9},
-      {name:'detail',color:pale,metallic:0,roughness:.58},
-      {name:'plant',color:green,metallic:0,roughness:.9}
+      {name:'derived-surface',color:bodyColor,metallic:0,roughness:.9},
+      {name:'growth-ridges',color:accent,metallic:0,roughness:.78},
+      {name:'ventral-surface',color:dark,metallic:0,roughness:.94}
     ];
     const groups=materials.map((_,materialIndex)=>({materialIndex,positions:[],normals:[],indices:[]}));
-    function tri(p0,p1,p2,mat,outward) {
-      let n=cross(vec(p1,p0),vec(p2,p0)), len=Math.hypot(...n); if(len<1e-8)return;
-      n=n.map(x=>x/len);
-      if(outward&&dot(n,outward)<0){const tmp=p1;p1=p2;p2=tmp;n=n.map(x=>-x);}
-      const g=groups[mat], base=g.positions.length/3;
-      for(const p of [p0,p1,p2]){g.positions.push(p[0],p[1],p[2]);g.normals.push(n[0],n[1],n[2]);}
+    const primitives=[];
+    function addPrimitive(cx,cy,cz,rx,ry,rz,weight,kind,phase) {
+      primitives.push({c:[cx,cy,cz],r:[Math.max(.025,rx),Math.max(.025,ry),Math.max(.025,rz)],w:weight,kind:kind||0,phase:phase||0});
+    }
+    // One shared developmental grammar for all organisms: sequence-derived fields
+    // alter a continuous tissue-density field; no taxon-specific mesh templates.
+    addPrimitive(0,.52*H+H,0,W,H,L,1,0,rnd()*TAU);
+    const anterior=.18*L+.22*neck;
+    addPrimitive(0,H*1.78,anterior,W*(.12+.16*head),H*(.13+.14*head),L*(.10+.10*head),.92,1,rnd()*TAU);
+    if(tail>.06){
+      const segments=3+Math.floor(sequenceSignal(dna,17,Math.max(1,Math.floor(dna.length/10)))*5);
+      for(let i=0;i<segments;i++){
+        const t=(i+1)/segments,z=-L*(.32+tail*.62*t);
+        addPrimitive(0,H*(1.45-.23*t),z,W*(.22*(1-t)+.025),H*(.20*(1-t)+.025),L*(.17*(1-t)+.025),.76,2,t);
+      }
+    }
+    if(neck>.12){
+      const count=2+Math.floor(neck*2);
+      for(let i=0;i<count;i++){
+        const t=(i+1)/count;
+        addPrimitive(0,H*(1.58+.38*t),L*(.12+.2*t),W*(.17*(1-t)+.035),H*(.17*(1-t)+.035),L*(.12*(1-t)+.025),.78,1,t);
+      }
+    }
+    // Appendage number and placement are derived from sequence signals, not species labels.
+    for(let i=0;i<limbCount;i++){
+      const side=i%2===0?-1:1, row=Math.floor(i/2), z=L*(.22-row*.27);
+      const rootX=side*W*.66, rootY=H*(1.08-row*.10);
+      const spread=(.55+.9*sequenceSignal(dna,11+i*7,Math.max(1,Math.floor(dna.length/12))))*limb;
+      const endX=rootX+side*W*(.55+spread*.35);
+      const endY=Math.max(.07,rootY-H*(.45+.35*sequenceSignal(dna,29+i*5,Math.max(1,Math.floor(dna.length/14)))));
+      const endZ=z+L*(sequenceSignal(dna,37+i*3,Math.max(1,Math.floor(dna.length/16)))-.5)*.35;
+      const midX=(rootX+endX)*.5,midY=(rootY+endY)*.5,midZ=(z+endZ)*.5;
+      addPrimitive(midX,midY,midZ,Math.max(.035,Math.abs(endX-rootX)*.54),Math.max(.035,Math.abs(rootY-endY)*.55),Math.max(.045,L*.075),.62,3,i);
+      addPrimitive(endX,endY,endZ,W*(.10+thick*.14),H*(.06+thick*.08),L*(.07+thick*.07),.58,3,i+.3);
+      if(aquatic||s.environment.aquaticAdaptation>.68){
+        addPrimitive(side*(W*.90+span*.16),H*(1.04-row*.1),z,W*(.12+span*.22),H*(.035+span*.045),L*(.10+span*.15),.38,4,i);
+      }
+    }
+    // Growth ridges are a thresholded developmental response, not fixed ornaments.
+    const ridgeSignal=sequenceSignal(dna,Math.floor(dna.length*.71),Math.max(1,Math.floor(dna.length*.18)));
+    const ridgeCount=Math.floor(2+ridgeSignal*7);
+    if(ridgeSignal>.56){
+      for(let i=0;i<ridgeCount;i++){
+        const t=(i+.5)/ridgeCount,z=L*(.40-t*.78);
+        addPrimitive(0,H*(1.82+rough*.25),z,W*(.035+rough*.045),H*(.06+rough*.12),L*.035,.34,1,i);
+      }
+    }
+    // Sessile/photosynthetic expression produces upward branching fields via the same grammar.
+    if(a.photosynthetic||(!limbCount&&moisture>.45&&s.environment.oxygen>.12)){
+      const stemH=H*(.75+activity*.7);
+      addPrimitive(0,H+stemH*.48,0,W*.13,stemH*.56,W*.13,.8,5,0);
+      const branchCount=2+Math.floor(sequenceSignal(dna,Math.floor(dna.length*.42),Math.max(1,Math.floor(dna.length*.14)))*7);
+      for(let i=0;i<branchCount;i++){
+        const t=(i+1)/(branchCount+1),angle=TAU*sequenceSignal(dna,i*11,Math.max(1,Math.floor(dna.length/16)))+i*2.399;
+        const radius=W*(.25+.75*t),y=H+stemH*t;
+        addPrimitive(Math.cos(angle)*radius,y,Math.sin(angle)*radius,W*(.09+.08*activity),H*(.05+.07*activity),W*(.12+.09*activity),.48,5,i);
+      }
+    }
+    // Environment modifies growth envelope; it does not magically identify a species.
+    const thermalStress=Math.abs(s.environment.temperatureC-22)/80;
+    const envScale=clamp(1-.12*thermalStress+.10*moisture-.08*(1-s.environment.oxygen),.72,1.12);
+    for(const p of primitives){p.r[0]*=envScale;p.r[1]*=envScale;p.r[2]*=envScale;}
+    function field(x,y,z){
+      let value=-1e6;
+      for(const p of primitives){
+        const dx=(x-p.c[0])/p.r[0],dy=(y-p.c[1])/p.r[1],dz=(z-p.c[2])/p.r[2];
+        let d=(1-Math.sqrt(dx*dx+dy*dy+dz*dz))*p.w;
+        const wave=Math.sin((x*13+p.phase)*(.6+rough))*Math.sin((y*11-p.phase)*(.6+rough))*Math.sin((z*12+p.phase)*(.6+rough));
+        d+=wave*rough*.045;
+        const k=.12;
+        if(value<-1e5)value=d;
+        else {const h=clamp(.5+.5*(d-value)/k,0,1);value=d*(1-h)+value*h+k*h*(1-h);}
+      }
+      return value-.19;
+    }
+    const bounds={min:[-W*(2.2+span*.25),0,-L*(1.15+tail*.65)],max:[W*(2.2+span*.25),H*(3.4+activity*.7),L*(1.05+neck*.4)]};
+    const nx=25,ny=28,nz=33;
+    const dx=(bounds.max[0]-bounds.min[0])/nx,dy=(bounds.max[1]-bounds.min[1])/ny,dz=(bounds.max[2]-bounds.min[2])/nz;
+    const index=(i,j,k)=>(i*(ny+1)+j)*(nz+1)+k;
+    const values=new Float32Array((nx+1)*(ny+1)*(nz+1));
+    for(let i=0;i<=nx;i++)for(let j=0;j<=ny;j++)for(let k=0;k<=nz;k++){
+      values[index(i,j,k)]=field(bounds.min[0]+i*dx,bounds.min[1]+j*dy,bounds.min[2]+k*dz);
+    }
+    const tetrahedra=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
+    const cubeOffsets=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
+    const edges=[[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
+    function gradient(p){
+      const e=.004;
+      return norm([field(p[0]+e,p[1],p[2])-field(p[0]-e,p[1],p[2]),field(p[0],p[1]+e,p[2])-field(p[0],p[1]-e,p[2]),field(p[0],p[1],p[2]+e)-field(p[0],p[1],p[2]-e)]);
+    }
+    function emit(p0,p1,p2){
+      const center=[(p0[0]+p1[0]+p2[0])/3,(p0[1]+p1[1]+p2[1])/3,(p0[2]+p1[2]+p2[2])/3];
+      const n=gradient(center),u=vec(p1,p0),v=vec(p2,p0),cr=cross(u,v);
+      if(dot(cr,n)<0){const t=p1;p1=p2;p2=t;}
+      const mat=center[1]<H*.8?2:(center[1]>H*1.65&&ridgeSignal>.56?1:0),g=groups[mat],base=g.positions.length/3;
+      for(const p of [p0,p1,p2]){
+        const normal=gradient(p);
+        g.positions.push(p[0],p[1],p[2]);g.normals.push(normal[0],normal[1],normal[2]);
+      }
       g.indices.push(base,base+1,base+2);
     }
-    function ellipsoid(c,r,mat,rotY=0,rotZ=0,detail=12) {
-      const latN=Math.max(7,Math.floor(detail*.68)), lonN=detail;
-      const transform=p=>{let x=p[0],y=p[1],z=p[2];let x2=x*Math.cos(rotY)+z*Math.sin(rotY),z2=-x*Math.sin(rotY)+z*Math.cos(rotY);let x3=x2*Math.cos(rotZ)-y*Math.sin(rotZ),y3=x2*Math.sin(rotZ)+y*Math.cos(rotZ);return [x3+c[0],y3+c[1],z2+c[2]];};
-      const at=(i,j)=>{const v=-Math.PI/2+Math.PI*i/latN,u=TAU*j/lonN;return transform([r[0]*Math.cos(v)*Math.cos(u),r[1]*Math.sin(v),r[2]*Math.cos(v)*Math.sin(u)]);};
-      for(let i=0;i<latN;i++)for(let j=0;j<lonN;j++){
-        const p00=at(i,j),p01=at(i,j+1),p10=at(i+1,j),p11=at(i+1,j+1);
-        const center=[(p00[0]+p01[0]+p10[0])/3-c[0],(p00[1]+p01[1]+p10[1])/3-c[1],(p00[2]+p01[2]+p10[2])/3-c[2]];
-        tri(p00,p10,p01,mat,center);tri(p01,p10,p11,mat,[((p01[0]+p10[0]+p11[0])/3)-c[0],((p01[1]+p10[1]+p11[1])/3)-c[1],((p01[2]+p10[2]+p11[2])/3)-c[2]]);
+    function polygoniseTet(points,vals){
+      const inside=[],outside=[];
+      for(let i=0;i<4;i++)(vals[i]>=0?inside:outside).push(i);
+      if(!inside.length||!outside.length)return;
+      const crossings=[];
+      for(const [a,b] of edges)if((vals[a]>=0)!==(vals[b]>=0)){
+        const t=vals[a]/(vals[a]-vals[b]),p=points[a],q=points[b];
+        crossings.push([p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t,p[2]+(q[2]-p[2])*t]);
       }
+      if(crossings.length===3)emit(crossings[0],crossings[1],crossings[2]);
+      else if(crossings.length===4){emit(crossings[0],crossings[1],crossings[2]);emit(crossings[0],crossings[2],crossings[3]);}
     }
-    function tube(p0,p1,r0,r1,mat,segments=9) {
-      const axis=norm(vec(p1,p0)), helper=Math.abs(axis[1])<.88?[0,1,0]:[1,0,0], u=norm(cross(axis,helper)), v=norm(cross(axis,u));
-      const ring=(p,r,i)=>{const an=TAU*i/segments;return [p[0]+r*(u[0]*Math.cos(an)+v[0]*Math.sin(an)),p[1]+r*(u[1]*Math.cos(an)+v[1]*Math.sin(an)),p[2]+r*(u[2]*Math.cos(an)+v[2]*Math.sin(an))];};
-      const c0=[p0[0]-(p0[0]+p1[0])/2,p0[1]-(p0[1]+p1[1])/2,p0[2]-(p0[2]+p1[2])/2];
-      for(let i=0;i<segments;i++){
-        const a0=ring(p0,r0,i),a1=ring(p0,r0,i+1),b0=ring(p1,r1,i),b1=ring(p1,r1,i+1);
-        const mid=[(a0[0]+a1[0]+b0[0]+b1[0])/4-(p0[0]+p1[0])/2,(a0[1]+a1[1]+b0[1]+b1[1])/4-(p0[1]+p1[1])/2,(a0[2]+a1[2]+b0[2]+b1[2])/4-(p0[2]+p1[2])/2];
-        tri(a0,b0,a1,mat,mid);tri(a1,b0,b1,mat,mid);
-      }
-      for(let i=0;i<segments;i++){tri(p0,ring(p0,r0,i+1),ring(p0,r0,i),mat,[-axis[0],-axis[1],-axis[2]]);tri(p1,ring(p1,r1,i),ring(p1,r1,i+1),mat,axis);}
+    for(let i=0;i<nx;i++)for(let j=0;j<ny;j++)for(let k=0;k<nz;k++){
+      const cp=cubeOffsets.map(([oi,oj,ok])=>[bounds.min[0]+(i+oi)*dx,bounds.min[1]+(j+oj)*dy,bounds.min[2]+(k+ok)*dz]);
+      const cv=cubeOffsets.map(([oi,oj,ok])=>values[index(i+oi,j+oj,k+ok)]);
+      for(const tet of tetrahedra)polygoniseTet(tet.map(n=>cp[n]),tet.map(n=>cv[n]));
     }
-    function polygon(points,mat) { if(points.length<3)return;for(let i=1;i<points.length-1;i++)tri(points[0],points[i],points[i+1],mat); }
-    const E=(c,r,m,ry,rz,d)=>ellipsoid(c,r,m,ry||0,rz||0,d||13);
-    const T=(p0,p1,r0,r1,m)=>tube(p0,p1,r0,r1,m,9);
-    const eye=(x,y,z,side=1)=>{E([x,y,z],[.065,.065,.045],3,side*.2,0,10);E([x+side*.012,y,z+side*.031],[.026,.031,.018],2,0,0,8);};
-    // Plant, tree and fungal morphology are generated as volumetric parts rather than 2-D sprites.
-    if(f==='plant'||f==='tree'){
-      const trunk=f==='tree'?.12:.055, height=f==='tree'?1.45:clamp(limb,.2,1.6)*.7;
-      T([0,.04,0],[0,height,0],trunk,trunk*.68,2);
-      const leafCount=f==='tree'?9:5;
-      for(let i=0;i<leafCount;i++){
-        const angle=TAU*i/leafCount, y=height*(.35+(i%4)*.14), radius=f==='tree'?.30:.19;
-        E([Math.cos(angle)*radius*.56,y,Math.sin(angle)*radius*.56],[radius,.10,radius*.26],4,angle,angle*.18,12);
-      }
-      E([0,height+.04,0],[.12,.12,.12],1,0,0,10);
-    } else if(f==='fungus'){
-      T([0,.035,0],[0,.60,0],.12,.09,3);
-      E([0,.65,0],[.49,.23,.45],1,0,0,18);
-      E([0,.53,0],[.39,.07,.37],0,0,0,16);
-      for(let i=0;i<5;i++){const ang=TAU*i/5;E([Math.cos(ang)*.20,.70,Math.sin(ang)*.20],[.035,.025,.035],3,0,0,8);}
-    } else if(f==='microbe'||f==='bacterium'||f==='aquatic'){
-      E([0,.40,0],[W*.76,.24,L*.66],0,.16,0,18);
-      for(let i=0;i<4;i++){const ang=TAU*i/4;T([Math.cos(ang)*W*.70,.40,Math.sin(ang)*L*.50],[Math.cos(ang)*W*.96,.42+Math.sin(i)*.08,Math.sin(ang)*L*.74],.025,.012,1);}
-      E([W*.22,.48,L*.22],[.07,.07,.07],3);
-    } else if(f==='fish'){
-      E([0,.48,0],[W*.56,H*.28,L*.43],0,0,0,18);
-      polygon([[0,.48,-L*.36],[-W*.55,.50,-L*.70],[0,.50,-L*.60]],1);
-      polygon([[0,.48,-L*.36],[W*.55,.50,-L*.70],[0,.50,-L*.60]],1);
-      polygon([[-W*.10,.70,0],[-W*.25,.95,L*.05],[W*.15,.83,L*.1]],1);
-      polygon([[W*.30,.47,L*.05],[W*.72,.30,L*.22],[W*.48,.45,L*.34]],1);
-      for(const side of [-1,1]){eye(side*W*.35,.57,L*.26,side);E([side*W*.43,.39,L*.03],[.18,.025,.22],2,side*.25,0,10);}
-      for(let i=0;i<3;i++)T([-W*.18+i*.10,.40,L*.16],[-W*.18+i*.10,.58,L*.16],.012,.012,3);
-    } else if(f==='insect'){
-      E([0,.52,L*.25],[W*.28,H*.20,L*.20],1,0,0,13);
-      E([0,.48,0],[W*.30,H*.20,L*.24],0,0,0,13);
-      E([0,.46,-L*.28],[W*.34,H*.20,L*.31],2,0,0,13);
-      for(const side of [-1,1]){
-        T([side*W*.14,.47,L*.12],[side*W*.50,.26,L*.30],.033,.018,2);
-        for(let i=0;i<3;i++){
-          const z=L*(.22-i*.20);
-          T([side*W*.18,.43,z],[side*W*(.48+.04*(i%2)),.26,z+L*.05],.025,.015,3);
-          T([side*W*(.48+.04*(i%2)),.26,z+L*.05],[side*W*.62,.06,z+L*.10],.015,.010,2);
-        }
-        T([side*.05,.66,L*.43],[side*.10,.93,L*.54],.013,.006,3);
-      }
-      E([0,.72,L*.43],[W*.21,H*.16,L*.17],0);
-      for(const side of [-1,1])polygon([[side*W*.1,.60,L*.04],[side*W*.72,.82,-L*.04],[side*W*.42,.61,-L*.22]],3);
-    } else {
-      const isSauro=f==='sauropod', isBiped=['theropod','dinosaur','armoredDino','bird','humanoid','human'].includes(f)||f==='amphibian';
-      const isBird=f==='bird', isFish=false, isHumanoid=f==='humanoid'||f==='human';
-      const isDino=['sauropod','theropod','dinosaur','armoredDino','reptile'].includes(f);
-      E([0,H*.47,0],[W*.52,H*.25,L*.35],0,0,0,18);
-      // Long necks are tapered tube chains; ordinary vertebrates use a short neck.
-      if(isSauro){T([0,H*.57,L*.22],[0,H*.78,L*.39],W*.18,W*.12,0);T([0,H*.78,L*.39],[0,H*.98,L*.48],W*.12,W*.07,1);}
-      else T([0,H*.57,L*.23],[0,H*.65,L*.31],W*.15,W*.12,0);
-      const headZ=isSauro?L*.50:L*.39, headY=isSauro?H*.98:H*.67;
-      E([0,headY,headZ],[W*.22*head,H*.17*head,L*.18*head],1,0,0,15);
-      if(isBird||f==='dog'||f==='cat')T([0,headY-.03,headZ+L*.10],[0,headY-.08,headZ+L*.23],W*.075,W*.035,3);
-      if(f==='elephant')T([0,headY-.07,headZ+L*.09],[0,headY-.34,headZ+L*.22],W*.08,W*.045,3);
-      for(const side of [-1,1])eye(side*W*.17,headY+.035,headZ+L*.10,side);
-      if(f==='elephant')for(const side of [-1,1])E([side*W*.20,headY-.03,headZ-.025],[W*.12,H*.15,L*.06],1,0,0,12);
-      if(isBiped){
-        for(const side of [-1,1]){
-          const hip=[side*W*.20,H*.36,L*.02],knee=[side*W*.22,H*.20,L*.06],ankle=[side*W*.23,.09,L*.11];
-          T(hip,knee,W*.105*thick,W*.077*thick,0);T(knee,ankle,W*.065*thick,W*.045*thick,2);E([ankle[0],.07,ankle[2]+L*.04],[W*.11,.055,L*.10],2);
-          const shoulder=[side*W*.36,H*.56,L*.18],elbow=[side*W*.45,H*.44,L*.25],hand=[side*W*.47,H*.40,L*.32];
-          T(shoulder,elbow,W*.065*thick,W*.045*thick,0);T(elbow,hand,W*.04,W*.028,1);
-        }
-      } else {
-        for(const side of [-1,1])for(const z of [-L*.20,L*.21]){
-          const hip=[side*W*.36,H*.35,z],knee=[side*W*.39,H*.20,z+L*.015],ankle=[side*W*.39,.08,z+L*.035];
-          T(hip,knee,W*.11*thick,W*.075*thick,0);T(knee,ankle,W*.06*thick,W*.04*thick,2);E([ankle[0],.06,ankle[2]+L*.035],[W*.10,.05,L*.08],2);
-        }
-      }
-      // A continuous chain of tapered sections makes inherited tail proportions visible in 3-D.
-      if(!isHumanoid&&tail>.08){
-        const z0=-L*.27, z1=-L*(.34+tail*.36), z2=-L*(.40+tail*.62);
-        T([0,H*.43,z0],[0,H*.39,z1],W*.18,W*.10,0);
-        T([0,H*.39,z1],[0,H*.34,z2],W*.10,W*.015,1);
-      }
-      if(isBird){
-        for(const side of [-1,1]){
-          polygon([[side*W*.2,H*.61,-L*.03],[side*W*(.4+wing*.45),H*.65,-L*.10],[side*W*(.46+wing*.43),H*.43,L*.14],[side*W*.22,H*.47,L*.15]],1);
-          T([side*W*.09,.20,L*.02],[side*W*.09,.06,L*.06],.03,.022,2);
-        }
-        polygon([[-W*.04,H*.66,headZ+L*.14],[W*.04,H*.66,headZ+L*.14],[0,H*.61,headZ+L*.28]],3);
-      } else if(isDino&&a.armorCoverage>.36){
-        for(let i=0;i<6;i++){
-          const z=-L*.25+i*L*.10, y=H*.47+H*.21;
-          polygon([[-W*.12,y,z],[0,y+H*(.10+a.armorCoverage*.18),z],[W*.12,y,z]],2);
-        }
-      }
-      if(isHumanoid){
-        E([0,H*.83,L*.39],[W*.10,H*.045,L*.025],3);
-        E([0,H*.39,L*.02],[W*.31,H*.12,L*.15],1);
-      }
-      if(f==='amphibian'){
-        for(const side of [-1,1]){E([side*W*.50,.11,L*.25],[W*.20,.07,L*.12],3);E([side*W*.50,.11,-L*.18],[W*.20,.07,L*.12],3);}
-      }
-    }
-    // A compact ground-contact marker makes an accidental floating origin easier to spot in preview.
-    const all=groups.flatMap(g=>g.positions);
-    if(!all.length)throw new Error('Procedural mesher produced no triangles.');
-    const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
-    for(let i=0;i<all.length;i+=3)for(let aI=0;aI<3;aI++){min[aI]=Math.min(min[aI],all[i+aI]);max[aI]=Math.max(max[aI],all[i+aI]);}
-    const triCount=groups.reduce((sum,g)=>sum+g.indices.length/3,0);
-    return {version:VERSION,specimen:s,materials,groups:groups.filter(g=>g.positions.length),bounds:{min,max},vertices:groups.reduce((sum,g)=>sum+g.positions.length/3,0),triangles:triCount,provenance:{
-      category:s.referenceGenome?'reference-genome-derived digital proxy':'digital simulation genome',
+    const active=groups.filter(g=>g.positions.length);
+    if(!active.length)throw new Error('Developmental field produced no surface. Check the digital genome and environment.');
+    const all=active.flatMap(g=>g.positions),min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
+    for(let i=0;i<all.length;i+=3)for(let axis=0;axis<3;axis++){min[axis]=Math.min(min[axis],all[i+axis]);max[axis]=Math.max(max[axis],all[i+axis]);}
+    const triangles=active.reduce((sum,g)=>sum+g.indices.length/3,0);
+    return {version:VERSION,specimen:s,materials,groups:active,bounds:{min,max},vertices:active.reduce((sum,g)=>sum+g.positions.length/3,0),triangles,provenance:{
+      category:'sequence-and-environment-driven developmental field',
       sourceAccession:s.referenceGenome&&s.referenceGenome.accession||null,
-      confidence:'illustrative / unvalidated',
-      claim:'Geometry is procedurally generated from simulator phenotype parameters. It is not a scientifically validated prediction of the organism’s anatomy from raw DNA.',
-      realGenomeDecodedAsPhenotype:false,digitalSequenceUsedAsSimulationInput:!s.referenceGenome
+      confidence:'hypothesis-only / unvalidated',
+      claim:'Surface is generated by a continuous developmental field driven by sequence-derived digital traits and environment. This is not a validated prediction of anatomy from a natural genome.',
+      realGenomeDecodedAsPhenotype:false,digitalSequenceUsedAsSimulationInput:true,
+      method:'implicit tissue field + marching tetrahedra; no taxon-specific mesh template selected'
     }};
-  }
-  function packBytes(chunks) {
-    const size=chunks.reduce((sum,chunk)=>sum+chunk.byteLength,0);
-    const out=new Uint8Array(size); let offset=0;
-    for(const chunk of chunks){out.set(new Uint8Array(chunk.buffer,chunk.byteOffset,chunk.byteLength),offset);offset+=chunk.byteLength;}
-    return out;
   }
   function toGLB(model) {
     if(!model||!Array.isArray(model.groups)||!model.groups.length)throw new Error('Build a 3D mesh before exporting.');
