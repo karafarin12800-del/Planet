@@ -30,7 +30,7 @@
   const ALLOWED_FORMS = new Set([
     "microbe","bacterium","aquatic","fish","amphibian","reptile","plant","tree","fungus",
     "dinosaur","sauropod","theropod","armoredDino","mammal","dog","cat","horse","elephant",
-    "bird","insect","humanoid"
+    "bird","insect","earlyHorse","earlyElephant","primate","hominin","earlyHomo","humanoid"
   ]);
 
   function clamp(value, min, max) {
@@ -226,9 +226,9 @@
       if (a.armorCoverage > 0.52) return "armoredDino";
       return "theropod";
     }
-    if (age < 4535) return home === "ocean" ? "fish" : (a.wingSpan > 0.92 ? "bird" : "mammal");
-    if (age < 4539.5) return home === "ocean" ? "fish" : (p.cognition > 0.63 && p.motility > 0.68 ? "humanoid" : "mammal");
-    return home === "ocean" ? "fish" : (p.cognition > 0.64 && p.motility > 0.68 ? "humanoid" : "mammal");
+    if (age < 4535) return home === "ocean" ? "fish" : (a.wingSpan > 0.96 ? "bird" : "mammal");
+    // Homo sapiens is a curated lineage milestone, never inferred from a random toy-genome cognition score.
+    return home === "ocean" ? "fish" : (a.wingSpan > 0.99 ? "bird" : "mammal");
   }
   function mutateSyntheticGenome(dna, rate, random) {
     const seq = normalizeSyntheticGenome(dna);
@@ -336,10 +336,11 @@
     const wing = clamp(a.wingSpan, 0.04, 1.39);
     const armor = clamp(a.armorCoverage, 0, 1);
     const legWidth = clamp(a.limbThickness, 0.30, 1.42);
-    const stroke = "hsla(" + hue + ",78%,88%,.84)";
-    const fill = "hsl(" + hue + ",58%,56%)";
-    const light = "hsl(" + hue + ",74%,74%)";
-    const dark = "hsl(" + hue + ",54%,29%)";
+    const stroke = "hsla(" + hue + ",78%,92%,.90)";
+    const solid = "hsl(" + hue + ",58%,56%)";
+    const light = "hsl(" + hue + ",80%,78%)";
+    const dark = "hsl(" + hue + ",58%,28%)";
+    const fill = typeof ctx.createLinearGradient === "function" ? (function(){const g=ctx.createLinearGradient(-1.25*k,-1.1*k,1.15*k,1.1*k);g.addColorStop(0,"hsl("+hue+",74%,78%)");g.addColorStop(.34,"hsl("+hue+",64%,58%)");g.addColorStop(.72,"hsl("+hue+",59%,42%)");g.addColorStop(1,"hsl("+hue+",55%,27%)");return g;})() : solid;
     const lw = Math.max(0.55, (Number(dpr) || 1) * 0.62);
     const sc = Number(depthScale) || 1;
     ctx.save();
@@ -428,6 +429,11 @@
       ellipse(0.59 * body, -0.13, 0.035 * eye, 0.035 * eye, "#14243a");
       for (let i = 0; i < 4; i++) line([[-0.48 + i * 0.24, -0.18], [-0.38 + i * 0.24, 0.17]], "rgba(240,255,255,.42)", lw * 0.7);
     } else if (/insect/i.test(form)) {
+      // Membranous wings, abdomen segments, compound eyes and articulated legs make the insect plan distinct.
+      ctx.save();ctx.globalAlpha=.34;
+      path([[-0.22*body,-0.08],[-0.50*body,-0.66*wing],[-0.05*body,-0.48*wing],[0.22*body,-0.04]],"rgba(182,235,255,.72)",true);
+      path([[0.00,-0.10],[-0.04*body,-0.82*wing],[0.33*body,-0.60*wing],[0.42*body,-0.03]],"rgba(155,220,255,.66)",true);
+      ctx.restore();
       ellipse(0.38, 0, 0.30 * body, 0.28 * width, dark);
       ellipse(0, 0, 0.31 * body, 0.42 * width, fill);
       ellipse(-0.42, 0, 0.22 * body, 0.24 * width, light);
@@ -435,8 +441,13 @@
       path([[-0.62, -0.33], [-0.82, -0.72], [-0.92, -0.75]], "rgba(205,250,255,.36)", true);
       path([[-0.48, -0.13], [-0.35, -0.64], [0.04, -0.49]], "rgba(175,230,255,.28)", true);
       for (let side of [-1, 1]) for (let i = 0; i < 3; i++) {
-        line([[side * (0.02 + i * 0.15), 0.14], [side * (0.25 + i * 0.18), 0.45 + i * 0.10], [side * (0.48 + i * 0.20), 0.55 + i * 0.11]], stroke);
+        const joint=0.02+i*0.15;
+        line([[side*joint,0.14],[side*(0.18+i*0.17),0.36+i*0.08],[side*(0.28+i*0.19),0.61+i*0.07]],dark,Math.max(lw,1.05*lw));
+        ellipse(side*(0.28+i*0.19),0.61+i*0.07,.055,.045,light);
       }
+      line([[-0.52,-0.12],[-0.70,-0.50],[-0.82,-0.55]],stroke,Math.max(lw,1.2*lw));
+      line([[-0.42,-0.18],[-0.40,-0.58],[-0.49,-0.64]],stroke,Math.max(lw,1.2*lw));
+      ellipse(-0.68,-0.10,.22,.20,light);ellipse(-0.72,-0.12,.08,.09,"#102238");
     } else if (/bird/i.test(form)) {
       ellipse(-0.05, 0.05, 0.72 * body, 0.50 * width * bodyHeight, fill);
       path([[0.35 * body, -0.04], [0.90 * head, -0.16], [0.42 * body, 0.10]], "#e7c777", true);
@@ -492,7 +503,59 @@
       if (frill > 0.52 && biped) {
         path([[0.55 * body, -0.28 * neck], [0.72 * body, -(0.42 + frill * 0.28) * neck], [0.90 * body, -0.28 * neck]], dark, true);
       }
-    } else if (/mammal|dog|cat|horse|elephant|humanoid|human/i.test(form)) {
+    } else if (/earlyHorse|horse|equid/i.test(form)) {
+      const early=/earlyHorse/i.test(form);
+      ellipse(-0.06,0.00,0.66*body,0.38*width*bodyHeight,fill);
+      ellipse(0.36*body,-0.12,0.30*head,0.31*head,light);
+      path([[0.20*body,-0.20],[0.35*body,-0.54*neck],[0.55*body,-0.77*neck],[0.79*body,-0.71*neck],[0.68*body,-0.49*neck],[0.53*body,-0.25]],fill,true);
+      ellipse(0.73*body,-0.69*head,0.25*head,0.17*head,light);
+      path([[0.52*body,-0.81*head],[0.53*body,-1.12*head],[0.64*body,-0.83*head]],dark,true);
+      path([[0.67*body,-0.80*head],[0.80*body,-1.07*head],[0.77*body,-0.73*head]],dark,true);
+      path([[0.69*body,-0.59*head],[0.96*body,-0.60*head],[0.83*body,-0.46*head]],light,true);
+      ellipse(0.76*body,-0.73*head,0.035*eye,0.04*eye,"#102238");
+      path([[0.19*body,-0.27],[0.28*body,-0.57*neck],[0.47*body,-0.82*neck],[0.54*body,-0.78*neck],[0.44*body,-0.55*neck],[0.31*body,-0.23]],dark,true);
+      line([[-0.62*body,-0.10],[-0.86*tail,-0.37*tail],[-0.98*tail,-0.56*tail]],dark,Math.max(lw,1.8*lw));
+      for(const pair of [[-0.47,0.63],[-0.20,0.67],[0.30,0.64],[0.52,0.61]]){
+        const lx=pair[0]*body*legSpread,stride=pair[1]*limb;
+        line([[lx,0.22*width*bodyHeight],[lx+(early?-.02:.03),stride],[lx+(early?-.08:.06),stride+.12]],dark,Math.max(lw,(early?1.7:2.2)*lw));
+        path([[lx+(early?-.10:.02),stride+.09],[lx+(early?-.02:.13),stride+.08],[lx+(early?-.01:.12),stride+.19],[lx+(early?-.12:.02),stride+.19]],"#302b28",true);
+      }
+      if(early)for(const side of [-1,1])for(const toe of [0,1])line([[(side*.40+toe*.12)*body,.66*limb],[(side*.40+toe*.12)*body+side*.035,.73*limb]],light,Math.max(lw,.7*lw));
+    } else if (/earlyElephant|elephant/i.test(form)) {
+      const early=/earlyElephant/i.test(form);
+      ellipse(-0.03,0.02,0.70*body,0.48*width*bodyHeight,fill);
+      ellipse(0.43*body,-0.08,0.34*head,0.36*head,light);
+      path([[0.28*body,-0.15],[0.12*body,-0.55],[0.26*body,-0.63],[0.49*body,-0.39],[0.47*body,-0.09]],dark,true);
+      path([[0.52*body,-0.19],[0.60*body,0.10],[0.58*body,0.33],[0.67*body,0.43],[0.78*body,0.34],[0.73*body,0.24],[0.72*body,0.03],[0.67*body,-0.19]],fill,true);
+      if(!early){path([[0.49*body,0.10],[0.64*body,0.20],[0.77*body,0.12]],"#f5e7bb",true);path([[0.45*body,0.09],[0.57*body,0.25],[0.66*body,0.13]],"#e7d6a4",true);}
+      ellipse(0.62*body,-0.19*head,0.045*eye,0.05*eye,"#16212a");
+      path([[-0.65*body,-0.02],[-0.91*body,-0.25],[-0.86*body,0.25],[-0.65*body,0.30]],light,true);
+      line([[-0.58*body,0.17*width],[-0.60*body,0.70*limb],[-0.46*body,0.73*limb]],dark,Math.max(lw,3.1*lw));
+      line([[-0.22*body,0.26*width],[-0.23*body,0.70*limb],[-0.08*body,0.73*limb]],dark,Math.max(lw,3.1*lw));
+      line([[0.27*body,0.26*width],[0.28*body,0.70*limb],[0.43*body,0.73*limb]],dark,Math.max(lw,3.1*lw));
+      line([[0.50*body,0.16*width],[0.50*body,0.68*limb],[0.64*body,0.72*limb]],dark,Math.max(lw,3.1*lw));
+      line([[-0.69*body,-0.04],[-0.86*tail,0.13],[-0.91*tail,0.32]],dark,Math.max(lw,1.3*lw));
+    } else if (/primate|hominin|earlyHomo/i.test(form)) {
+      const upright=!/primate/i.test(form),early=/earlyHomo/i.test(form);
+      ellipse(-0.05,0.00,0.54*body,0.34*width,fill);
+      ellipse(0.46*body,-0.25*head,0.24*head,0.24*head,light);
+      ellipse(0.56*body,-0.30*head,0.035*eye,0.035*eye,"#102238");
+      if(!upright){
+        line([[-0.25,0.17],[-0.57*limb,0.58*limb],[-0.94*limb,0.62*limb]],dark,Math.max(lw,2.1*lw));
+        line([[0.10,0.16],[0.38*limb,0.54*limb],[0.76*limb,0.56*limb]],dark,Math.max(lw,2.1*lw));
+        line([[-0.49,0.05],[-0.78*tail,0.35],[-1.04*tail,0.08]],dark,Math.max(lw,1.3*lw));
+        line([[-0.10,0.23],[0.05,0.53],[0.20,0.56]],dark,Math.max(lw,1.8*lw));
+        line([[0.16,0.20],[0.33,0.50],[0.48,0.52]],dark,Math.max(lw,1.8*lw));
+      }else{
+        ellipse(0,-0.66,early?0.23*head:0.25*head,early?0.24*head:0.27*head,light);
+        path([[-0.23,-0.43],[0.21,-0.43],[0.28,0.12],[0.16,0.26],[0.11,0.74],[-0.10,0.74],[-0.13,0.24],[-0.29,0.13]],fill,true);
+        line([[-0.18,-0.24],[-0.40*limb,0.17],[-0.48*limb,0.39]],dark,Math.max(lw,2.0*lw));
+        line([[0.18,-0.24],[0.45*limb,0.14],[0.52*limb,0.34]],dark,Math.max(lw,2.0*lw));
+        line([[-0.10,0.22],[-0.24*limb,0.69],[-0.31*limb,0.77]],dark,Math.max(lw,2.2*lw));
+        line([[0.10,0.22],[0.26*limb,0.69],[0.34*limb,0.77]],dark,Math.max(lw,2.2*lw));
+        ellipse(-0.08,-0.69,0.026,0.03,"#102238");ellipse(0.08,-0.69,0.026,0.03,"#102238");
+      }
+    } else if (/mammal|dog|cat|humanoid|human/i.test(form)) {
       if (/humanoid|human/i.test(form)) {
         ellipse(0, -0.73, 0.28 * head, 0.30 * head, light);
         path([[-0.26, -0.39], [0.25, -0.39], [0.31, 0.23], [0.12, 0.33], [0.06, 0.82], [-0.12, 0.82], [-0.10, 0.28], [-0.30, 0.20]], fill, true);
@@ -551,12 +614,14 @@
     if (first.signals.some(function (v) { return !Number.isFinite(v) || v < 0 || v > 1; })) problems.push("signal range");
     if (JSON.stringify(first) !== JSON.stringify(second)) problems.push("determinism");
     if (!Number.isFinite(first.appearance.tailLength) || first.appearance.tailLength <= 0) problems.push("morphology");
+    const randomHumanLike = inferForm(Object.assign({}, first, { cognition: 1, motility: 1, appearance: Object.assign({}, first.appearance, { wingSpan: 0.2 }) }), 4539.9, "land");
+    if (randomHumanLike === "humanoid") problems.push("random-human-inference");
     if (proxy.proxyDNA.length !== GENOME_LENGTH) problems.push("reference proxy length");
     if (!proxy.evidence || proxy.evidence.verifiedBiologicalPhenotype !== false) problems.push("scientific provenance");
-    return { ok: problems.length === 0, problems: problems, checks: 7, engine: "PlanetEvolutionModel-v1.1.0" };
+    return { ok: problems.length === 0, problems: problems, checks: 7, engine: "PlanetEvolutionModel-v1.2.0" };
   }
   return {
-    version: "1.1.0",
+    version: "1.2.0",
     geneLength: GENE_LENGTH,
     geneCount: GENE_COUNT,
     genomeLength: GENOME_LENGTH,
