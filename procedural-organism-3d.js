@@ -244,6 +244,12 @@
       method:'implicit tissue field + marching tetrahedra; no taxon-specific mesh template selected'
     }};
   }
+  function packBytes(chunks) {
+    const size=chunks.reduce((sum,chunk)=>sum+chunk.byteLength,0);
+    const out=new Uint8Array(size);let offset=0;
+    for(const chunk of chunks){out.set(new Uint8Array(chunk.buffer,chunk.byteOffset,chunk.byteLength),offset);offset+=chunk.byteLength;}
+    return out;
+  }
   function toGLB(model) {
     if(!model||!Array.isArray(model.groups)||!model.groups.length)throw new Error('Build a 3D mesh before exporting.');
     const chunks=[],views=[],accessors=[],primitives=[];let offset=0;
