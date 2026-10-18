@@ -42,6 +42,6 @@ assert.equal(proxy.summary.sourceGenomeBp, 420);
 assert.equal(proxy.evidence.verifiedBiologicalPhenotype, false);
 assert.equal(proxy.evidence.sourceSequenceUsedAsFullGenotype, false);
 
-assert.equal(engine.inferForm(p1, 4310, "land") === "fish", false);
+assert.ok(["sauropod", "theropod", "armoredDino"].includes(engine.inferForm(p1, 4310, "land")), "dinosaur-era terrestrial genomes must select a modeled dinosaur body plan");
 assert.equal(engine.selfTest().ok, true);
 console.log("Planet evolution engine tests passed:", engine.selfTest());
