@@ -1135,15 +1135,20 @@ window.PlanetLifeAPI={
   const now=lifeAgeMa;
   return speciesCatalog.map(function(s){
    const projected=!!s.genomeProjectionEvidence||s.genomeStatus==='reference-proxy';
-   const accession=s.referenceGenome&&s.referenceGenome.accession||s.referenceSequence&&s.referenceSequence.sourceName||null;
+   // Taxon-linked reference accessions are catalog metadata unless the actual sequence
+   // was imported and projected. Do not imply the listed reference genome generated DNA.
+   const accession=projected
+    ? (s.referenceGenome&&s.referenceGenome.accession||s.referenceSequence&&s.referenceSequence.sourceName||null)
+    : null;
    return {
     id:s.id,nameFa:s.nameFa||'',nameEn:s.nameEn||'',name:s.nameEn||s.nameFa||('Species '+s.id),
     dna:String(s.dna||s.lineageDNA||''),form:String(s.form||'microbe'),habitat:String(s.habitat||'unknown'),
     generation:Number(s.generation)||0,population:Number(s.population)||0,ageMa:Number(now)||0,
     extinct:Number.isFinite(s.extinctAtMa)&&s.extinctAtMa<=now,
-    referenceGenome:accession?{accession:accession,note:String(s.genomeModelNote||s.referenceGenome&&s.referenceGenome.note||'')}:(s.referenceGenome||null),
-    scientificEvidence:projected?(s.genomeProjectionEvidence||s.referenceSequence||null):(s.animalGeneticEvidence||s.geneticEvidence||null),
-    genomeStatus:projected?'reference-proxy':(s.genomeStatus||'digital-simulation-genome')
+    referenceGenome:accession?{accession:accession,note:String(s.genomeModelNote||s.referenceGenome&&s.referenceGenome.note||'')}:null,
+    referenceMetadata:s.referenceGenome||null,
+    scientificEvidence:s.genomeProjectionEvidence||s.animalGeneticEvidence||s.geneticEvidence||s.referenceSequence||null,
+    genomeStatus:projected?'reference-proxy':(s.animalTaxonKey?'digital-simulation-genome-with-reference-metadata':'digital-simulation-genome')
    };
   }).reverse();
  },
