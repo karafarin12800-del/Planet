@@ -7,7 +7,8 @@ on:
       - 'index.html'
       - 'evolution-engine.js'
       - 'procedural-organism-3d.js'
-      - 'procedural-organism-3d.js'
+      - 'planet-image-generation.js'
+      - 'services/image-generation-worker/**'
       - 'tests/**'
       - 'offline-ai.js'
       - 'manifest.webmanifest'
@@ -25,6 +26,8 @@ on:
       - 'index.html'
       - 'evolution-engine.js'
       - 'procedural-organism-3d.js'
+      - 'planet-image-generation.js'
+      - 'services/image-generation-worker/**'
       - 'offline-ai.js'
       - 'manifest.webmanifest'
       - 'sw.js'
@@ -73,7 +76,7 @@ jobs:
       - name: Bundle the current web simulation into the Android app
         run: |
           mkdir -p app/src/main/assets
-          cp index.html evolution-engine.js procedural-organism-3d.js offline-ai.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
+          cp index.html evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
 
       - name: Validate full-genome lab JavaScript syntax
         shell: bash
@@ -96,6 +99,12 @@ jobs:
           node --check procedural-organism-3d.js
           npm install --no-save --no-package-lock gltf-validator
           node tests/procedural-organism-3d.test.cjs
+
+      - name: Validate genome-driven AI image generation pipeline
+        run: |
+          node --check planet-image-generation.js
+          node --check --input-type=module < services/image-generation-worker/index.js
+          node tests/image-generation-contract.test.cjs
 
       - name: Validate all inline JavaScript in app HTML
         shell: bash
