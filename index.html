@@ -148,6 +148,26 @@
       <p id="gpMeta" class="gp-muted"></p>
       <div class="gp-note">محدودیت علمی: بررسی حرف‌ها، طول و GC به‌تنهایی کامل‌بودن اسمبلی، هویت گونه یا عملکرد ژن‌ها را اثبات نمی‌کند. ژنوم واقعی در این بخش تحلیل می‌شود؛ برای پرهیز از ادعای نادرست، صفات و رفتار باکتری از روی توالی به‌طور کامل پیش‌بینی نمی‌شوند. مدل تکامل زیر یک مدل آماریِ آموزشی است.</div>
     </section>
+    <section id="gpAnimalLink" class="gp-card" hidden>
+      <h3>۴) اتصال توالی واقعی به گونهٔ جانوری</h3>
+      <p class="gp-muted">پس از واردکردن توالی، آن را به گونهٔ مناسب پیوند بده. توالی واقعی جدا از DNA مصنوعی کوتاهِ موتور تکامل نگهداری می‌شود تا دادهٔ علمی با مدل آموزشی اشتباه نشود.</p>
+      <label for="gpAnimalTaxon">گونه‌ای که این توالی به آن تعلق دارد</label>
+      <select id="gpAnimalTaxon">
+        <option value="earlyFish">ماهی گورخر — Danio rerio</option>
+        <option value="amphibian">قورباغهٔ پنجه‌دار — Xenopus tropicalis</option>
+        <option value="insect">مگس سرکه — Drosophila melanogaster</option>
+        <option value="mouse">موش خانگی — Mus musculus</option>
+        <option value="bird">مرغ — Gallus gallus</option>
+        <option value="dog">سگ — Canis lupus familiaris</option>
+        <option value="cat">گربه — Felis catus</option>
+        <option value="horse">اسب — Equus caballus</option>
+        <option value="elephant">فیل آفریقایی — Loxodonta africana</option>
+        <option value="human">انسان — Homo sapiens</option>
+      </select>
+      <div class="gp-actions"><button id="gpLinkAnimal" class="gp-btn primary" type="button">ذخیره و پیوند توالی به گونه</button><button id="gpCheckAnimal" class="gp-btn" type="button">بررسی پیوندهای ذخیره‌شده</button></div>
+      <div id="gpAnimalStatus" class="gp-status">ابتدا توالی را دریافت یا از فایل وارد کن.</div>
+      <div class="gp-note">ذخیره در حافظهٔ محلی مرورگر انجام می‌شود و به فضای کافی نیاز دارد؛ برای جلوگیری از هنگ‌کردن گوشی، این مرحله توالی‌های بزرگ‌تر از ۱۰۰ مگابایت را نمی‌پذیرد. برای اسمبلی‌های چندگیگابایتی، توالی ژن/کروموزوم مشخص یا فایل کوچک‌تر را وارد کن. این پیوند به‌تنهایی اثر فنوتیپی ژن یا آلل را اثبات نمی‌کند.</div>
+    </section>
     <section id="gpModel" class="gp-card" hidden>
       <h3>مدل تکامل جمعیت بر پایهٔ اندازهٔ ژنوم</h3>
       <div class="gp-muted">طول ژنوم واردشده در محاسبهٔ فشار جهش استفاده می‌شود. فراوانی یک نشانگر فرضی با انتخاب طبیعی و رانش ژنتیکی مدل می‌شود؛ این خروجی، بازسازی دقیق تکامل آن باکتری نیست.</div>
@@ -268,6 +288,43 @@
    for(const size of sizes){sum+=size;if(sum>=total/2){n50=size;break;}}
    return {name:name||records[0].description||records[0].id,format:formatHint||format,records,total,gc,gcPct:100*gc/total,n,amb,n50,cds:format==='GenBank'?cds:null,type:/U/i.test(records.map(r=>r.seq).join(''))&&!/[T]/i.test(records.map(r=>r.seq).join(''))?'RNA':'DNA',loadedAt:new Date().toISOString()};
  }
+ function openAnimalGenomeDB(){
+   return new Promise((resolve,reject)=>{
+     if(!('indexedDB' in window)){reject(new Error('مرورگر IndexedDB را پشتیبانی نمی‌کند.'));return;}
+     const req=indexedDB.open('planet-animal-reference-genomes',1);
+     req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains('genomes'))db.createObjectStore('genomes',{keyPath:'taxonKey'});};
+     req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('بازکردن پایگاه محلی ناموفق بود.'));
+   });
+ }
+ function readAnimalGenomeLinks(){
+   try{return JSON.parse(localStorage.getItem('planet-animal-genome-links')||'{}');}catch(e){return {};}
+ }
+ async function saveAnimalGenomeLink(){
+   if(!current){$('gpAnimalStatus').textContent='ابتدا ژنوم واقعی را وارد کن.';return;}
+   const bytes=current.records.reduce((n,r)=>n+r.seq.length,0);
+   if(bytes>100*1024*1024){$('gpAnimalStatus').textContent='این توالی از سقف ۱۰۰ مگابایت این مرحله بزرگ‌تر است. برای جلوگیری از بسته‌شدن برنامه، یک ژن/کروموزوم مشخص یا فایل کوچک‌تر وارد کن.';return;}
+   const taxonKey=$('gpAnimalTaxon').value;
+   const option=$('gpAnimalTaxon').selectedOptions[0];
+   const record={taxonKey,taxonLabel:option?option.textContent:taxonKey,sourceName:current.name,format:current.format,total:current.total,gcPct:+current.gcPct.toFixed(6),records:current.records.map(r=>({id:r.id,description:r.description,seq:r.seq})),loadedAt:current.loadedAt,storedAt:new Date().toISOString(),evidenceLevel:'sequence-linked; phenotype not inferred'};
+   $('gpLinkAnimal').disabled=true;$('gpAnimalStatus').textContent='در حال ذخیرهٔ توالی در حافظهٔ محلی…';
+   let db;
+   try{
+     db=await openAnimalGenomeDB();
+     await new Promise((resolve,reject)=>{const tx=db.transaction('genomes','readwrite');tx.objectStore('genomes').put(record);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('ذخیرهٔ توالی انجام نشد.'));tx.onabort=()=>reject(tx.error||new Error('ذخیره لغو شد.'));});
+     const links=readAnimalGenomeLinks();links[taxonKey]={taxonLabel:record.taxonLabel,sourceName:record.sourceName,format:record.format,total:record.total,gcPct:record.gcPct,recordCount:record.records.length,storedAt:record.storedAt,evidenceLevel:record.evidenceLevel};
+     localStorage.setItem('planet-animal-genome-links',JSON.stringify(links));
+     $('gpAnimalStatus').textContent='پیوند ذخیره شد: '+record.taxonLabel+' · '+fmt(record.total)+' باز · '+fmt(record.records.length)+' رکورد. توالی واقعی در IndexedDB نگهداری می‌شود؛ ژنوتیپ کوتاه شبیه‌سازی عمداً تغییر نکرده است.';
+     window.dispatchEvent(new CustomEvent('planet-animal-genome-linked',{detail:links[taxonKey]}));
+   }catch(e){$('gpAnimalStatus').textContent='ذخیره انجام نشد: '+String(e.message||e)+' . فضای خالی مرورگر را بررسی کن و دوباره تلاش کن.';}
+   finally{if(db)db.close();$('gpLinkAnimal').disabled=false;}
+ }
+ async function showAnimalGenomeLinks(){
+   const links=readAnimalGenomeLinks(),items=Object.values(links);
+   if(!items.length){$('gpAnimalStatus').textContent='هنوز توالی واقعی به گونه‌ای پیوند داده نشده است.';return;}
+   $('gpAnimalStatus').textContent='پیوندهای ذخیره‌شده:\n'+items.map(x=>x.taxonLabel+' — '+fmt(x.total)+' bp; GC '+x.gcPct+'%; '+x.format+'; ذخیره '+new Date(x.storedAt).toLocaleString('fa-IR')).join('\n')+'\nاین اطلاعات در همین دستگاه است.';
+ }
+ $('gpLinkAnimal').addEventListener('click',saveAnimalGenomeLink);
+ $('gpCheckAnimal').addEventListener('click',showAnimalGenomeLinks);
  function applyGenome(g,source){
    current=g;lastModel=null;
    $('gpResults').hidden=false;$('gpModel').hidden=false;
@@ -781,6 +838,13 @@ function evolutionaryStep(){
   if(divergence>=8&&evolutionGeneration-lastSpeciationGeneration>=7&&speciesCatalog.length<MAX_SPECIES&&livingNow<MAX_LIVING_SPECIES){
    const child=makeSpecies(s.lineageDNA,{firstAppearanceMa:lifeAgeMa,habitat:s.habitat,population:Math.max(25,Math.round(s.population*.12)),generation:0,parentId:s.id,mutations:divergence,artificial:s.artificial});
    child.fitness=s.fitness;
+   // Preserve lineage-level animal identity and reference metadata across digital speciation.
+   if(s.animalTaxonKey){
+    child.animalTaxonKey=s.animalTaxonKey;child.animalTaxon=s.animalTaxon;
+    child.referenceGenome=s.referenceGenome;child.genomeStatus=s.genomeStatus;
+    child.genomeModelNote=s.genomeModelNote;child.form=s.form;
+    child.nameFa=s.nameFa+' • نسل '+child.id;child.nameEn=s.nameEn+' • lineage '+child.id;
+   }
    s.speciationCount++;s.dna=s.lineageDNA;s.fitness=clamp(s.fitness,0,1);
    lastSpeciationGeneration=evolutionGeneration;
   }
@@ -823,7 +887,7 @@ function renderSpeciesCatalog(){
   const agents=(s.agents||[]).filter(a=>a.alive),meanCognition=agents.length?agents.reduce((sum,a)=>sum+a.traits.cognition,0)/agents.length:s.traits.cognition;
   const commonAction=agents.length?agents.reduce((counts,a)=>{counts[a.action]=(counts[a.action]||0)+1;return counts;},{}):{};
   const action=Object.keys(commonAction).sort((a,b)=>commonAction[b]-commonAction[a])[0]||'explore';
-  return '<div class="species-item"><div class="species-dot" style="background:hsl('+s.hue+',72%,66%)"></div><div class="species-info"><b>'+speciesName(s)+'</b><small>DNA '+s.dna.length+' bp · '+(lang?'generation ':'نسل ')+s.generation+' · '+place+' · '+status+'<br>'+aaDescription(s)+(s.referenceGenome?'<br><b>'+ (lang?'Real reference genome: ':'ژنوم مرجع واقعی: ')+'</b>'+s.referenceGenome.accession+' · '+s.referenceGenome.assembly+'<br><span style="color:#ffdc9b">'+(lang?'The reference genome is linked, not used as the simulated genotype.':'ژنوم مرجع پیوند داده شده؛ ژنوتیپ شبیه‌سازی از آن ساخته نشده است.')+'</span> <a href="'+s.referenceGenome.url+'" target="_blank" rel="noopener" style="color:#8ee8ff">'+(lang?'NCBI record':'رکورد NCBI')+'</a>':'')+'<br>'+ (lang?'Population: ':'جمعیت: ')+Math.round(s.population).toLocaleString(lang?'en-US':'fa-IR')+' · '+(lang?'digital cognition ':'شناخت دیجیتال ')+Math.round(meanCognition*100)+'%<br>'+ (lang?'Most common current action: ':'عمل رایج فعلی: ')+actionLabel(action)+' · '+(lang?'alive sample: ':'نمونه‌های زنده: ')+agents.length+'</small></div><button type="button" data-species-id="'+s.id+'">'+(lang?'Inspect habitat':'بررسی زیستگاه')+'</button></div>';
+  return '<div class="species-item"><div class="species-dot" style="background:hsl('+s.hue+',72%,66%)"></div><div class="species-info"><b>'+speciesName(s)+'</b><small>DNA '+s.dna.length+' bp · '+(lang?'generation ':'نسل ')+s.generation+' · '+place+' · '+status+'<br>'+aaDescription(s)+(s.referenceGenome?'<br><b>'+ (lang?'Real reference genome: ':'ژنوم مرجع واقعی: ')+'</b>'+s.referenceGenome.accession+' · '+s.referenceGenome.assembly+'<br><span style="color:#ffdc9b">'+(lang?'The reference genome is linked, not used as the simulated genotype.':'ژنوم مرجع پیوند داده شده؛ ژنوتیپ شبیه‌سازی از آن ساخته نشده است.')+'</span> <a href="'+s.referenceGenome.url+'" target="_blank" rel="noopener" style="color:#8ee8ff">'+(lang?'NCBI record':'رکورد NCBI')+'</a>':'')+(function(){try{const links=JSON.parse(localStorage.getItem('planet-animal-genome-links')||'{}');const link=links[s.animalTaxonKey];return link?'<br><b style="color:#91f5be">'+(lang?'Imported reference sequence: ':'توالی مرجع واقعیِ واردشده: ')+'</b>'+link.total.toLocaleString()+' bp · GC '+link.gcPct+'% · '+link.recordCount+' '+(lang?'records':'رکورد')+'<br><span style="color:#ffdc9b">'+(lang?'Sequence stored locally; phenotype is not inferred from it.':'توالی در همین دستگاه ذخیره شده؛ فنوتیپ از آن استنتاج نشده است.')+'</span>':'';}catch(e){return '';}})()+'<br>'+ (lang?'Population: ':'جمعیت: ')+Math.round(s.population).toLocaleString(lang?'en-US':'fa-IR')+' · '+(lang?'digital cognition ':'شناخت دیجیتال ')+Math.round(meanCognition*100)+'%<br>'+ (lang?'Most common current action: ':'عمل رایج فعلی: ')+actionLabel(action)+' · '+(lang?'alive sample: ':'نمونه‌های زنده: ')+agents.length+'</small></div><button type="button" data-species-id="'+s.id+'">'+(lang?'Inspect habitat':'بررسی زیستگاه')+'</button></div>';
  }).join('');
  box.innerHTML=rows;box.querySelectorAll('[data-species-id]').forEach(btn=>btn.addEventListener('click',()=>openHabitat(Number(btn.getAttribute('data-species-id')))));
 }
