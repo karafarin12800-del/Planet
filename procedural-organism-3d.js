@@ -22,7 +22,7 @@
     return [hue(p,q,h+1/3),hue(p,q,h),hue(p,q,h-1/3)];
   }
   function sequenceSignal(dna, offset, span) {
-    const seq=String(dna||'').toUpperCase().replace(/[^ACGT]/g,'');
+    const seq=String(dna||''); // Internal callers pass the normalized sequence; avoid rescanning multi-megabase genomes for each locus.
     if(!seq.length)return 0.5;
     const n=Math.min(span,seq.length),start=((offset%seq.length)+seq.length)%seq.length;
     let value=0,weight=0;
