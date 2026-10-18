@@ -223,7 +223,12 @@
         crossings.push([p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t,p[2]+(q[2]-p[2])*t]);
       }
       if(crossings.length===3)emit(crossings[0],crossings[1],crossings[2]);
-      else if(crossings.length===4){emit(crossings[0],crossings[1],crossings[2]);emit(crossings[0],crossings[2],crossings[3]);}
+      else if(crossings.length===4){
+        const center=crossings.reduce((sum,p)=>[sum[0]+p[0]/4,sum[1]+p[1]/4,sum[2]+p[2]/4],[0,0,0]);
+        const normal=gradient(center),u=norm(vec(crossings[0],center)),v=norm(cross(normal,u));
+        crossings.sort((p,q)=>Math.atan2(dot(vec(p,center),v),dot(vec(p,center),u))-Math.atan2(dot(vec(q,center),v),dot(vec(q,center),u)));
+        emit(crossings[0],crossings[1],crossings[2]);emit(crossings[0],crossings[2],crossings[3]);
+      }
     }
     for(let i=0;i<nx;i++)for(let j=0;j<ny;j++)for(let k=0;k<nz;k++){
       const cp=cubeOffsets.map(([oi,oj,ok])=>[bounds.min[0]+(i+oi)*dx,bounds.min[1]+(j+oj)*dy,bounds.min[2]+(k+ok)*dz]);
