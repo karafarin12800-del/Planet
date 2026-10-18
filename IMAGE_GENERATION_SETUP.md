@@ -19,12 +19,12 @@
    - `PLANET_ACCESS_CODE`: یک رمز تصادفی و بلند که فقط خودت می‌دانی.
 4. دو مقدار **Variable** اضافه کن:
    - `OPENAI_IMAGE_MODEL` = `gpt-image-2.5-flare`
-   - `ALLOWED_ORIGINS` = `https://karafarin12800-del.github.io`
+   - `ALLOWED_ORIGINS` = `https://karafarin12800-del.github.io` (وب Worker، مبدأ WebView اندروید `https://appassets.androidplatform.net` نیز به فهرست پیش‌فرض مجاز اضافه شده است.)
 5. دوباره Deploy کن. نشانی Worker معمولاً شبیه `https://نام-کارگر.نام-حساب.workers.dev` است.
 6. در PLANET، کاتالوگ گونه‌ها را باز کن، روی **تولید تصویر هوش مصنوعی** بزن و از تنظیم سرویس، نشانی Worker و همان `PLANET_ACCESS_CODE` را وارد و ذخیره کن. کلید `OPENAI_API_KEY` را در اپ وارد نکن.
 7. برای بررسی پیکربندی، نشانی `https://نشانی-Worker/health` را باز کن؛ فیلد `configured` باید `true` باشد.
 
-برای APKهایی که Origin آن‌ها `null` است، فقط پس از اطمینان از محدود بودن دسترسی و هزینه، متغیر `ALLOW_NULL_ORIGIN=true` را اضافه کن. بهتر است در غیر این صورت Origin را محدود نگه داری. برای توسعهٔ محلی، Originهای لازم را با فهرست جداشده با کاما به `ALLOWED_ORIGINS` اضافه کن.
+در APK فعلی، صفحه با `WebViewAssetLoader` از مبدأ `https://appassets.androidplatform.net` بارگذاری می‌شود و Worker این مبدأ را در allowlist پیش‌فرض می‌پذیرد. فقط اگر با بررسی درخواست واقعی ثابت شد Origin برابر `null` است، متغیر `ALLOW_NULL_ORIGIN=true` را اضافه کن؛ بی‌دلیل آن را فعال نکن. برای توسعهٔ محلی، Originهای لازم را با فهرست جداشده با کاما به `ALLOWED_ORIGINS` اضافه کن.
 
 ### مسیر خط فرمان (اختیاری)
 
