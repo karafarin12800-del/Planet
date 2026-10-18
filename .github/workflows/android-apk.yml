@@ -94,6 +94,7 @@ jobs:
           node --check evolution-engine.js
           node tests/evolution-engine.test.cjs
           node --check procedural-organism-3d.js
+          npm install --no-save --no-package-lock gltf-validator
           node tests/procedural-organism-3d.test.cjs
 
       - name: Validate all inline JavaScript in app HTML
