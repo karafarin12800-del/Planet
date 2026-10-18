@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const engine = require("../evolution-engine.js");
+const lineage = require("../lineage-model.js");
 
 const gene = "ATGGCTGACGTTCCAAAGTAA";
 const dna = Array(8).fill(gene).join("");
@@ -72,5 +73,14 @@ const visualSignatures = visualForms.map(form => {
 });
 assert.ok(new Set(visualSignatures).size >= 7, "distinct body plans must render as different shapes rather than one generic cell");
 
+
+const chronology = lineage.validate();
+assert.equal(chronology.ok,true,"lineage chronology and conversion must be consistent");
+assert.ok(lineage.events.every((e,i)=>i===0||lineage.events[i-1].earthAgeMa<=e.earthAgeMa),"events must be sorted by Earth age");
+assert.equal(lineage.toMaBeforePresent(4539.7),0.3,"4539.7 Ma after Earth formed is about 300 ka before present");
+assert.ok(lineage.branches.find(b=>b.key==="human").pathFa.includes("نخستی‌ها"),"human branch must pass through primates");
+assert.ok(lineage.branches.find(b=>b.key==="insects").pathFa.includes("بندپایان"),"insects must be an arthropod branch");
+const highCognition={...p1,cognition:1,motility:1,appearance:{...p1.appearance,wingSpan:.2}};
+assert.equal(engine.inferForm(highCognition,4539.9,"land"),"mammal","random cognition must not infer Homo sapiens");
 assert.equal(engine.selfTest().ok, true);
 console.log("Planet evolution engine tests passed:", engine.selfTest());
