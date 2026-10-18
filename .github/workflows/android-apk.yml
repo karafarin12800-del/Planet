@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'evolution-engine.js'
+      - 'tests/**'
       - 'offline-ai.js'
       - 'manifest.webmanifest'
       - 'sw.js'
@@ -14,6 +16,22 @@ on:
       - 'build.gradle'
       - 'settings.gradle'
       - 'gradle.properties'
+      - '.github/workflows/android-apk.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'evolution-engine.js'
+      - 'offline-ai.js'
+      - 'manifest.webmanifest'
+      - 'sw.js'
+      - 'icon.svg'
+      - 'privacy.html'
+      - 'app/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - 'tests/**'
       - '.github/workflows/android-apk.yml'
   workflow_dispatch:
 
@@ -52,7 +70,7 @@ jobs:
       - name: Bundle the current web simulation into the Android app
         run: |
           mkdir -p app/src/main/assets
-          cp index.html offline-ai.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
+          cp index.html evolution-engine.js offline-ai.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
 
       - name: Validate full-genome lab JavaScript syntax
         shell: bash
@@ -67,6 +85,27 @@ jobs:
           print("Extracted full-genome lab script for Node.js syntax validation.")
           PY
           node --check /tmp/planet-genome-lab.js
+
+      - name: Validate genome-to-organism evolution engine
+        run: |
+          node --check evolution-engine.js
+          node tests/evolution-engine.test.cjs
+
+      - name: Validate all inline JavaScript in app HTML
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib, re
+          source = pathlib.Path("index.html").read_text(encoding="utf-8")
+          matches = re.findall(r'<script\b([^>]*)>(.*?)</script\s*>', source, re.S | re.I)
+          scripts = [body for attrs, body in matches if not re.search(r'\bsrc\s*=', attrs, re.I)]
+          if not scripts:
+              raise SystemExit("No inline scripts found in index.html")
+          for i, body in enumerate(scripts):
+              pathlib.Path(f"/tmp/planet-inline-{i}.js").write_text(body, encoding="utf-8")
+          print(f"Extracted {len(scripts)} inline JavaScript blocks.")
+          PY
+          for script in /tmp/planet-inline-*.js; do node --check "$script"; done
 
       - name: Validate offline intelligence engine
         run: |
