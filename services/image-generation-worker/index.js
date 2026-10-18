@@ -2,7 +2,10 @@
  * Required secrets: OPENAI_API_KEY, PLANET_ACCESS_CODE.
  * Add Cloudflare edge rate limiting before exposing this endpoint publicly.
  */
-const DEFAULT_ALLOWED_ORIGINS = ["https://karafarin12800-del.github.io"];
+const DEFAULT_ALLOWED_ORIGINS = [
+  "https://karafarin12800-del.github.io",
+  "https://appassets.androidplatform.net"
+];
 const WINDOW_MS = 5 * 60 * 1000;
 const MAX_REQUESTS_PER_WINDOW = 3;
 const requestWindows = new Map();
