@@ -46,7 +46,7 @@
     const signal=(i)=>sequenceSignal(dna,i* Math.max(1,Math.floor(dna.length/8)),Math.max(1,Math.floor(dna.length/8)));
     const v=Array.from({length:8},(_,i)=>signal(i));
     const env=specimen.environment||specimen.conditions||{};
-    const temperature=clamp(env.temperatureC===undefined?env.temperature:env.temperatureC,-80,100);
+    const temperature=clamp(env.temperatureC===undefined?(env.temperature===undefined?22:env.temperature):env.temperatureC,-80,100);
     const moisture=clamp(env.moisture===undefined?(env.waterAvailability===undefined?.5:env.waterAvailability):env.moisture,0,1);
     const oxygen=clamp(env.oxygen===undefined?.21:env.oxygen,0,1);
     const aquatic=/water|ocean|river|lake|aquatic|marine/i.test(String(specimen.habitat||''));
@@ -183,7 +183,7 @@
         d+=wave*rough*.045;
         const k=.12;
         if(value<-1e5)value=d;
-        else {const h=clamp(.5+.5*(d-value)/k,0,1);value=d*(1-h)+value*h+k*h*(1-h);}
+        else {const h=clamp(.5+.5*(d-value)/k,0,1);value=value*(1-h)+d*h+k*h*(1-h);}
       }
       return value-.19;
     }
