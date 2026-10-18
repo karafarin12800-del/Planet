@@ -372,6 +372,31 @@
     $('planet-proc3d-build').addEventListener('click',build);
     select.addEventListener('change',build);
     const langButton=$('languageToggle');if(langButton)langButton.addEventListener('click',()=>{button.textContent=localized('◈ ساخت مدل ۳بعدی','◈ Build 3D model');$('planet-proc3d-head').firstElementChild.textContent=localized('مولد سه‌بعدی موجودات · PLANET','Procedural Organism 3D · PLANET');refresh();});
+    let habitatViewer=null;
+    const habitatButton=root.document.getElementById('habitatShow3D');
+    const habitatCanvas=root.document.getElementById('habitat3DCanvas');
+    const habitatWrap=root.document.getElementById('habitat3DWrap');
+    const habitatStatus=root.document.getElementById('habitat3DStatus');
+    if(habitatButton&&habitatCanvas&&habitatWrap){
+      habitatButton.addEventListener('click',()=>{
+        try{
+          const habitatOverlay=root.document.getElementById('habitatOverlay');
+          const targetId=habitatOverlay&&habitatOverlay.dataset?habitatOverlay.dataset.speciesId:'';
+          const item=getList().find(x=>String(x.id)===String(targetId));
+          if(!item)throw new Error(localized('شناسهٔ گونهٔ زیستگاه پیدا نشد. زیستگاه را ببند و دوباره باز کن.','Could not find the habitat species. Close and reopen its habitat.'));
+          habitatWrap.style.display='block';
+          if(habitatViewer&&habitatViewer.dispose)habitatViewer.dispose();
+          const habitatModel=buildMesh(item);
+          habitatViewer=preview(habitatCanvas,habitatModel,{yaw:.62,pitch:.08});
+          const title=root.document.getElementById('habitat3DTitle');
+          if(title)title.textContent=localized('مدل سه‌بعدی روی سطح زیستگاه: ','3D model on the habitat ground: ')+item.name;
+          if(habitatStatus)habitatStatus.textContent=localized('مدل ساخته شد: ','Generated mesh: ')+habitatModel.vertices.toLocaleString()+' '+localized('رأس، ','vertices, ')+habitatModel.triangles.toLocaleString()+' '+localized('مثلث. برای چرخش بکش.','triangles. Drag to rotate.');
+          habitatCanvas.scrollIntoView({behavior:'smooth',block:'nearest'});
+        }catch(e){if(habitatStatus)habitatStatus.textContent=localized('خطا در تولید مدل: ','Model generation error: ')+String(e.message||e);}
+      });
+      const closeHabitat=root.document.getElementById('closeHabitat');
+      if(closeHabitat)closeHabitat.addEventListener('click',()=>{if(habitatViewer&&habitatViewer.dispose){habitatViewer.dispose();habitatViewer=null;}});
+    }
     const api={refresh:refresh,build:build};
     root.PlanetProcedural3DUI=api;
     if(root.MutationObserver){const mo=new root.MutationObserver(()=>{if(overlay.classList.contains('open'))refresh();});mo.observe(root.document.documentElement,{attributes:true,attributeFilter:['lang']});}
