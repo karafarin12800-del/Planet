@@ -618,7 +618,7 @@
     if (randomHumanLike === "humanoid") problems.push("random-human-inference");
     if (proxy.proxyDNA.length !== GENOME_LENGTH) problems.push("reference proxy length");
     if (!proxy.evidence || proxy.evidence.verifiedBiologicalPhenotype !== false) problems.push("scientific provenance");
-    return { ok: problems.length === 0, problems: problems, checks: 7, engine: "PlanetEvolutionModel-v1.2.0" };
+    return { ok: problems.length === 0, problems: problems, checks: 8, engine: "PlanetEvolutionModel-v1.2.0" };
   }
   return {
     version: "1.2.0",
