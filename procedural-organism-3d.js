@@ -225,9 +225,9 @@
     }};
   }
   function packBytes(chunks) {
-    let size=0; for(const c of chunks)size=(size+3)&~3,size+=c.byteLength;
+    const size=chunks.reduce((sum,chunk)=>sum+chunk.byteLength,0);
     const out=new Uint8Array(size); let offset=0;
-    for(const c of chunks){offset=(offset+3)&~3;out.set(new Uint8Array(c.buffer,c.byteOffset,c.byteLength),offset);offset+=c.byteLength;}
+    for(const chunk of chunks){out.set(new Uint8Array(chunk.buffer,chunk.byteOffset,chunk.byteLength),offset);offset+=chunk.byteLength;}
     return out;
   }
   function toGLB(model) {
