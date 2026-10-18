@@ -81,7 +81,7 @@
       {name:'detail',color:pale,metallic:0,roughness:.58},
       {name:'plant',color:green,metallic:0,roughness:.9}
     ];
-    const groups=materials.map(()=>({positions:[],normals:[],indices:[]}));
+    const groups=materials.map((_,materialIndex)=>({materialIndex,positions:[],normals:[],indices:[]}));
     function tri(p0,p1,p2,mat,outward) {
       let n=cross(vec(p1,p0),vec(p2,p0)), len=Math.hypot(...n); if(len<1e-8)return;
       n=n.map(x=>x/len);
@@ -96,7 +96,7 @@
       const at=(i,j)=>{const v=-Math.PI/2+Math.PI*i/latN,u=TAU*j/lonN;return transform([r[0]*Math.cos(v)*Math.cos(u),r[1]*Math.sin(v),r[2]*Math.cos(v)*Math.sin(u)]);};
       for(let i=0;i<latN;i++)for(let j=0;j<lonN;j++){
         const p00=at(i,j),p01=at(i,j+1),p10=at(i+1,j),p11=at(i+1,j+1);
-        const center=[p00[0]+p01[0]+p10[0],p00[1]+p01[1]+p10[1],p00[2]+p01[2]+p10[2]].map(v=>v/3-c[0]);
+        const center=[(p00[0]+p01[0]+p10[0])/3-c[0],(p00[1]+p01[1]+p10[1])/3-c[1],(p00[2]+p01[2]+p10[2])/3-c[2]];
         tri(p00,p10,p01,mat,center);tri(p01,p10,p11,mat,[((p01[0]+p10[0]+p11[0])/3)-c[0],((p01[1]+p10[1]+p11[1])/3)-c[1],((p01[2]+p10[2]+p11[2])/3)-c[2]]);
       }
     }
@@ -221,7 +221,7 @@
       sourceAccession:s.referenceGenome&&s.referenceGenome.accession||null,
       confidence:'illustrative / unvalidated',
       claim:'Geometry is procedurally generated from simulator phenotype parameters. It is not a scientifically validated prediction of the organism’s anatomy from raw DNA.',
-      genomeUsedAsFullGenotype:!s.referenceGenome
+      realGenomeDecodedAsPhenotype:false,digitalSequenceUsedAsSimulationInput:!s.referenceGenome
     }};
   }
   function packBytes(chunks) {
@@ -243,7 +243,7 @@
       const pAcc=accessors.length;accessors.push({bufferView:pView,componentType:5126,count,type:'VEC3',min,max});
       const nAcc=accessors.length;accessors.push({bufferView:nView,componentType:5126,count,type:'VEC3'});
       const iAcc=accessors.length;accessors.push({bufferView:iView,componentType:5123,count:indices.length,type:'SCALAR',min:[0],max:[Math.max(0,count-1)]});
-      const materialIndex=model.groups.indexOf(g);
+      const materialIndex=g.materialIndex;
       primitives.push({attributes:{POSITION:pAcc,NORMAL:nAcc},indices:iAcc,material:materialIndex,mode:4});
     });
     const binary=packBytes(chunks);
