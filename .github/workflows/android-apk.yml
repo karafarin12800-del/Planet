@@ -6,6 +6,7 @@ on:
     paths:
       - 'index.html'
       - 'evolution-engine.js'
+      - 'procedural-organism-3d.js'
       - 'tests/**'
       - 'offline-ai.js'
       - 'manifest.webmanifest'
@@ -70,7 +71,7 @@ jobs:
       - name: Bundle the current web simulation into the Android app
         run: |
           mkdir -p app/src/main/assets
-          cp index.html evolution-engine.js offline-ai.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
+          cp index.html evolution-engine.js procedural-organism-3d.js offline-ai.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
 
       - name: Validate full-genome lab JavaScript syntax
         shell: bash
@@ -90,6 +91,8 @@ jobs:
         run: |
           node --check evolution-engine.js
           node tests/evolution-engine.test.cjs
+          node --check procedural-organism-3d.js
+          node tests/procedural-organism-3d.test.cjs
 
       - name: Validate all inline JavaScript in app HTML
         shell: bash
