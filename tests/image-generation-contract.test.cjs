@@ -33,4 +33,11 @@ assert.ok(sw.includes("planet-pwa-v12-genome-ai-images"), "service-worker cache 
 assert.ok(threeD.includes("implicit tissue field + marching tetrahedra; no taxon-specific mesh template selected"),
   "3D model generation uses runtime procedural geometry without taxon-specific templates");
 assert.ok(setup.includes("OPENAI_API_KEY"), "setup explains server-only API credentials");
-console.log("PLANET image-generation integration contract passed: runtime-generated imagery, backend-only API key, Android packaging, PWA cache and syntax-validation wiring.");
+
+assert.ok(client.includes("function generateOfflineSVG"), "the app has a local genome-driven procedural image generator");
+assert.ok(client.includes("if(!endpoint||!access){generateOffline();return;}"), "image generation works without configuring a remote API");
+assert.ok(client.includes("An original image was generated locally"), "the UI honestly identifies offline procedural output");
+assert.ok(client.includes("generateOffline();"), "the online failure path falls back to local generation");
+assert.ok(client.includes("generateOfflineSVG:id=>"), "the generated SVG path is exposed for direct testing");
+
+console.log("PLANET image-generation contract passed: online API safety, offline genome-driven generation, Android packaging, PWA cache and syntax wiring.");

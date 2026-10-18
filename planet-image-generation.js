@@ -106,15 +106,96 @@
     $('planet-image-title').textContent=tr('تولید تصویر مولد از ژنوم و محیط','Generate an AI image from genome + environment');
     $('planet-image-intro').textContent=tr('تصویر توسط مدل مولد و بر اساس صفات محاسبه‌شده از ژنوم دیجیتال، زیستگاه و مرحلهٔ زمانی ساخته می‌شود؛ تصویر از پیش در برنامه ذخیره نشده است. نگاشت DNA این شبیه‌سازی فرضی است، نه پیش‌بینی زیستی معتبر.','The image model generates new pixels using digital-genome traits, habitat and timeline stage; no prepared image is bundled. The DNA mapping is illustrative, not validated biological prediction.');
     showBadges(s);promptInput.value=buildPrompt(s,'A');clearOutput();loadSettings();
-    if(!endpointInput.value){$('planet-image-settings').open=true;setStatus(tr('برای شروع، نشانی Worker را در تنظیم سرویس وارد کن؛ کلید اصلی فقط باید روی سرور باشد.','Set the Worker URL in Service settings first; the provider key must stay server-side.'));}
-    else setStatus(tr('آمادهٔ تولید یک تصویر تازه.','Ready to request a new image.'));
+    if(!endpointInput.value||!accessInput.value){setStatus(tr('آماده است: با «تولید تصویر جدید» همین حالا تصویر را محلی و بدون تنظیمات بساز. برای تصویرسازی مولد آنلاین، تنظیم سرویس اختیاری است.','Ready: tap Generate image to create a local image now, with no setup. Online AI image generation is optional.'));}
+    else setStatus(tr('سرویس آنلاین تنظیم شده؛ در صورت خطا مولد محلی جایگزین می‌شود.','Online service configured; local generation is the fallback.'));
   }
   function closeModal(){overlay.classList.remove('open');document.documentElement.style.overflow='';}
+
+  function generateOfflineSVG(s, variation) {
+    const p=getPhenotype(s)||{},a=p.appearance||{};
+    const dna=String(s.dna||'').toUpperCase().replace(/[^ACGT]/g,'');
+    let seed=2166136261;
+    const seedText=dna+'|'+String(s.id||0)+'|'+String(s.generation||0)+'|'+String(variation||'A');
+    for(let i=0;i<seedText.length;i++){seed^=seedText.charCodeAt(i);seed=Math.imul(seed,16777619);}
+    function rand(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}
+    function n(v,d,min,max){v=Number(v);return Math.max(min,Math.min(max,Number.isFinite(v)?v:d));}
+    const hue=n(a.hue,145,0,360),sat=38+Math.round(rand()*27),light=30+Math.round(rand()*18);
+    const primary='hsl('+hue+','+sat+'%,'+light+'%)',lightTone='hsl('+hue+','+sat+'%,'+(light+18)+'%)';
+    const darkTone='hsl('+hue+','+Math.max(20,sat-10)+'%,'+Math.max(9,light-17)+'%)';
+    const accent='hsl('+((hue+70+Math.round(rand()*90))%360)+',58%,62%)';
+    const habitat=String(s.habitat||'').toLowerCase(),form=String(s.form||'').toLowerCase();
+    const aquatic=/ocean|marine|aquatic|water|shore|coast|wetland/.test(habitat);
+    const plant=/plant|tree|flora|veget/.test(form);
+    const bodyL= n(a.bodyLength,0.65,0.25,1.5),bodyW=n(a.bodyWidth,0.48,0.2,1.2),bodyH=n(a.bodyHeight,0.5,0.2,1.2);
+    const head=n(a.headSize,0.3,0.1,0.8),tail=n(a.tailLength,0.35,0,1.4),limbs=Math.round(n(a.limbCount,4,0,8));
+    const append=n(a.wingSpan||a.appendageLength,0.2,0,1.2),segments=Math.round(n(a.segmentCount,4,1,12));
+    const cx=512,cy=440,rx=110+bodyL*85,ry=40+bodyH*70,headR=17+head*30;
+    const left=cx-rx*0.62,right=cx+rx*0.52;
+    const shapes=[];
+    shapes.push('<defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="'+(aquatic?'#0b3654':'#142a43')+'"/><stop offset="1" stop-color="'+(aquatic?'#397d93':'#c1a77a')+'"/></linearGradient><linearGradient id="skin" x2=".1" y2="1"><stop stop-color="'+lightTone+'"/><stop offset=".58" stop-color="'+primary+'"/><stop offset="1" stop-color="'+darkTone+'"/></linearGradient><radialGradient id="glow"><stop stop-color="#d7f4ff" stop-opacity=".24"/><stop offset="1" stop-color="#d7f4ff" stop-opacity="0"/></radialGradient></defs>');
+    shapes.push('<rect width="1024" height="768" fill="url(#sky)"/><ellipse cx="520" cy="270" rx="420" ry="320" fill="url(#glow)"/>');
+    if(aquatic){
+      for(let i=0;i<13;i++){const y=410+i*25;shapes.push('<path d="M0 '+y+' Q130 '+(y-12-rand()*15)+' 260 '+y+' T520 '+y+' T780 '+y+' T1040 '+y+'" fill="none" stroke="#b2e8ec" stroke-opacity="'+(0.08+rand()*0.16).toFixed(2)+'" stroke-width="'+(1+rand()*4).toFixed(1)+'"/>');}
+      for(let i=0;i<80;i++){const x=Math.round(rand()*1024),y=Math.round(90+rand()*560),r=(0.7+rand()*2.2).toFixed(1);shapes.push('<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="#d7f7ff" opacity="'+(0.08+rand()*0.2).toFixed(2)+'"/>');}
+      shapes.push('<path d="M0 700 Q220 660 440 704 T880 700 T1200 705 L1200 800 L0 800Z" fill="#263e3d"/><path d="M0 718 Q220 685 440 720 T880 716 T1200 720" fill="none" stroke="#a4c2a1" stroke-opacity=".35" stroke-width="3"/>');
+    }else{
+      shapes.push('<circle cx="820" cy="125" r="47" fill="#f4d9a0" opacity=".8"/><path d="M0 570 Q170 480 330 558 T650 540 T1024 520 L1024 800 L0 800Z" fill="#756a4e"/><path d="M0 635 Q240 590 460 630 T820 612 T1100 640 L1100 800 L0 800Z" fill="#3d5140"/><path d="M0 708 Q200 680 430 714 T850 700 T1100 718" fill="none" stroke="#a8b78a" stroke-opacity=".35" stroke-width="4"/>');
+      for(let i=0;i<35;i++){const x=Math.round(rand()*1024),y=Math.round(570+rand()*160),r=1+rand()*4;shapes.push('<ellipse cx="'+x+'" cy="'+y+'" rx="'+r.toFixed(1)+'" ry="'+(r*.45).toFixed(1)+'" fill="#d5c39a" opacity=".25"/>');}
+    }
+    if(plant){
+      const baseY=635,stemTop=235+rand()*80,stemX=512;
+      shapes.push('<path d="M'+stemX+' '+baseY+' Q'+(stemX-30)+' 470 '+(stemX+Math.round(rand()*25-12))+' '+stemTop+'" fill="none" stroke="'+darkTone+'" stroke-width="'+(12+bodyW*14).toFixed(1)+'" stroke-linecap="round"/>');
+      const leafCount=Math.max(5,segments+4);
+      for(let i=0;i<leafCount;i++){const y=baseY-(i+1)*(baseY-stemTop)/(leafCount+1),side=i%2?1:-1,len=38+rand()*105,w=12+rand()*22,x=stemX+side*(12+rand()*25);
+        shapes.push('<path d="M'+x+' '+y+' Q'+(x+side*len*.35)+' '+(y-18-w)+' '+(x+side*len)+' '+(y-len*.45)+' Q'+(x+side*len*.35)+' '+(y+8)+' '+x+' '+y+'Z" fill="'+(i%3===0?accent:primary)+'" stroke="'+darkTone+'" stroke-opacity=".6" stroke-width="2"/>');}
+      shapes.push('<ellipse cx="512" cy="646" rx="'+(50+bodyW*45).toFixed(1)+'" ry="16" fill="#1a3429" opacity=".8"/>');
+    }else{
+      // Body silhouette is constructed afresh from genome-derived proportions and seeded perturbations.
+      const points=[];
+      for(let i=0;i<18;i++){const ang=(Math.PI*2*i)/18,noise=(rand()-.5)*0.23,xx=Math.cos(ang)*(rx*(Math.cos(ang)<-.55?1.05:1)+noise*rx),yy=Math.sin(ang)*(ry*(1+noise));points.push([cx+xx,cy+yy]);}
+      let path='M'+points[0][0].toFixed(1)+' '+points[0][1].toFixed(1);
+      for(let i=1;i<points.length;i++){const prev=points[i-1],cur=points[i],midX=(prev[0]+cur[0])/2,midY=(prev[1]+cur[1])/2;path+=' Q'+prev[0].toFixed(1)+' '+prev[1].toFixed(1)+' '+midX.toFixed(1)+' '+midY.toFixed(1);}
+      path+=' Q'+points[points.length-1][0].toFixed(1)+' '+points[points.length-1][1].toFixed(1)+' '+points[0][0].toFixed(1)+' '+points[0][1].toFixed(1)+'Z';
+      if(tail>0.05){const tl=tail*105;shapes.push('<path d="M'+(left+12)+' '+(cy+5)+' Q'+(left-tl*.55)+' '+(cy-ry*.2)+' '+(left-tl)+' '+(cy-ry*.6)+' Q'+(left-tl*.68)+' '+(cy+ry*.45)+' '+(left+7)+' '+(cy+ry*.32)+'Z" fill="url(#skin)" stroke="'+darkTone+'" stroke-width="3"/>');}
+      if(append>0.08){
+        for(let side of [-1,1]){const ax=cx+side*(rx*.24),ay=cy-ry*.42,span=append*140;
+          shapes.push('<path d="M'+ax+' '+ay+' Q'+(ax+side*span*.45)+' '+(ay-span*.8)+' '+(ax+side*span)+' '+(ay-span*.45)+' Q'+(ax+side*span*.62)+' '+(ay+span*.15)+' '+ax+' '+(ay+ry*.35)+'Z" fill="'+accent+'" fill-opacity=".72" stroke="'+darkTone+'" stroke-width="3"/>');}
+      }
+      for(let i=0;i<limbs;i++){
+        const side=i%2?1:-1,rank=Math.floor(i/2),x=cx+side*(rx*(.28+rank*.19)),y=cy+ry*.38,drop=45+rand()*60+bodyH*20,footX=x+side*(15+rand()*22);
+        shapes.push('<path d="M'+x.toFixed(1)+' '+y.toFixed(1)+' Q'+(x+side*10)+' '+(y+drop*.42)+' '+(x+side*3)+' '+(y+drop*.76)+' L'+footX.toFixed(1)+' '+(y+drop)+'" fill="none" stroke="'+darkTone+'" stroke-width="'+(9+bodyW*8).toFixed(1)+'" stroke-linecap="round" stroke-linejoin="round"/><path d="M'+(footX-12)+' '+(y+drop)+' Q'+footX+' '+(y+drop+7)+' '+(footX+18)+' '+(y+drop+1)+'" fill="none" stroke="'+darkTone+'" stroke-width="7" stroke-linecap="round"/>');
+      }
+      shapes.push('<path d="'+path+'" fill="url(#skin)" stroke="'+darkTone+'" stroke-width="5" stroke-linejoin="round"/>');
+      // Segments, pigmentation and surface structures are newly sampled for every genome/variation.
+      for(let i=0;i<segments;i++){const x=left+35+i*(rx*1.2/Math.max(1,segments-1)),yy=cy-ry*.8;shapes.push('<path d="M'+x.toFixed(1)+' '+yy.toFixed(1)+' Q'+(x-10)+' '+cy+' '+(x+4)+' '+(cy+ry*.78)+'" fill="none" stroke="'+darkTone+'" stroke-opacity=".55" stroke-width="'+(2+rand()*5).toFixed(1)+'"/>');}
+      const textureCount=Math.round(18+n(a.armorCoverage,0,0,1)*80);
+      for(let i=0;i<textureCount;i++){const x=cx+(rand()*2-1)*rx*.8,y=cy+(rand()*2-1)*ry*.7,r=1.5+rand()*7;shapes.push('<ellipse cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" rx="'+r.toFixed(1)+'" ry="'+(r*(.45+rand()*.6)).toFixed(1)+'" fill="'+(rand()>.55?accent:lightTone)+'" opacity="'+(.14+rand()*.35).toFixed(2)+'"/>');}
+      const hx=right+headR*.55,hy=cy-ry*.28;
+      shapes.push('<path d="M'+(right-8)+' '+(hy+headR*.65)+' Q'+(hx-headR*.4)+' '+(hy-headR*1.15)+' '+(hx+headR*.55)+' '+hy+' Q'+(hx+headR*1.1)+' '+(hy+headR*.75)+' '+(right+headR*.35)+' '+(hy+headR)+'Z" fill="url(#skin)" stroke="'+darkTone+'" stroke-width="4"/>');
+      const eyeR=3+ n(a.eyeSize,.3,0,1)*6;
+      shapes.push('<ellipse cx="'+(hx+headR*.25).toFixed(1)+'" cy="'+(hy-headR*.05).toFixed(1)+'" rx="'+(eyeR*1.4).toFixed(1)+'" ry="'+eyeR.toFixed(1)+'" fill="#f6e7bd"/><circle cx="'+(hx+headR*.35).toFixed(1)+'" cy="'+(hy-headR*.05).toFixed(1)+'" r="'+(eyeR*.55).toFixed(1)+'" fill="#101822"/><circle cx="'+(hx+headR*.43).toFixed(1)+'" cy="'+(hy-headR*.28).toFixed(1)+'" r="'+(eyeR*.2).toFixed(1)+'" fill="#fff"/>');
+      if(/fish|aquatic|marine|water/.test(form)||aquatic){for(let i=0;i<3;i++){const x=cx-rx*.18+i*11;shapes.push('<path d="M'+x.toFixed(1)+' '+(cy-ry*.55)+' Q'+(x-24)+' '+cy+' '+x+' '+(cy+ry*.55)+'" fill="none" stroke="'+accent+'" stroke-width="4" stroke-opacity=".8"/>');}}
+      if(/micro|bacter|fung/.test(form)){for(let i=0;i<9;i++){const x=cx+(rand()*2-1)*rx*.7,y=cy+(rand()*2-1)*ry*.6;shapes.push('<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(2+rand()*5).toFixed(1)+'" fill="'+accent+'" opacity=".7"/>');}}
+      shapes.push('<ellipse cx="'+cx+'" cy="'+(cy+ry+100)+'" rx="'+(rx*.95)+'" ry="14" fill="#07111b" opacity=".35"/>');
+    }
+    const label=String(s.name||('Organism '+s.id)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').slice(0,48);
+    shapes.push('<rect x="26" y="24" width="972" height="70" rx="14" fill="#06111c" fill-opacity=".72" stroke="#b8e8ff" stroke-opacity=".28"/><text x="48" y="54" fill="#e8f7ff" font-size="21" font-family="sans-serif" font-weight="700">'+label+'</text><text x="48" y="78" fill="#a9cce0" font-size="13" font-family="sans-serif">GENOME-DRIVEN PROCEDURAL RENDER · '+dna.length+' bp · generation '+(Number(s.generation)||0)+'</text>');
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768" viewBox="0 0 1024 768">'+shapes.join('')+'</svg>';
+  }
+  function generateOffline(){
+    if(!selected)return false;
+    const variation=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);
+    const svg=generateOfflineSVG(selected,variation);
+    generated='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+    output.src=generated;output.style.display='block';placeholder.style.display='none';downloadButton.disabled=false;
+    setStatus(tr('تصویر به‌صورت محلی از ژنوم دیجیتال و محیط ساخته شد؛ بدون اینترنت، سرویس بیرونی یا تصویر آماده. این مولد هندسی است، نه مدل انتشار تصویرِ آموزش‌دیده.','An original image was generated locally from digital-genome traits and habitat, without internet, external services, or bundled pictures. This is a procedural generator, not a trained diffusion image model.'));
+    return true;
+  }
+
   async function generate(){
     if(busy||!selected)return;
     const endpoint=endpointInput.value.trim().replace(/\/+$/,''),access=accessInput.value.trim();
-    if(!endpoint){$('planet-image-settings').open=true;setStatus(tr('نشانی Worker تنظیم نشده است.','No Worker endpoint configured.'),true);return;}
-    if(!access){$('planet-image-settings').open=true;setStatus(tr('کد دسترسی Worker وارد نشده است.','Worker access code is required.'),true);return;}
+    if(!endpoint||!access){generateOffline();return;}
     const wait=Math.ceil((nextAllowedAt-Date.now())/1000);if(wait>0){setStatus(tr('برای جلوگیری از درخواست تکراری '+wait+' ثانیه صبر کن.','Please wait '+wait+' seconds before another request.'),true);return;}
     let url;try{url=new URL(endpoint);}catch(_){setStatus(tr('نشانی سرویس معتبر نیست.','Invalid service URL.'),true);return;}
     if(url.protocol!=='https:'&&url.hostname!=='localhost'&&url.hostname!=='127.0.0.1'){setStatus(tr('نشانی سرویس باید HTTPS باشد.','The service endpoint must use HTTPS.'),true);return;}
@@ -132,11 +213,13 @@
       generated='data:'+mime+';base64,'+b64;output.src=generated;output.style.display='block';placeholder.style.display='none';downloadButton.disabled=false;
       setStatus(tr('تصویر با مدل '+(data.model||'API')+' تولید شد. این یک پیشنهاد بصری بر پایهٔ صفات دیجیتال و محیط است، نه پیش‌بینی زیستی اعتبارسنجی‌شده.','Image generated by '+(data.model||'the API')+'. It is a visual proposal based on digital traits and environment, not a validated biological prediction.'));
     }catch(error){
-      setStatus(tr('تولید تصویر ناموفق بود: ','Image generation failed: ')+(error&&error.name==='AbortError'?tr('درخواست بیش از حد طول کشید.','Request timed out.'):String(error&&error.message||error)),true);
+      const reason=(error&&error.name==='AbortError'?tr('درخواست بیش از حد طول کشید.','Request timed out.'):String(error&&error.message||error));
+      generateOffline();
+      setStatus(tr('سرویس آنلاین در دسترس نبود ('+reason+'). تصویر محلی ساخته شد.','Online image service unavailable ('+reason+'). A local image was generated.')+'\n'+tr('این تصویر مولد رویه‌ای است، نه خروجی مدل انتشار آموزش‌دیده.','This is procedural output, not a trained diffusion model output.'));
     }finally{clearTimeout(timer);busy=false;generateButton.disabled=variationButton.disabled=false;generateButton.textContent=tr('تولید تصویر جدید','Generate image');}
   }
   function createVariation(){if(!selected)return;promptInput.value=buildPrompt(selected,Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7));setStatus(tr('صفات و محیط ثابت می‌مانند؛ نسخهٔ تصویری تازه درخواست می‌شود.','Genomic traits and habitat stay the same; a new visual variation will be requested.'));generate();}
-  function downloadImage(){if(!generated||!selected)return;const a=document.createElement('a');a.href=generated;a.download='planet-organism-'+String(selected.id)+'-ai.png';document.body.appendChild(a);a.click();a.remove();}
+  function downloadImage(){if(!generated||!selected)return;const a=document.createElement('a');a.href=generated;a.download='planet-organism-'+String(selected.id)+(generated.indexOf('data:image/svg+xml')===0?'-procedural.svg':'-ai.png');document.body.appendChild(a);a.click();a.remove();}
   function addButtons(container){
     if(!container)return;
     container.querySelectorAll('.species-item').forEach(row=>{
@@ -155,5 +238,5 @@
     const catalog=$('speciesList');if(catalog){addButtons(catalog);new MutationObserver(()=>addButtons(catalog)).observe(catalog,{childList:true,subtree:true});}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-  window.PlanetImageGeneration={openForSpecies:openForSpecies,buildPrompt:id=>{const s=getSpecies(id);return s?buildPrompt(s,'preview'):'';},getConfigured:()=>{try{return!!localStorage.getItem(ENDPOINT_KEY)&&!!localStorage.getItem(ACCESS_KEY);}catch(_){return false;}}};
+  window.PlanetImageGeneration={openForSpecies:openForSpecies,buildPrompt:id=>{const s=getSpecies(id);return s?buildPrompt(s,'preview'):'';},generateOfflineSVG:id=>{const s=getSpecies(id);return s?generateOfflineSVG(s,'test'):'';},getConfigured:()=>{try{return!!localStorage.getItem(ENDPOINT_KEY)&&!!localStorage.getItem(ACCESS_KEY);}catch(_){return false;}}};
 })();
