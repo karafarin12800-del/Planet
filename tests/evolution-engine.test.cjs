@@ -21,7 +21,9 @@ assert.ok(p1.appearance.tailLength > 0);
 assert.ok(p1.appearance.headSize > 0);
 assert.equal(p1.model.verifiedBiologicalPhenotype, false);
 
-const mutated = engine.mutateSyntheticGenome(dna, 1, () => 0.7);
+let rngState = 123456789;
+const deterministicRng = () => { rngState = (1664525 * rngState + 1013904223) >>> 0; return rngState / 4294967296; };
+const mutated = engine.mutateSyntheticGenome(dna, 1, deterministicRng);
 assert.equal(mutated.length, dna.length);
 assert.ok(mutated.startsWith("ATG"), "start codons remain protected");
 for (let i = 0; i < 8; i++) assert.ok(["TAA", "TAG", "TGA"].includes(mutated.slice(i * 21 + 18, i * 21 + 21)));
