@@ -35,7 +35,7 @@
 - ساخت APK و نتیجهٔ آزمون CI پس از بازشدن PR باید در GitHub بررسی شوند. تا پیش از آن، نباید فایل را build موفق یا آمادهٔ انتشار نامید.
 - برای اعتبارسنجی ساختاری پیشرفتهٔ GLB، CI باید از اعتبارسنج رسمی Khronos یا آزمون هم‌ارز استفاده کند؛ آزمون داخلی موجود جای داوری زیستی یا اعتبارسنج کامل استاندارد را نمی‌گیرد.
 
-## فهرست ۷۵ منبع و مرجع برای طراحی و راستی‌آزمایی
+## فهرست ۷۸ منبع و مرجع برای طراحی و راستی‌آزمایی
 
 ### الف) نگاشت ژنوتیپ–فنوتیپ، تکوین و پلاستیسیته
 
@@ -46,8 +46,8 @@
 5. [The role of phenotypic plasticity in driving genetic evolution](https://pmc.ncbi.nlm.nih.gov/articles/PMC1691402/) — پلاستیسیته و تکامل.
 6. [Relaxed Genetic Constraint Is Ancestral to the Evolution of Phenotypic Plasticity](https://pmc.ncbi.nlm.nih.gov/articles/PMC3381942/) — زمینهٔ ژنتیکی پلاستیسیته.
 7. [The locus of evolution: evo devo and the genetics of adaptation](https://pubmed.ncbi.nlm.nih.gov/17456002/) — ژنتیک سازگاری و زیست‌شناسی تکوینی.
-8. [Evolution and development of shape: integrating quantitative approaches](https://www.nature.com/articles/nrg2908) — اندازه‌گیری و تغییر شکل.
-9. [Written in stone: fossils, genes and evo-devo](https://www.nature.com/articles/nrg2045) — ادغام فسیل، ژن و تکوین.
+8. [Evolution and development of shape: integrating quantitative approaches](https://www.nature.com/articles/nrg2829) — اندازه‌گیری و تغییر شکل.
+9. [Written in stone: fossils, genes and evo-devo](https://www.nature.com/articles/nrg2225) — ادغام فسیل، ژن و تکوین.
 10. [Gene regulatory networks and animal development](https://pubmed.ncbi.nlm.nih.gov/16109876/) — شبکه‌های تنظیمی در رشد جانوران.
 11. [Gene Ontology Annotations](http://geneontology.org/docs/go-annotations/) — اصطلاحات و کدهای شواهد عملکرد ژن.
 12. [NCBI Gene](https://www.ncbi.nlm.nih.gov/gene/) — رکوردهای ژنی.
@@ -93,10 +93,10 @@
 46. [Smithsonian: Dinosaurs](https://naturalhistory.si.edu/education/teaching-resources/paleontology) — منابع موزه‌ای دیرین‌شناسی.
 47. [American Museum of Natural History: Dinosaurs](https://www.amnh.org/exhibitions/permanent/dinosaurs) — نمونه‌ها و بازسازی‌های موزه‌ای.
 48. [Royal Tyrrell Museum](https://tyrrellmuseum.com/) — مجموعه و پژوهش فسیلی.
-49. [Do morphometric data improve phylogenetic reconstruction?](https://bmcbiol.biomedcentral.com/) — اهمیت انتخاب صفات و سنجش ریخت‌شناختی؛ صفحهٔ مجله/مقاله برای یافتن نسخهٔ دقیق.
+49. [Do morphometric data improve phylogenetic reconstruction?](https://pmc.ncbi.nlm.nih.gov/articles/PMC11487705/) — اهمیت انتخاب صفات و سنجش ریخت‌شناختی؛ صفحهٔ مجله/مقاله برای یافتن نسخهٔ دقیق.
 50. [Dinosaur paleohistology: review and trends](https://peerj.com/articles/7764/) — ریزساختار استخوان و شواهد رشد.
-51. [The Origin and Evolution of Dinosaurs](https://www.annualreviews.org/) — مرجع مرور تاریخ تکاملی دایناسورها؛ صفحهٔ ناشر.
-52. [Progress and future directions in dinosaur palaeontology](https://www.nature.com/) — مرور حوزهٔ دیرین‌شناسی دایناسورها؛ صفحهٔ ناشر.
+51. [The Origin and Evolution of Dinosaurs](https://www.annualreviews.org/content/journals/10.1146/annurev.earth.25.1.435) — مرجع مرور تاریخ تکاملی دایناسورها؛ صفحهٔ ناشر.
+52. [Progress and future directions in dinosaur palaeontology](https://www.nature.com/articles/s44358-026-00191-9) — مرور حوزهٔ دیرین‌شناسی دایناسورها؛ صفحهٔ ناشر.
 53. [Natural History Museum: Fossils](https://www.nhm.ac.uk/discover/fossils.html) — مفاهیم شواهد فسیلی.
 54. [IUCN Red List](https://www.iucnredlist.org/) — ارزیابی گونه‌ها، زیستگاه و تهدیدها.
 55. [GBIF: What is GBIF?](https://www.gbif.org/what-is-gbif) — ثبت حضور گونه‌ها در زمان و مکان.
@@ -109,8 +109,8 @@
 59. [Mesa Getting Started](https://mesa.readthedocs.io/stable/getting_started.html) — عامل، محیط و رفتارهای جمعی.
 60. [NetLogo Documentation](https://ccl.northwestern.edu/netlogo/docs/) — مدل‌سازی عامل‌محور و بوم‌شناسی.
 61. [OpenStax Biology 2e: Evolution and Population Genetics](https://openstax.org/details/books/biology-2e) — رانش ژنتیکی، انتخاب طبیعی و فرضیات جمعیت.
-62. [Nature Ecology & Evolution: species-distribution modelling](https://www.nature.com/natecolevol/) — مدل‌سازی توزیع گونه‌ها و محدودیت‌ها.
-63. [Nature Climate Change: species range and climate forecasts](https://www.nature.com/nclimate/) — محدودیت پیش‌بینی جابه‌جایی زیستگاه.
+62. [Gaps and opportunities in modelling human influence on species distributions](https://www.nature.com/articles/s41559-024-02435-3) — مدل‌سازی توزیع گونه‌ها و محدودیت‌ها.
+63. [Anthropogenic range contractions bias species climate change forecasts](https://www.nature.com/articles/s41558-018-0089-x) — محدودیت پیش‌بینی جابه‌جایی زیستگاه.
 64. [Darwin, On the Origin of Species (Project Gutenberg)](https://www.gutenberg.org/ebooks/1228) — متن تاریخی نظریهٔ انتخاب طبیعی؛ منبع تاریخی است، نه جایگزین ادبیات مدرن.
 65. [Understanding Evolution — UC Berkeley](https://evolution.berkeley.edu/) — آموزش انتخاب طبیعی و شواهد تکامل.
 
