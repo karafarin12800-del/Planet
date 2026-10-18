@@ -6,6 +6,7 @@ on:
     paths:
       - 'index.html'
       - 'evolution-engine.js'
+      - 'lineage-model.js'
       - 'tests/**'
       - 'offline-ai.js'
       - 'manifest.webmanifest'
@@ -22,6 +23,7 @@ on:
     paths:
       - 'index.html'
       - 'evolution-engine.js'
+      - 'lineage-model.js'
       - 'offline-ai.js'
       - 'manifest.webmanifest'
       - 'sw.js'
@@ -70,7 +72,7 @@ jobs:
       - name: Bundle the current web simulation into the Android app
         run: |
           mkdir -p app/src/main/assets
-          cp index.html evolution-engine.js offline-ai.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
+          cp index.html evolution-engine.js lineage-model.js offline-ai.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
 
       - name: Validate full-genome lab JavaScript syntax
         shell: bash
