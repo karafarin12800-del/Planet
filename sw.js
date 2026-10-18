@@ -1,4 +1,4 @@
-const CACHE_NAME = "planet-pwa-v5";
+const CACHE_NAME = "planet-pwa-v6";
 const APP_SHELL = ["./index.html", "./offline-ai.js", "./manifest.webmanifest", "./icon.svg", "./privacy.html"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
