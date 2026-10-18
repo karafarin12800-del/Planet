@@ -65,4 +65,27 @@ assert.match(html,/getSpeciesSnapshot:function\(\)/,"the simulator exposes its o
 assert.match(html,/procedural-organism-3d\.js/,"the 3D engine is loaded by the app");
 const sw = fs.readFileSync(path.join(__dirname,"..","sw.js"),"utf8");
 assert.match(sw,/procedural-organism-3d\.js/,"the PWA caches the 3D engine");
-console.log("Planet procedural 3D tests passed:", JSON.stringify({version:engine.version,vertices:dino.vertices,triangles:dino.triangles,glbBytes:glb.byteLength,forms:["theropod","fish","tree"]}));
+async function validateWithKhronos() {
+  const validator = require("gltf-validator");
+  const report = await validator.validateBytes(new Uint8Array(glb), {
+    uri: "planet-procedural-organism.glb",
+    maxIssues: 100
+  });
+  const issues = report.issues || {};
+  const errors = (issues.messages || []).filter(issue => issue.severity === 0);
+  assert.equal(Number(issues.numErrors || errors.length), 0, "official Khronos glTF Validator must report zero errors: " + JSON.stringify(errors));
+  console.log("Khronos glTF Validator:", JSON.stringify({
+    errors: issues.numErrors || 0,
+    warnings: issues.numWarnings || 0,
+    infos: issues.numInfos || 0
+  }));
+}
+validateWithKhronos().then(() => {
+  console.log("Planet procedural 3D tests passed:", JSON.stringify({
+    version: engine.version, vertices: dino.vertices, triangles: dino.triangles,
+    glbBytes: glb.byteLength, forms: ["theropod","fish","tree"]
+  }));
+}).catch(error => {
+  console.error("Procedural GLB validation failed:", error);
+  process.exitCode = 1;
+});
