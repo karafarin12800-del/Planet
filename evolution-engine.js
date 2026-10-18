@@ -402,7 +402,7 @@
       ctx.fillStyle = fill;
       ctx.fill();
       ctx.stroke();
-      for (let i = 0; i < Math.max(3, Math.floor(3 + (Number(a.segmentCount) || 3)); i++) {
+      for (let i = 0; i < Math.max(3, Math.floor(3 + (Number(a.segmentCount) || 3))); i++) {
         ellipse(-0.54 + i * 0.25, (i % 2 ? 0.14 : -0.14), 0.055, 0.055, "#e3fff4");
       }
       for (let i = 0; i < 3; i++) line([[0.42 + i * 0.10, (i - 1) * 0.15], [0.70 + i * 0.10, (i - 1) * 0.24], [0.82 + i * 0.11, (i - 1) * 0.12]], light);
