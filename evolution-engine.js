@@ -486,7 +486,9 @@
         line([[0.38, 0.25 * width], [0.46, 0.72 * limb], [0.62, 0.75 * limb]], dark, Math.max(lw, legWidth * lw));
         line([[0.20, -0.08], [0.38, 0.20], [0.50, 0.08]], stroke);
       } else {
-        for (const lx of [-0.62, -0.25, 0.36, 0.70]) {
+        const modeledLimbs = Math.round(clamp(a.limbCount, 2, 6));
+        for (let i = 0; i < modeledLimbs; i++) {
+          const lx = -0.70 + 1.40 * i / Math.max(1, modeledLimbs - 1);
           line([[lx * body * legSpread, 0.23 * width * bodyHeight], [lx * body * legSpread, 0.63 * limb], [lx * body * legSpread + 0.07, 0.65 * limb]], dark, Math.max(lw, legWidth * lw));
         }
       }
@@ -515,10 +517,12 @@
       } else {
         ellipse(-0.08, 0.02, 0.90 * body, 0.44 * width * bodyHeight, fill);
         ellipse(0.68 * body, -0.30 * head, 0.30 * head, 0.29 * head, light);
-        line([[-0.72, 0.28 * width], [-0.72, 0.72 * limb], [-0.58, 0.75 * limb]], dark, Math.max(lw, legWidth * lw));
-        line([[-0.28, 0.30 * width], [-0.28, 0.70 * limb], [-0.12, 0.73 * limb]], dark, Math.max(lw, legWidth * lw));
-        line([[0.35, 0.28 * width], [0.38, 0.71 * limb], [0.54, 0.74 * limb]], dark, Math.max(lw, legWidth * lw));
-        line([[0.68, 0.10], [0.73, 0.62 * limb], [0.86, 0.65 * limb]], dark, Math.max(lw, legWidth * lw));
+        const modeledLimbs = Math.round(clamp(a.limbCount, 2, 6));
+        for (let i = 0; i < modeledLimbs; i++) {
+          const lx = -0.72 + 1.40 * i / Math.max(1, modeledLimbs - 1);
+          const rootY = i >= modeledLimbs - 1 ? 0.10 : 0.28 * width;
+          line([[lx, rootY], [lx, 0.70 * limb], [lx + 0.14, 0.74 * limb]], dark, Math.max(lw, legWidth * lw));
+        }
         line([[-0.84, -0.02], [-1.12 * tail, -0.36]], dark);
         if (/elephant/i.test(form)) line([[0.87 * body, -0.13], [1.00 * body, 0.12], [0.88 * body, 0.40]], dark, 1.8 * lw);
         if (/dog|cat/i.test(form)) {
