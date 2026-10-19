@@ -70,7 +70,14 @@ assert.equal(engine.selfTest().ok,true,"built-in self test passes");
 const html = fs.readFileSync(path.join(__dirname,"..","index.html"),"utf8");
 assert.match(html,/getSpeciesSnapshot:function\(\)/,"the simulator exposes its organism catalog to the 3D tool");
 assert.match(html,/procedural-organism-3d\.js/,"the 3D engine is loaded by the app");
-assert.match(html,/id="habitatShow3D"/,"each habitat view can request a procedural model on the ground-stage preview");
+assert.match(html,/id="habitatShow3D"/,"each habitat view can request a procedural model");
+assert.match(html,/مدل سه‌بعدی در استودیوی نمایش مستقل/,"3D model preview is labeled as a separate studio view");
+const lifeStart = html.indexOf("function drawLife(t)");
+const lifeEnd = html.indexOf("function updateLifeUI()", lifeStart);
+assert.ok(lifeStart >= 0 && lifeEnd > lifeStart, "Earth globe renderer can be isolated for regression checks");
+const globeRenderer = html.slice(lifeStart, lifeEnd);
+assert.doesNotMatch(globeRenderer,/PlanetEvolutionModel\.drawOrganism|activeSpecies\(\)/,
+  "generated animals must not be drawn or stamped onto the Earth globe");
 assert.match(html,/const projected=!!s\.genomeProjectionEvidence/,"reference metadata is distinguished from an imported genome proxy");
 const sw = fs.readFileSync(path.join(__dirname,"..","sw.js"),"utf8");
 assert.match(sw,/procedural-organism-3d\.js/,"the PWA caches the 3D engine");

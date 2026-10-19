@@ -105,33 +105,43 @@
       : signalsFromProteins(translateGenome(seq));
     const mix = function (a, b, wa) { return clamp(a * wa + b * (1 - wa), 0, 1); };
     const variation = hashUnit(seq + "|morphology");
-    const surfaceSignal = mix(v[3], variation, 0.7);
+    const surfaceSignal = mix(v[3], hashUnit(seq + "|surface"), 0.55);
+    const bodyProfile = hashUnit(seq + "|body-profile");
+    const headProfile = hashUnit(seq + "|head-profile");
+    const appendageProfile = hashUnit(seq + "|appendage-profile");
+    const limbProfile = hashUnit(seq + "|limb-profile");
     return {
       hue: Math.round((variation * 360 + v[0] * 67) % 360),
-      bodyLength: 0.72 + 0.76 * mix(v[1], v[4], 0.62),
-      bodyWidth: 0.62 + 0.72 * mix(v[3], v[0], 0.58),
-      bodyHeight: 0.42 + 0.88 * mix(v[5], v[3], 0.55),
-      headSize: 0.42 + 0.88 * mix(v[2], v[6], 0.72),
-      limbLength: 0.35 + 1.15 * v[1],
-      limbThickness: 0.30 + 1.12 * v[3],
-      appendageLength: 0.25 + 1.40 * mix(v[1], v[2], 0.57),
-      tailLength: 0.22 + 1.58 * mix(v[1], variation, 0.68),
-      neckLength: 0.18 + 1.48 * mix(v[4], v[2], 0.65),
-      wingSpan: 0.04 + 1.35 * mix(v[1], v[6], 0.56),
-      finSize: 0.18 + 1.18 * v[2],
-      armorCoverage: clamp((v[3] * 0.72 + v[7] * 0.28 - 0.24) * 1.26, 0, 1),
-      hornLength: clamp((v[3] * 0.58 + v[7] * 0.42 - 0.43) * 1.8, 0, 1),
-      eyeSize: 0.30 + 0.84 * v[2],
-      limbCount: v[1] < 0.22 ? 0 : (v[1] > 0.78 && v[6] > 0.64 ? 2 : 4),
-      segmentCount: 2 + Math.floor(v[7] * 5),
-      pattern: Math.floor(hashUnit(seq + "|pattern") * 5),
-      surface: Math.floor(surfaceSignal * 4),
-      symmetry: 0.72 + 0.27 * hashUnit(seq + "|symmetry"),
-      crestHeight: 0.04 + 0.78 * hashUnit(seq + "|crest") + 0.18 * v[7],
-      frillSize: 0.08 + 0.82 * hashUnit(seq + "|frill") * (0.35 + 0.65 * v[3]),
-      jawLength: 0.35 + 0.95 * ((v[2] * 0.58) + (hashUnit(seq + "|jaw") * 0.42)),
-      legSpread: 0.72 + 0.56 * hashUnit(seq + "|stance"),
-      stripeCount: 1 + Math.floor(hashUnit(seq + "|stripes") * 5),
+      // Wider independent shape channels make sequence differences visible in the silhouette,
+      // rather than confining most variation to palette and tiny ornaments.
+      bodyLength: 0.58 + 1.18 * mix(v[1], bodyProfile, 0.56),
+      bodyWidth: 0.40 + 1.10 * mix(v[3], bodyProfile, 0.62),
+      bodyHeight: 0.30 + 1.18 * mix(v[5], bodyProfile, 0.58),
+      headSize: 0.22 + 1.12 * mix(v[2], headProfile, 0.62),
+      limbLength: 0.22 + 1.48 * mix(v[1], limbProfile, 0.64),
+      limbThickness: 0.18 + 1.22 * mix(v[3], limbProfile, 0.60),
+      appendageLength: 0.08 + 1.62 * mix(v[1], appendageProfile, 0.55),
+      tailLength: 0.04 + 1.92 * mix(v[1], variation, 0.56),
+      neckLength: 0.04 + 1.72 * mix(v[4], headProfile, 0.58),
+      wingSpan: 0.02 + 1.52 * mix(v[1], appendageProfile, 0.54),
+      finSize: 0.08 + 1.38 * mix(v[2], appendageProfile, 0.66),
+      armorCoverage: clamp((v[3] * 0.62 + hashUnit(seq + "|armor") * 0.38 - 0.22) * 1.35, 0, 1),
+      hornLength: clamp((v[3] * 0.45 + headProfile * 0.55 - 0.36) * 2.0, 0, 1),
+      eyeSize: 0.18 + 1.00 * mix(v[2], headProfile, 0.72),
+      limbCount: limbProfile < 0.18 ? 0 : limbProfile < 0.48 ? 2 : limbProfile < 0.86 ? 4 : 6,
+      segmentCount: 2 + Math.floor(hashUnit(seq + "|segments") * 8),
+      pattern: Math.floor(hashUnit(seq + "|pattern") * 7),
+      surface: Math.floor(surfaceSignal * 5),
+      symmetry: 0.45 + 0.54 * hashUnit(seq + "|symmetry"),
+      crestHeight: 0.02 + 1.05 * hashUnit(seq + "|crest") + 0.14 * v[7],
+      frillSize: 0.04 + 1.02 * hashUnit(seq + "|frill") * (0.25 + 0.75 * v[3]),
+      jawLength: 0.12 + 1.28 * ((v[2] * 0.48) + (headProfile * 0.52)),
+      legSpread: 0.52 + 0.92 * hashUnit(seq + "|stance"),
+      stripeCount: 1 + Math.floor(hashUnit(seq + "|stripes") * 7),
+      bodyProfile: bodyProfile,
+      headProfile: headProfile,
+      appendageProfile: appendageProfile,
+      limbProfile: limbProfile,
       model: "synthetic-educational",
       evidence: "hypothesis-only; not a real-organism phenotype prediction"
     };
@@ -319,23 +329,23 @@
     const form = String(species.form || "microbe");
     const k = Math.max(0.7, Number(size) || 1);
     const hue = clamp(a.hue, 0, 359);
-    const body = clamp(a.bodyLength, 0.72, 1.48);
-    const width = clamp(a.bodyWidth, 0.66, 1.32);
-    const head = clamp(a.headSize, 0.42, 1.30);
-    const bodyHeight = clamp(a.bodyHeight, 0.42, 1.36);
-    const eye = clamp(a.eyeSize, 0.30, 1.14);
+    const body = clamp(a.bodyLength, 0.48, 1.72);
+    const width = clamp(a.bodyWidth, 0.35, 1.50);
+    const head = clamp(a.headSize, 0.18, 1.34);
+    const bodyHeight = clamp(a.bodyHeight, 0.25, 1.48);
+    const eye = clamp(a.eyeSize, 0.18, 1.18);
     const crest = clamp(a.crestHeight, 0.04, 1.25);
     const frill = clamp(a.frillSize, 0.08, 1.00);
     const jaw = clamp(a.jawLength, 0.35, 1.30);
     const legSpread = clamp(a.legSpread, 0.72, 1.28);
     const stripeCount = Math.round(clamp(a.stripeCount, 1, 5));
-    const limb = clamp(a.limbLength, 0.35, 1.50);
-    const tail = clamp(a.tailLength, 0.22, 1.80);
-    const neck = clamp(a.neckLength, 0.18, 1.66);
-    const fin = clamp(a.finSize, 0.18, 1.36);
-    const wing = clamp(a.wingSpan, 0.04, 1.39);
+    const limb = clamp(a.limbLength, 0.20, 1.70);
+    const tail = clamp(a.tailLength, 0.02, 1.95);
+    const neck = clamp(a.neckLength, 0.02, 1.75);
+    const fin = clamp(a.finSize, 0.08, 1.46);
+    const wing = clamp(a.wingSpan, 0.02, 1.55);
     const armor = clamp(a.armorCoverage, 0, 1);
-    const legWidth = clamp(a.limbThickness, 0.30, 1.42);
+    const legWidth = clamp(a.limbThickness, 0.18, 1.42);
     const stroke = "hsla(" + hue + ",78%,88%,.84)";
     const fill = "hsl(" + hue + ",58%,56%)";
     const light = "hsl(" + hue + ",74%,74%)";
@@ -476,7 +486,9 @@
         line([[0.38, 0.25 * width], [0.46, 0.72 * limb], [0.62, 0.75 * limb]], dark, Math.max(lw, legWidth * lw));
         line([[0.20, -0.08], [0.38, 0.20], [0.50, 0.08]], stroke);
       } else {
-        for (const lx of [-0.62, -0.25, 0.36, 0.70]) {
+        const modeledLimbs = Math.round(clamp(a.limbCount, 2, 6));
+        for (let i = 0; i < modeledLimbs; i++) {
+          const lx = -0.70 + 1.40 * i / Math.max(1, modeledLimbs - 1);
           line([[lx * body * legSpread, 0.23 * width * bodyHeight], [lx * body * legSpread, 0.63 * limb], [lx * body * legSpread + 0.07, 0.65 * limb]], dark, Math.max(lw, legWidth * lw));
         }
       }
@@ -505,10 +517,12 @@
       } else {
         ellipse(-0.08, 0.02, 0.90 * body, 0.44 * width * bodyHeight, fill);
         ellipse(0.68 * body, -0.30 * head, 0.30 * head, 0.29 * head, light);
-        line([[-0.72, 0.28 * width], [-0.72, 0.72 * limb], [-0.58, 0.75 * limb]], dark, Math.max(lw, legWidth * lw));
-        line([[-0.28, 0.30 * width], [-0.28, 0.70 * limb], [-0.12, 0.73 * limb]], dark, Math.max(lw, legWidth * lw));
-        line([[0.35, 0.28 * width], [0.38, 0.71 * limb], [0.54, 0.74 * limb]], dark, Math.max(lw, legWidth * lw));
-        line([[0.68, 0.10], [0.73, 0.62 * limb], [0.86, 0.65 * limb]], dark, Math.max(lw, legWidth * lw));
+        const modeledLimbs = Math.round(clamp(a.limbCount, 2, 6));
+        for (let i = 0; i < modeledLimbs; i++) {
+          const lx = -0.72 + 1.40 * i / Math.max(1, modeledLimbs - 1);
+          const rootY = i >= modeledLimbs - 1 ? 0.10 : 0.28 * width;
+          line([[lx, rootY], [lx, 0.70 * limb], [lx + 0.14, 0.74 * limb]], dark, Math.max(lw, legWidth * lw));
+        }
         line([[-0.84, -0.02], [-1.12 * tail, -0.36]], dark);
         if (/elephant/i.test(form)) line([[0.87 * body, -0.13], [1.00 * body, 0.12], [0.88 * body, 0.40]], dark, 1.8 * lw);
         if (/dog|cat/i.test(form)) {
