@@ -315,7 +315,8 @@ $('reset').addEventListener('click',function(){$('paste').value='';$('accession'
 $('json').addEventListener('click',function(){if(!session)return;download('planet-full-genome-evidence.json',JSON.stringify(session.report,null,2),'application/json;charset=utf-8');});
 $('fasta').addEventListener('click',function(){if(!session)return;download('planet-full-sequences.fasta',canonicalFasta(session.records),'text/plain;charset=utf-8');});
 $('tsv').addEventListener('click',function(){if(!session)return;var rows=['record_id\tfeature\tstart\tend\tstrand\tgene\tlocus_tag\tproduct\tprotein_id\tnote\tpseudo'];session.report.features.forEach(function(f){rows.push([f.record_id,f.key,f.start==null?'':f.start,f.end==null?'':f.end,f.strand,f.gene,f.locus_tag,f.product,f.protein_id,f.note,f.pseudo?'yes':'no'].map(function(x){return String(x==null?'':x).replace(/[\t\r\n]/g,' ');}).join('\t'));});download('planet-genome-features.tsv',rows.join('\n')+'\n','text/tab-separated-values;charset=utf-8');});
-window.addEventListener('keydown',function(e){if(e.key==='Escape'&&window.parent&&window.parent!==window)window.parent.postMessage({type:'planet-genome-evidence-close'},window.location.origin);});
+window.addEventListener('keydown',function(e){if(e.key==='Escape'&&window.parent&&window.parent!==window)window.parent.postMessage({type:'planet-genome-evidence-close'},'*');});
+window.PlanetGenomeEvidenceCore={parseGenBank:parseGenBank,parseFasta:parseFasta,analyzeRecords:analyzeRecords,extractIntervals:extractIntervals,mergeCoverage:mergeCoverage};
 })();
 </script>
 </body>
