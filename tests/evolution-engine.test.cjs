@@ -23,6 +23,20 @@ assert.ok(p1.appearance.tailLength > 0);
 assert.ok(p1.appearance.headSize > 0);
 assert.equal(p1.model.verifiedBiologicalPhenotype, false);
 
+// Regression: small sequence changes must influence multiple visible morphology channels,
+// not only hue. The synthetic mapping remains illustrative, not a validated biological decoder.
+const shapeVariants = Array.from({length: 12}, (_, i) => {
+  const bases = dna.split("");
+  bases[3 + i] = "ACGT"[(i + 1) % 4];
+  return engine.phenotypeFromDNA(bases.join(""), { ageMa: 4320 }).appearance;
+});
+assert.ok(new Set(shapeVariants.map(a => a.bodyProfile)).size >= 10,
+  "different DNA sequences should produce diverse body profiles");
+assert.ok(new Set(shapeVariants.map(a => a.headProfile)).size >= 10,
+  "different DNA sequences should produce diverse head profiles");
+assert.ok(shapeVariants.every(a => a.limbCount === 0 || a.limbCount === 2 || a.limbCount === 4 || a.limbCount === 6),
+  "appendage count stays within supported modeled categories");
+
 let rngState = 123456789;
 const deterministicRng = () => { rngState = (1664525 * rngState + 1013904223) >>> 0; return rngState / 4294967296; };
 const mutated = engine.mutateSyntheticGenome(dna, 1, deterministicRng);
