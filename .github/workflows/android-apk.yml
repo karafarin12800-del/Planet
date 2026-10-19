@@ -77,7 +77,8 @@ jobs:
       - name: Bundle the current web simulation into the Android app
         run: |
           mkdir -p app/src/main/assets
-          cp index.html genome-evidence.html evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
+          cp index.html evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
+          cp genome-evidence.html app/src/main/assets/
 
       - name: Validate full-genome lab JavaScript syntax
         shell: bash
