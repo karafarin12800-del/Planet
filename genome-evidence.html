@@ -97,12 +97,12 @@ function extractIntervals(location){
 function parseFeatureBlock(block){
  var features=[],current=null,hasQual=false;
  function finish(){if(!current)return;var q=parseQualifiers(current.qualifierLines),ints=extractIntervals(current.location),start=ints.length?Math.min.apply(null,ints.map(function(x){return x.start;})):null,end=ints.length?Math.max.apply(null,ints.map(function(x){return x.end;})):null;
-  var tr=qualifierValue(q,'translation');
+  var tr=qualifierValue(q,'translation');delete q.translation;
   features.push({key:current.key,location:current.location.trim(),intervals:ints,start:start,end:end,strand:/complement\s*\(/i.test(current.location)?'-':'+',gene:qualifierValue(q,'gene'),locus_tag:qualifierValue(q,'locus_tag'),product:qualifierValue(q,'product'),protein_id:qualifierValue(q,'protein_id'),note:qualifierValue(q,'note').slice(0,500),function:qualifierValue(q,'function'),ec_number:qualifierValue(q,'EC_number'),db_xref:q.db_xref||[],pseudo:Object.prototype.hasOwnProperty.call(q,'pseudo')||Object.prototype.hasOwnProperty.call(q,'pseudogene'),translation_length_aa:tr?tr.replace(/\s/g,'').length:null,qualifiers:q});
   current=null;hasQual=false;
  }
  block.split(/\r?\n/).forEach(function(line){
-  if(line.length<6)return;
+  if(line.length<6||/^\s*FEATURES\b/.test(line))return;
   var key=line.slice(5,21).trim(),rest=line.length>21?line.slice(21).trim():'';
   if(key&&key.charAt(0)!=='/'){
    finish();current={key:key,location:rest,qualifierLines:[]};hasQual=false;return;
@@ -158,12 +158,11 @@ async function analyzeRecords(records,onProgress){
  for(i=0;i<records.length;i++){
   var s=records[i].seq,rec=records[i],cnt={A:0,C:0,G:0,T:0,U:0,R:0,Y:0,S:0,W:0,K:0,M:0,B:0,D:0,H:0,V:0,N:0},cg=0,cc=0,can=0,ns=0,sk=0,cds=(rec.features||[]).filter(function(f){return f.key==='CDS';});
   for(j=0;j<s.length;j++){
-   var b=s.charAt(j);if(b==='U')b='T';
-   if(allCounts[b]!==undefined)allCounts[b]++;
-   if(cnt[b]!==undefined)cnt[b]++;
-   if(b==='A'||b==='C'||b==='G'||b==='T'){canonical++;can++;}else{amb++;if(b==='N')nCount++;}
-   if(b==='G'||b==='C'){gc++;cg++;}if(b==='G')g++;if(b==='C')c++;
-   if(j>0&&b==='G'&&s.charAt(j-1)==='C')cpg++;
+   var b=s.charAt(j);if(allCounts[b]!==undefined)allCounts[b]++;if(cnt[b]!==undefined)cnt[b]++;
+   var base=b==='U'?'T':b;
+   if(base==='A'||base==='C'||base==='G'||base==='T'){canonical++;can++;}else{amb++;if(base==='N')nCount++;}
+   if(base==='G'||base==='C'){gc++;cg++;}if(base==='G')g++;if(base==='C')c++;
+   if(j>0&&base==='G'&&s.charAt(j-1)==='C')cpg++;
    if((j&262143)===0){if(onProgress)onProgress('تحلیل تمام بازها: رکورد '+(i+1)+' از '+records.length+'، جایگاه '+fmt(j)+' / '+fmt(s.length));await tick();}
   }
   var kCount2=0,kCount3=0;
@@ -193,7 +192,7 @@ async function analyzeRecords(records,onProgress){
 }
 function sha256(buffer){if(!window.crypto||!crypto.subtle)return Promise.resolve(null);return crypto.subtle.digest('SHA-256',buffer).then(function(h){return Array.prototype.map.call(new Uint8Array(h),function(x){return x.toString(16).padStart(2,'0');}).join('');}).catch(function(){return null;});}
 function toBytes(text){return new TextEncoder().encode(text);}
-function canonicalFasta(records){return records.map(function(r){return '>'+r.id+(r.description&&r.description!==r.id?' '+r.description:'')+'\n'+r.seq.match(/.{1,70}/g).join('\n');}).join('\n')+'\n';}
+function canonicalFasta(records){return records.map(function(r){return '>'+r.id+(r.description&&r.description!==r.id?' '+r.description:'')+'\n'+r.seq;}).join('\n')+'\n';}
 function safeText(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function accessionFrom(records,typed){var t=String(typed||'').trim();if(t)return t;for(var i=0;i<records.length;i++){if(records[i].accession)return records[i].accession;}return '';}
 function sourceUrl(ref){var t=String(ref||'').trim();if(/^https?:\/\//i.test(t))return t;if(/^(GCF|GCA)_\d+\.\d+$/i.test(t))return 'https://www.ncbi.nlm.nih.gov/datasets/genome/'+encodeURIComponent(t)+'/';if(/^(NC_|NZ_|NR_|NM_|XM_|XR_|NG_|NT_|NW_|CP|CM|AP|LR)[A-Za-z0-9_.-]+$/i.test(t))return 'https://www.ncbi.nlm.nih.gov/nuccore/'+encodeURIComponent(t);return '';}
@@ -226,10 +225,11 @@ async function processRecords(records,meta){
   var report=await analyzeRecords(records,function(s){setStatus(s);});
   var canon=canonicalFasta(records),seqSha=null;
   if(total<=50000000){seqSha=await sha256(toBytes(canon).buffer);}
-  report.provenance={source_ref:meta.sourceRef||'',source_url:sourceUrl(meta.sourceRef)||'',format:meta.format||'',accessions:records.map(function(r){return r.accession||'';}).filter(Boolean),organisms:records.map(function(r){return r.organism||'';}).filter(Boolean),sequence_sha256:seqSha,raw_file_sha256:meta.rawFileSha||null};
-  report.reproducibility={sequence_sha256_status:seqSha?'computed over normalized FASTA representation':'not computed: normalized sequence exceeds 50 million bases or WebCrypto unavailable',normalization:'uppercase sequence; FASTA header identifiers retained; sequence data wrapped at 70 bases/line for canonical checksum',sequence_embedded_in_report:false,download_available:'Separate full FASTA export contains every accepted nucleotide.'};
+  var resolvedRef=meta.sourceRef||records.map(function(r){return r.accession||'';}).filter(Boolean)[0]||'';
+  report.provenance={source_ref:resolvedRef,source_url:sourceUrl(resolvedRef)||'',format:meta.format||'',accessions:records.map(function(r){return r.accession||'';}).filter(Boolean),organisms:records.map(function(r){return r.organism||'';}).filter(Boolean),sequence_sha256:seqSha,raw_file_sha256:meta.rawFileSha||null};
+  report.reproducibility={sequence_sha256_status:seqSha?'computed over normalized FASTA representation':'not computed: normalized sequence exceeds 50 million bases or WebCrypto unavailable',normalization:'uppercase sequence; FASTA header identifiers and full sequence retained; each record sequence is represented on one line for the canonical checksum.',sequence_embedded_in_report:false,download_available:'Separate full FASTA export contains every accepted nucleotide.'};
   if(!seqSha&&window.crypto&&crypto.subtle&&total>50000000)report.reproducibility.note='No bases were skipped in the analyses; checksum was omitted to limit memory pressure on mobile devices.';
-  renderReport(report,{records:records,sourceRef:meta.sourceRef||'',sourceText:meta.sourceText||'',rawFileSha:meta.rawFileSha||null,sequenceSha:seqSha,format:meta.format||'sequence'});
+  renderReport(report,{records:records,sourceRef:resolvedRef,sourceText:meta.sourceText||'',rawFileSha:meta.rawFileSha||null,sequenceSha:seqSha,format:meta.format||'sequence'});
   setStatus('تمام '+fmt(total)+' باز در '+fmt(records.length)+' رکورد تحلیل شد. هیچ پروکسی ۱۶۸ بازی در این گزارش استفاده نشده است.');
  }finally{busy=false;$('analyze').disabled=false;$('fetch').disabled=false;$('current').disabled=false;}
 }
@@ -306,7 +306,7 @@ function currentPlanetGenome(){
  }catch(e){setStatus(String(e&&e.message||e),true);}
 }
 function download(name,content,type){var blob=new Blob([content],{type:type||'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},2000);}
-$('close').addEventListener('click',function(){if(window.parent&&window.parent!==window){window.parent.postMessage({type:'planet-genome-evidence-close'},window.location.origin);}else{history.back();}});
+$('close').addEventListener('click',function(){if(window.parent&&window.parent!==window){window.parent.postMessage({type:'planet-genome-evidence-close'},'*');}else{history.back();}});
 $('fetch').addEventListener('click',fetchAccession);
 $('file').addEventListener('change',loadFile);
 $('analyze').addEventListener('click',analyzePaste);
