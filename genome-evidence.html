@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071426">
+<title>Planet | گزارش مستند ژنوم</title>
+<style>
+:root{color-scheme:dark;--bg:#06111f;--panel:#0c1d31;--edge:#27425d;--muted:#a9bdd2;--text:#ecf6ff;--accent:#6ce0ce;--blue:#80cfff;--warn:#ffd68a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#112d48 0,#071426 54%,#030914 100%);color:var(--text);font:14px/1.8 system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;padding:12px}
+main{max-width:1000px;margin:0 auto}.head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 4px 18px;border-bottom:1px solid var(--edge);margin-bottom:14px}.head h1{font-size:20px;margin:0;color:#dffcff}.head p{font-size:12px;color:var(--muted);margin:3px 0 0}
+button,input,textarea{font:inherit}button{border:1px solid #3b657c;border-radius:10px;padding:9px 12px;background:#12324a;color:var(--text);cursor:pointer}button.primary{background:linear-gradient(135deg,#176858,#1d526d);border-color:#4cbdaa}button:disabled{opacity:.5;cursor:wait}input,textarea{width:100%;min-width:0;background:#061322;border:1px solid #29445d;color:var(--text);border-radius:9px;padding:10px}textarea{min-height:120px;resize:vertical;direction:ltr;text-align:left;font:12px/1.6 ui-monospace,Consolas,monospace}label{font-size:12px;color:#c2d6e9;display:block;margin:8px 0 4px}.panel{background:rgba(12,29,49,.94);border:1px solid var(--edge);border-radius:15px;padding:14px;margin:12px 0;min-width:0}.panel h2{font-size:15px;color:var(--accent);margin:0 0 8px}.muted{color:var(--muted);font-size:12px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.status{padding:11px;border:1px solid #31526a;background:#071728;border-radius:10px;color:#cce9fa;white-space:pre-wrap;overflow-wrap:anywhere}.warning{border-color:#795b30;background:#2a2113;color:#ffe6b0}.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.stat{border:1px solid #27455d;border-radius:10px;padding:10px;background:#071728;min-width:0}.stat span{font-size:11px;color:var(--muted);display:block}.stat strong{display:block;color:#d8fffa;font-size:17px;overflow-wrap:anywhere;direction:ltr;text-align:right}.source{word-break:break-all}.source a{color:var(--blue)}.hide{display:none!important}.mini{font-size:11px}.pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #386b68;color:#9ef0d5;font-size:11px;margin:3px 3px 3px 0}.tablewrap{overflow:auto;max-height:320px;border:1px solid var(--edge);border-radius:9px}table{border-collapse:collapse;width:100%;font-size:12px;direction:ltr}th,td{padding:7px;border-bottom:1px solid #20394f;text-align:left;vertical-align:top;white-space:nowrap}th{position:sticky;top:0;background:#122941;color:#b4efe6}code{direction:ltr;unicode-bidi:embed;overflow-wrap:anywhere}.foot{color:#8199b2;font-size:11px;text-align:center;margin:18px 0 30px}.closebtn{white-space:nowrap}
+@media(max-width:650px){body{padding:8px}.head{align-items:flex-start}.head h1{font-size:17px}.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.panel{padding:11px}.stat strong{font-size:15px}}
+</style>
+</head>
+<body>
+<main>
+<header class="head">
+<div><h1>🧬 گزارش مستند ژنوم | Planet</h1><p>تحلیل تمام توالی ورودی، همراه با منشأ داده، اثرانگشت و محدودیت‌های علمی</p></div>
+<button id="close" class="closebtn" type="button">بستن</button>
+</header>
+<section class="panel">
+<h2>۱) منبع ژنوم</h2>
+<p class="muted">می‌توانی یک فایل FASTA یا GenBank/GBFF کامل وارد کنی، توالی را بچسبانی، یا شناسهٔ NCBI/RefSeq را دریافت کنی. فایل GenBank/GBFF شامل annotation است؛ FASTA معمولاً فقط توالی را دارد.</p>
+<div class="grid">
+<div><label for="accession">شناسهٔ NCBI / RefSeq / Assembly</label><input id="accession" placeholder="NC_000913.3 یا GCF_000005845.2" dir="ltr"><div class="actions"><button id="fetch" class="primary">دریافت رکورد حاشیه‌نویسی‌شده</button><button id="current">استفاده از ژنوم فعلی Planet</button></div></div>
+<div><label for="file">فایل توالی یا آرشیو</label><input id="file" type="file" accept=".fa,.fasta,.fna,.fas,.gb,.gbk,.gbff,.genbank,.txt,.zip,.gz,text/*,application/*"><label for="sourceRef">منبع/شناسه برای استناد (اختیاری)</label><input id="sourceRef" placeholder="مثلاً NC_000913.3 یا URL مقاله/رکورد" dir="ltr"></div>
+</div>
+<label for="paste">یا توالی / FASTA / متن GenBank را اینجا بچسبان</label><textarea id="paste" spellcheck="false" placeholder=">sequence_id  (FASTA)&#10;ACGT..."></textarea>
+<div class="actions"><button id="analyze" class="primary">تحلیل تمام توالی</button><button id="reset">پاک کردن ورودی</button></div>
+<div id="status" class="status" role="status" aria-live="polite">هنوز ژنومی تحلیل نشده است. Planet توالی را به ۱۶۸ باز تبدیل نمی‌کند؛ همهٔ رکوردهای واردشده بررسی می‌شوند یا در صورت ناسازگاری، تحلیل کامل رد می‌شود.</div>
+</section>
+<section id="results" class="panel hide">
+<h2>۲) نتیجهٔ قابل استناد</h2>
+<div id="badges"></div>
+<div id="stats" class="stats"></div>
+<p id="provenance" class="muted source"></p>
+<h2 style="margin-top:18px">ترکیب تمام توالی‌ها</h2>
+<div id="bases" class="muted"></div>
+<h2 style="margin-top:18px">امضای کل ژنوم (k-mer)</h2>
+<p class="muted">تعداد پنجره‌های هم‌پوشان ۲ و ۳ نوکلئوتیدی از تمام رکوردها محاسبه می‌شود؛ پنجره‌ای که باز مبهم دارد شمرده نمی‌شود. دو contig جدا به‌صورت مصنوعی به هم وصل نمی‌شوند.</p>
+<div id="kmers" class="muted"></div>
+<h2 style="margin-top:18px">Annotation دریافت‌شده از فایل</h2>
+<div id="annotation" class="muted"></div>
+<div class="actions"><button id="json" class="primary">دریافت گزارش کامل JSON</button><button id="fasta">دریافت تمام توالی به FASTA</button><button id="tsv">دریافت فهرست کامل ویژگی‌ها TSV</button></div>
+<p class="muted">گزارش JSON همهٔ آمار، تمام ویژگی‌های استخراج‌شده از فایل حاشیه‌نویسی‌شده، شناسهٔ منبع، روش تحلیل و هش توالی را دربر می‌گیرد؛ خودِ توالی کامل به‌صورت فایل FASTA جداگانه قابل دریافت است.</p>
+</section>
+<section class="panel">
+<h2>۳) معنی علمی نتیجه</h2>
+<p>این نسخه تمام بازهای موجود در همهٔ رکوردهای ورودی را برای آمار پایه، GC، GC-skew، پنجره‌های GC و شمارش k-mer بررسی می‌کند. اگر فایل GenBank/GBFF باشد، ویژگی‌های ثبت‌شده مانند CDS، ژن، rRNA و tRNA هم از annotation همان فایل استخراج می‌شوند.</p>
+<p>این گزارش به‌تنهایی عملکرد ژن، متابولیسم، شکل جانور، زنده‌مانی یا فنوتیپ را اثبات نمی‌کند. Annotation منبع نیز بدون اعتبارسنجی مستقل تأییدشده فرض نمی‌شود. در FASTA بدون annotation، برنامه ژن یا پروتئین را از خودش اختراع نمی‌کند.</p>
+<p class="muted">برای بازسازی متابولیسم میکروب باید annotation عملکردی و شبکهٔ واکنش‌های متابولیک/مدل ژنوم‌مقیاس به‌همراه شرایط محیطی به‌کار رود؛ برای جانوران و گیاهان مدل معتبر ژن‌به‌فنوتیپ عمومی و آماده‌ای وجود ندارد که از توالی به‌تنهایی شکل واقعی را تضمین کند.</p>
+</section>
+<section class="panel">
+<h2>منابع روش‌شناسی و استناد</h2>
+<div class="muted">
+<p><a href="https://www.ncbi.nlm.nih.gov/genbank/feature_table/" target="_blank" rel="noopener">NCBI GenBank — ساختار Feature Table و qualifierها</a></p>
+<p><a href="https://www.ncbi.nlm.nih.gov/books/NBK25499/" target="_blank" rel="noopener">NCBI Entrez Programming Utilities — دریافت رکوردها</a></p>
+<p><a href="https://docs.kbase.us/workflows/metabolic-models" target="_blank" rel="noopener">KBase — بازسازی مدل‌های متابولیک از annotation عملکردی</a></p>
+<p><a href="https://eggnog-mapper.cgmlab.org/how/" target="_blank" rel="noopener">eggNOG-mapper — روش annotation بر پایهٔ orthology</a></p>
+</div>
+</section>
+<footer class="foot">Planet Genome Evidence · روش تحلیل: همهٔ رکوردها و تمام بازهای فایل ورودی؛ بدون کوتاه‌سازی به ژنوم مصنوعی. برای نتایج متابولیک/فنوتیپی، مدل‌های اختصاصی و اعتبارسنجی جداگانه لازم‌اند.</footer>
+</main>
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id);};
+var session=null,busy=false;
+function fmt(n){return Number(n||0).toLocaleString('en-US');}
+function setStatus(s,warn){var el=$('status');el.textContent=s;el.className='status'+(warn?' warning':'');}
+function tick(){return new Promise(function(resolve){setTimeout(resolve,0);});}
+function cleanSequence(seq){return String(seq||'').toUpperCase().replace(/[\s0-9.-]/g,'');}
+function parseQualifiers(lines){
+ var q={},last=null;
+ lines.forEach(function(line){
+  if(/^\/[A-Za-z_][A-Za-z0-9_]*(?:=|$)/.test(line)){
+   var ix=line.indexOf('='),key=(ix<0?line.slice(1):line.slice(1,ix)).trim(),value=ix<0?'':line.slice(ix+1).trim();
+   last={key:key,value:value};if(!q[key])q[key]=[];q[key].push(last);
+  }else if(last){last.value+=' '+line.trim();}
+ });
+ var out={};
+ Object.keys(q).forEach(function(k){out[k]=q[k].map(function(item){var v=item.value.trim().replace(/^"/,'').replace(/"$/,'').replace(/""/g,'"');return v;});});
+ return out;
+}
+function qualifierValue(q,key){return q&&q[key]&&q[key].length?q[key][0]:'';}
+function extractIntervals(location){
+ var out=[],re=/(<?\d+)\s*\.\.\s*(>?\d+)|(<?\d+\s*>?)/g,m;
+ while((m=re.exec(String(location||'')))!==null){
+  var a,b;
+  if(m[1]){a=parseInt(m[1].replace(/[<>]/g,''),10);b=parseInt(m[2].replace(/[<>]/g,''),10);}
+  else{a=parseInt(m[3].replace(/[<>]/g,''),10);b=a;}
+  if(Number.isFinite(a)&&Number.isFinite(b)&&a>0&&b>0)out.push({start:Math.min(a,b),end:Math.max(a,b)});
+ }
+ return out;
+}
+function parseFeatureBlock(block){
+ var features=[],current=null,hasQual=false;
+ function finish(){if(!current)return;var q=parseQualifiers(current.qualifierLines),ints=extractIntervals(current.location),start=ints.length?Math.min.apply(null,ints.map(function(x){return x.start;})):null,end=ints.length?Math.max.apply(null,ints.map(function(x){return x.end;})):null;
+  var tr=qualifierValue(q,'translation');delete q.translation;
+  features.push({key:current.key,location:current.location.trim(),intervals:ints,start:start,end:end,strand:/complement\s*\(/i.test(current.location)?'-':'+',gene:qualifierValue(q,'gene'),locus_tag:qualifierValue(q,'locus_tag'),product:qualifierValue(q,'product'),protein_id:qualifierValue(q,'protein_id'),note:qualifierValue(q,'note').slice(0,500),function:qualifierValue(q,'function'),ec_number:qualifierValue(q,'EC_number'),db_xref:q.db_xref||[],pseudo:Object.prototype.hasOwnProperty.call(q,'pseudo')||Object.prototype.hasOwnProperty.call(q,'pseudogene'),translation_length_aa:tr?tr.replace(/\s/g,'').length:null,qualifiers:q});
+  current=null;hasQual=false;
+ }
+ block.split(/\r?\n/).forEach(function(line){
+  if(line.length<6||/^\s*FEATURES\b/.test(line))return;
+  var key=line.slice(5,21).trim(),rest=line.length>21?line.slice(21).trim():'';
+  if(key&&key.charAt(0)!=='/'){
+   finish();current={key:key,location:rest,qualifierLines:[]};hasQual=false;return;
+  }
+  if(!current)return;
+  if(rest.charAt(0)==='/'){current.qualifierLines.push(rest);hasQual=true;}
+  else if(hasQual&&current.qualifierLines.length){current.qualifierLines[current.qualifierLines.length-1]+=' '+rest;}
+  else if(rest){current.location+=' '+rest;}
+ });
+ finish();return features;
+}
+function parseGenBank(text){
+ var chunks=String(text||'').replace(/^\uFEFF/,'').split(/^\/\/\s*$/m),records=[];
+ chunks.forEach(function(chunk,idx){
+  if(!/^\s*LOCUS\s+\S+/m.test(chunk))return;
+  var originMatch=chunk.match(/^\s*ORIGIN\b([\s\S]*)/mi);
+  if(!originMatch)throw new Error('رکورد GenBank بدون بخش ORIGIN پیدا شد: ممکن است فایل کامل نباشد.');
+  var locus=(chunk.match(/^LOCUS\s+(\S+)/m)||[])[1]||('record-'+(idx+1));
+  var acc=(chunk.match(/^ACCESSION\s+([^\n]+)/m)||[])[1]||'';
+  var version=(chunk.match(/^VERSION\s+([^\s\n]+)/m)||[])[1]||acc.split(/\s+/)[0]||'';
+  var def=(chunk.match(/^DEFINITION\s+([^\n]*(?:\n {12}[^\n]*)*)/m)||[])[1]||'';
+  var organism=(chunk.match(/^\s+ORGANISM\s+([^\n]+)/m)||[])[1]||'';
+  var origin=originMatch[1].replace(/[0-9\s]/g,'').replace(/[^A-Za-z]/g,'').toUpperCase();
+  if(!origin)throw new Error('توالی ORIGIN خالی است: '+locus);
+  if(!/^[ACGTURYSWKMBDHVN]+$/.test(origin))throw new Error('رکورد '+locus+' نماد غیرنوکلئوتیدی دارد؛ تحلیل ناقص انجام نشد.');
+  var featureStart=chunk.search(/^FEATURES\s+/m),originStart=chunk.search(/^ORIGIN\b/im),features=[];
+  if(featureStart>=0&&originStart>featureStart)features=parseFeatureBlock(chunk.slice(featureStart,originStart));
+  records.push({id:locus,description:def.replace(/\n\s+/g,' ').trim(),accession:version,organism:organism,seq:origin,features:features,format:'GenBank'});
+ });
+ if(!records.length)throw new Error('فایل GenBank خوانده نشد؛ فایل GB/GBFF کامل یا FASTA وارد کن.');
+ return records;
+}
+function parseFasta(text){
+ var src=String(text||'').replace(/^\uFEFF/,'');if(/^\s*LOCUS\s+\S+/m.test(src))return parseGenBank(src);
+ var lines=src.split(/\r?\n/),records=[],cur=null,seq='';
+ function push(){if(!cur||!seq)return;var s=cleanSequence(seq);if(!s)return;if(!/^[ACGTURYSWKMBDHVN]+$/.test(s))throw new Error('رکورد '+cur.id+' نماد غیرنوکلئوتیدی دارد؛ توالی پروتئینی یا فایل خراب است و پذیرفته نشد.');records.push({id:cur.id,description:cur.description||'',accession:'',organism:'',seq:s,features:[],format:'FASTA'});}
+ lines.forEach(function(line){
+  if(line.charAt(0)==='>'){push();var h=line.slice(1).trim();cur={id:(h.split(/\s+/)[0]||('record-'+(records.length+1))),description:h};seq='';}
+  else if(line.trim()&&!/^\s*;/.test(line)){if(!cur)cur={id:'pasted-sequence',description:'raw sequence'};seq+=line.trim();}
+ });
+ push();if(!records.length)throw new Error('هیچ توالی نوکلئوتیدی پیدا نشد. FASTA، GenBank یا توالی A/C/G/T معتبر وارد کن.');return records;
+}
+function mergeCoverage(features,recordLength){
+ var spans=[];features.forEach(function(f){if(f.key==='CDS')f.intervals.forEach(function(i){spans.push([Math.max(1,i.start),Math.min(recordLength,i.end)]);});});
+ if(!spans.length)return 0;spans.sort(function(a,b){return a[0]-b[0];});var start=spans[0][0],end=spans[0][1],sum=0;
+ for(var i=1;i<spans.length;i++){var p=spans[i];if(p[0]<=end+1)end=Math.max(end,p[1]);else{sum+=Math.max(0,end-start+1);start=p[0];end=p[1];}}
+ return sum+Math.max(0,end-start+1);
+}
+function pct(a,b){return b?100*a/b:0;}
+async function analyzeRecords(records,onProgress){
+ var allCounts={A:0,C:0,G:0,T:0,U:0,R:0,Y:0,S:0,W:0,K:0,M:0,B:0,D:0,H:0,V:0,N:0},k2={},k3={},perRecord=[],featureCounts={},features=[],total=0,canonical=0,amb=0,nCount=0,gc=0,g=0,c=0,cpg=0,totalCDS=0,codingCovered=0;
+ var alphabet='ACGT',i,j;
+ for(i=0;i<records.length;i++){
+  var s=records[i].seq,rec=records[i],cnt={A:0,C:0,G:0,T:0,U:0,R:0,Y:0,S:0,W:0,K:0,M:0,B:0,D:0,H:0,V:0,N:0},cg=0,cc=0,can=0,ns=0,sk=0,cds=(rec.features||[]).filter(function(f){return f.key==='CDS';});
+  for(j=0;j<s.length;j++){
+   var b=s.charAt(j);if(allCounts[b]!==undefined)allCounts[b]++;if(cnt[b]!==undefined)cnt[b]++;
+   var base=b==='U'?'T':b;
+   if(base==='A'||base==='C'||base==='G'||base==='T'){canonical++;can++;}else{amb++;if(base==='N')nCount++;}
+   if(base==='G'||base==='C'){gc++;cg++;}if(base==='G')g++;if(base==='C')c++;
+   if(j>0&&base==='G'&&s.charAt(j-1)==='C')cpg++;
+   if((j&262143)===0){if(onProgress)onProgress('تحلیل تمام بازها: رکورد '+(i+1)+' از '+records.length+'، جایگاه '+fmt(j)+' / '+fmt(s.length));await tick();}
+  }
+  var kCount2=0,kCount3=0;
+  for(j=0;j<s.length;j++){
+   var ch=s.charAt(j);if(ch==='U')ch='T';
+   if(j+1<s.length){var b2=s.charAt(j+1);if(b2==='U')b2='T';var pair=ch+b2;if(alphabet.indexOf(ch)>=0&&alphabet.indexOf(b2)>=0){k2[pair]=(k2[pair]||0)+1;kCount2++;}}
+   if(j+2<s.length){var b3=s.charAt(j+2);if(b3==='U')b3='T';var tri=ch+b2+b3;if(alphabet.indexOf(ch)>=0&&alphabet.indexOf(b2)>=0&&alphabet.indexOf(b3)>=0){k3[tri]=(k3[tri]||0)+1;kCount3++;}}
+   if((j&262143)===0){if(onProgress)onProgress('شمارش تمام پنجره‌های k-mer: رکورد '+(i+1)+' از '+records.length);await tick();}
+  }
+  var win=10000,wCount=0,wMin=101,wMax=-1,wSum=0,wSumSq=0;
+  for(j=0;j<s.length;j+=win){
+   var part=s.slice(j,Math.min(j+win,s.length)),valid=part.match(/[ACGTU]/g)||[],cgPart=part.match(/[GC]/g)||[],gcPct=valid.length?100*cgPart.length/valid.length:null;
+   if(gcPct!==null){wCount++;wMin=Math.min(wMin,gcPct);wMax=Math.max(wMax,gcPct);wSum+=gcPct;wSumSq+=gcPct*gcPct;}
+  }
+  var cov=mergeCoverage(rec.features||[],s.length);codingCovered+=cov;totalCDS+=cds.length;
+  (rec.features||[]).forEach(function(f){featureCounts[f.key]=(featureCounts[f.key]||0)+1;var item=Object.assign({record_id:rec.id,record_accession:rec.accession||''},f);features.push(item);});
+  var den=can,entropy=0;['A','C','G','T'].forEach(function(base){var p=cnt[base]/(can||1);if(p>0)entropy-=p*Math.log2(p);});
+  perRecord.push({id:rec.id,description:rec.description||'',accession:rec.accession||'',organism:rec.organism||'',length_bp:s.length,gc_percent_canonical:+pct(cnt.G+cnt.C,den).toFixed(6),gc_skew:cnt.G+cnt.C?(cnt.G-cnt.C)/(cnt.G+cnt.C):null,canonical_bases:can,ambiguous_bases:s.length-can,N_count:cnt.N,CDS_count:cds.length,CDS_coverage_bp:cov,CDS_coverage_percent:+pct(cov,s.length).toFixed(6),GC_window_size_bp:win,GC_window_count:wCount,GC_window_min_percent:wCount?+wMin.toFixed(6):null,GC_window_max_percent:wCount?+wMax.toFixed(6):null,GC_window_mean_percent:wCount?+(wSum/wCount).toFixed(6):null,base_counts:cnt,kmer_2_windows:kCount2,kmer_3_windows:kCount3,base_entropy_bits:+entropy.toFixed(6)});
+  total+=s.length;
+ }
+ var gcCanonical=allCounts.G+allCounts.C,canonicalCount=allCounts.A+allCounts.C+allCounts.G+allCounts.T+allCounts.U;
+ var sizes=records.map(function(r){return r.seq.length;}).sort(function(a,b){return b-a;}),sum=0,n50=0;
+ for(i=0;i<sizes.length;i++){sum+=sizes[i];if(sum>=total/2){n50=sizes[i];break;}}
+ var cdn=allCounts.C+allCounts.G;
+ var allEnt=0;['A','C','G','T','U'].forEach(function(b){var n=allCounts[b]||0,p=n/(canonicalCount||1);if(p>0)allEnt-=p*Math.log2(p);});
+ return {schema_version:'planet-genome-evidence-1.0',generated_at:new Date().toISOString(),method:{base_analysis:'Every nucleotide in every record was iterated; no sequence downsampling or 168-bp proxy is used in this report.',kmer_analysis:'All overlapping k=2 and k=3 windows within each record; windows containing ambiguity symbols are excluded; records are never concatenated across boundaries.',annotation:'Feature annotations are parsed from supplied GenBank/GBFF only and are not independently validated.',functional_prediction:'Not performed.',phenotype_prediction:'Not performed.'},record_count:records.length,total_length_bp:total,canonical_bases:canonicalCount,ambiguous_bases:total-canonicalCount,n_count:nCount,gc_percent_canonical:+pct(gcCanonical,canonicalCount).toFixed(6),gc_percent_total:+pct(gcCanonical,total).toFixed(6),gc_skew:cdn?(g-c)/cdn:null,cpg_observed_dinucleotides:cpg,n50_bp:n50,base_entropy_bits:+allEnt.toFixed(6),base_counts:allCounts,kmer_2_counts:k2,kmer_2_total_windows:Object.values(k2).reduce(function(a,b){return a+b;},0),kmer_3_counts:k3,kmer_3_total_windows:Object.values(k3).reduce(function(a,b){return a+b;},0),CDS_feature_count:totalCDS,CDS_union_coverage_percent:+pct(codingCovered,total).toFixed(6),feature_counts:featureCounts,per_record:perRecord,features:features};
+}
+function sha256(buffer){if(!window.crypto||!crypto.subtle)return Promise.resolve(null);return crypto.subtle.digest('SHA-256',buffer).then(function(h){return Array.prototype.map.call(new Uint8Array(h),function(x){return x.toString(16).padStart(2,'0');}).join('');}).catch(function(){return null;});}
+function toBytes(text){return new TextEncoder().encode(text);}
+function canonicalFasta(records){return records.map(function(r){var d=String(r.description||'');if(d===r.id)d='';else if(d.indexOf(r.id)===0)d=d.slice(r.id.length).trim();return '>'+r.id+(d?' '+d:'')+'\n'+r.seq;}).join('\n')+'\n';}
+function safeText(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function accessionFrom(records,typed){var t=String(typed||'').trim();if(t)return t;for(var i=0;i<records.length;i++){if(records[i].accession)return records[i].accession;}return '';}
+function sourceUrl(ref){var t=String(ref||'').trim();if(/^https?:\/\//i.test(t))return t;if(/^(GCF|GCA)_\d+\.\d+$/i.test(t))return 'https://www.ncbi.nlm.nih.gov/datasets/genome/'+encodeURIComponent(t)+'/';if(/^(NC_|NZ_|NR_|NM_|XM_|XR_|NG_|NT_|NW_|CP|CM|AP|LR)[A-Za-z0-9_.-]+$/i.test(t))return 'https://www.ncbi.nlm.nih.gov/nuccore/'+encodeURIComponent(t);return '';}
+function fmtPct(x){return x===null||x===undefined?'—':Number(x).toFixed(4)+'%';}
+function renderReport(report,meta){
+ session={report:report,records:meta.records,sourceText:meta.sourceText||'',sourceRef:meta.sourceRef||'',rawFileSha:meta.rawFileSha||null,sequenceSha:meta.sequenceSha||null,format:meta.format||'unknown'};
+ $('results').classList.remove('hide');
+ $('badges').innerHTML='<span class="pill">تمام بازها بررسی شدند</span><span class="pill">'+safeText(meta.format||'Sequence')+'</span><span class="pill">'+(report.features.length?'Annotation موجود':'Annotation ارائه نشده')+'</span><span class="pill">بدون پیش‌بینی فنوتیپ</span>';
+ var cards=[['طول کل DNA',fmt(report.total_length_bp)+' bp'],['رکورد / contig',fmt(report.record_count)],['GC در بازهای قطعی',fmtPct(report.gc_percent_canonical)],['GC-skew کل',report.gc_skew===null?'—':report.gc_skew.toFixed(6)],['N50',fmt(report.n50_bp)+' bp'],['بازهای مبهم',fmt(report.ambiguous_bases)],['N در توالی',fmt(report.n_count)],['Entropy پایه‌ای',report.base_entropy_bits.toFixed(4)+' bits'],['پوشش CDS ثبت‌شده',fmtPct(report.CDS_union_coverage_percent)]];
+ $('stats').innerHTML=cards.map(function(x){return '<div class="stat"><span>'+safeText(x[0])+'</span><strong>'+safeText(x[1])+'</strong></div>';}).join('');
+ var src=meta.sourceRef||report.per_record.map(function(r){return r.accession;}).filter(Boolean)[0]||'منبع در ورودی مشخص نشده';
+ var url=sourceUrl(src),seqHash=meta.sequenceSha||'محاسبه نشد',fileHash=meta.rawFileSha||'برای این ورودی موجود نیست';
+ $('provenance').innerHTML='منبع: '+safeText(src)+(url?' · <a href="'+safeText(url)+'" target="_blank" rel="noopener">بازکردن رکورد اصلی</a>':'')+'<br>SHA-256 توالی استانداردشده: <code>'+safeText(seqHash)+'</code><br>SHA-256 فایل اصلی: <code>'+safeText(fileHash)+'</code><br>زمان گزارش: '+safeText(report.generated_at)+'<br>روش: '+safeText(report.method.base_analysis);
+ var names=['A','C','G','T','U','R','Y','S','W','K','M','B','D','H','V','N'];
+ $('bases').innerHTML=names.map(function(b){return '<span class="pill">'+b+': '+fmt(report.base_counts[b]||0)+'</span>';}).join('')+'<p>GC skew = (G − C)/(G + C). این شاخص توصیفی است، نه به‌تنهایی نشانهٔ عملکرد یا بیماری.</p>';
+ var kc2=Object.keys(report.kmer_2_counts).sort().map(function(k){return k+': '+fmt(report.kmer_2_counts[k]);}).join(' · ');
+ var top3=Object.keys(report.kmer_3_counts).sort(function(a,b){return report.kmer_3_counts[b]-report.kmer_3_counts[a];}).slice(0,12).map(function(k){return k+': '+fmt(report.kmer_3_counts[k]);}).join(' · ');
+ $('kmers').innerHTML='<p><b>۲-mer:</b> '+safeText(kc2||'داده‌ای موجود نیست')+'</p><p><b>۱۲ سه‌تایی پرتکرار از بین شمارش تمام پنجره‌ها:</b> '+safeText(top3||'داده‌ای موجود نیست')+'</p><p>تعداد تمام پنجره‌های معتبر ۲ باز: '+fmt(report.kmer_2_total_windows)+'؛ سه‌باز: '+fmt(report.kmer_3_total_windows)+'. توالی‌های مبهم از پنجرهٔ مربوطه کنار گذاشته شده‌اند، نه از شمارش پایه‌های کل.</p>';
+ var types=Object.keys(report.feature_counts).sort().map(function(k){return k+': '+fmt(report.feature_counts[k]);}).join(' · ');
+ $('annotation').innerHTML='<p>تعداد ویژگی‌های استخراج‌شده: '+fmt(report.features.length)+'؛ CDS: '+fmt(report.CDS_feature_count)+'</p><p>'+safeText(types||'در این ورودی Feature annotation موجود نیست. اگر فقط FASTA وارد شده باشد، عملکرد ژن‌ها از روی حروف حدس زده نشده است.')+'</p>';
+}
+async function processRecords(records,meta){
+ if(!records||!records.length)throw new Error('ورودی ژنوم خالی است.');
+ var total=records.reduce(function(n,r){return n+r.seq.length;},0);
+ if(total>100000000)throw new Error('این نسخه برای جلوگیری از بسته‌شدن WebView روی گوشی، حداکثر ۱۰۰ میلیون باز را می‌پذیرد. تحلیل ناقص یا انتخاب بخشی از ژنوم انجام نشد؛ ورودی باید کوچک‌تر یا در محیط محاسباتی مناسب پردازش شود.');
+ records.forEach(function(r){if(!r.seq||!/^[ACGTURYSWKMBDHVN]+$/.test(r.seq))throw new Error('رکورد '+r.id+' دارای نماد غیرنوکلئوتیدی است؛ تحلیل کامل انجام نشد.');});
+ busy=true;$('analyze').disabled=true;$('fetch').disabled=true;$('current').disabled=true;
+ try{
+  setStatus('در حال محاسبهٔ آمار از تمام '+fmt(total)+' باز؛ هیچ بخش توالی نمونه‌برداری یا حذف نمی‌شود…');
+  var report=await analyzeRecords(records,function(s){setStatus(s);});
+  var canon=canonicalFasta(records),seqSha=null;
+  if(total<=50000000){seqSha=await sha256(toBytes(canon).buffer);}
+  var resolvedRef=meta.sourceRef||records.map(function(r){return r.accession||'';}).filter(Boolean)[0]||'';
+  report.provenance={source_ref:resolvedRef,source_url:sourceUrl(resolvedRef)||'',format:meta.format||'',accessions:records.map(function(r){return r.accession||'';}).filter(Boolean),organisms:records.map(function(r){return r.organism||'';}).filter(Boolean),sequence_sha256:seqSha,raw_file_sha256:meta.rawFileSha||null};
+  report.references={methodological:[{title:'NCBI GenBank feature table specification',url:'https://www.ncbi.nlm.nih.gov/genbank/feature_table/'},{title:'NCBI Entrez Programming Utilities documentation',url:'https://www.ncbi.nlm.nih.gov/books/NBK25499/'}],not_used_by_this_report:[{title:'KBase metabolic-model workflows',url:'https://docs.kbase.us/workflows/metabolic-models',purpose:'Potential future stage; not executed for this report.'},{title:'eggNOG-mapper methodology',url:'https://eggnog-mapper.cgmlab.org/how/',purpose:'Potential future functional annotation; not executed for this report.'}]};
+  report.reproducibility={sequence_sha256_status:seqSha?'computed over normalized FASTA representation':'not computed: normalized sequence exceeds 50 million bases or WebCrypto unavailable',normalization:'uppercase sequence; FASTA header identifiers and full sequence retained; each record sequence is represented on one line for the canonical checksum.',sequence_embedded_in_report:false,download_available:'Separate full FASTA export contains every accepted nucleotide.'};
+  if(!seqSha&&window.crypto&&crypto.subtle&&total>50000000)report.reproducibility.note='No bases were skipped in the analyses; checksum was omitted to limit memory pressure on mobile devices.';
+  renderReport(report,{records:records,sourceRef:resolvedRef,sourceText:meta.sourceText||'',rawFileSha:meta.rawFileSha||null,sequenceSha:seqSha,format:meta.format||'sequence'});
+  setStatus('تمام '+fmt(total)+' باز در '+fmt(records.length)+' رکورد تحلیل شد. هیچ پروکسی ۱۶۸ بازی در این گزارش استفاده نشده است.');
+ }finally{busy=false;$('analyze').disabled=false;$('fetch').disabled=false;$('current').disabled=false;}
+}
+async function unzipAnnotatedZip(buffer){
+ var bytes=new Uint8Array(buffer),view=new DataView(buffer),eocd=-1;
+ for(var p=bytes.length-22;p>=Math.max(0,bytes.length-65557);p--){if(view.getUint32(p,true)===0x06054b50){eocd=p;break;}}
+ if(eocd<0)throw new Error('ZIP معتبر نیست؛ لطفاً فایل GBFF را از حالت فشرده خارج کن.');
+ var count=view.getUint16(eocd+10,true),pos=view.getUint32(eocd+16,true),decoder=new TextDecoder();
+ var entries=[];
+ for(var i=0;i<count;i++){
+  if(view.getUint32(pos,true)!==0x02014b50)throw new Error('فهرست ZIP خوانده نشد.');
+  var method=view.getUint16(pos+10,true),csize=view.getUint32(pos+20,true),usize=view.getUint32(pos+24,true),nl=view.getUint16(pos+28,true),el=view.getUint16(pos+30,true),cl=view.getUint16(pos+32,true),lo=view.getUint32(pos+42,true),name=decoder.decode(bytes.slice(pos+46,pos+46+nl));
+  entries.push({name:name,method:method,csize:csize,usize:usize,local:lo});pos+=46+nl+el+cl;
+ }
+ entries.sort(function(a,b){return (/\.gbff?$/i.test(b.name)?1:0)-(/\.gbff?$/i.test(a.name)?1:0);});
+ var entry=entries.find(function(e){return /\.(gbff?|gbk)$/i.test(e.name);});
+ if(!entry)throw new Error('در ZIP فایل حاشیه‌نویسی‌شدهٔ GBFF پیدا نشد. فایل genomic.gbff را استخراج و وارد کن.');
+ var l=entry.local,nlen=view.getUint16(l+26,true),elen=view.getUint16(l+28,true),start=l+30+nlen+elen,comp=bytes.slice(start,start+entry.csize),out;
+ if(entry.method===0)out=comp;
+ else if(entry.method===8){
+  if(typeof DecompressionStream==='undefined')throw new Error('این WebView بازکردن ZIP فشرده را پشتیبانی نمی‌کند؛ genomic.gbff را استخراج و جدا وارد کن.');
+  var stream=new Blob([comp]).stream().pipeThrough(new DecompressionStream('deflate-raw'));out=new Uint8Array(await new Response(stream).arrayBuffer());
+ }else throw new Error('روش فشرده‌سازی ZIP پشتیبانی نمی‌شود؛ genomic.gbff را دستی استخراج کن.');
+ return decoder.decode(out);
+}
+async function fetchAccession(){
+ if(busy)return;var acc=$('accession').value.trim();if(!acc){setStatus('یک شناسه مانند NC_000913.3 یا GCF_000005845.2 وارد کن.',true);return;}
+ if(!/^[A-Za-z0-9_.:-]{3,100}$/.test(acc)){setStatus('قالب شناسه نامعتبر است.',true);return;}
+ busy=true;$('fetch').disabled=true;setStatus('در حال دریافت annotation و توالی کامل از NCBI؛ حجم فایل ممکن است زیاد باشد…');
+ try{
+  var response,txt,rawSha=null;
+  if(/^(GCF|GCA)_\d+\.\d+$/i.test(acc)){
+   response=await fetch('https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/'+encodeURIComponent(acc)+'/download?include_annotation_type=GENOME_GBFF');
+   if(!response.ok)throw new Error('NCBI Datasets HTTP '+response.status+'؛ فایل GBFF را دستی دانلود و وارد کن.');
+   var buf=await response.arrayBuffer();rawSha=await sha256(buf);txt=await unzipAnnotatedZip(buf);
+  }else{
+   response=await fetch('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id='+encodeURIComponent(acc)+'&rettype=gb&retmode=text');
+   if(!response.ok)throw new Error('NCBI EFetch HTTP '+response.status+'؛ فایل GB/GBFF را دستی وارد کن.');
+   var buf2=await response.arrayBuffer();rawSha=await sha256(buf2);txt=new TextDecoder().decode(buf2);
+   if(!/^\s*LOCUS\s+\S+/m.test(txt))throw new Error('پاسخ NCBI حاشیه‌نویسی GenBank نداشت؛ یک شناسهٔ nucleotide معتبر یا فایل GBFF وارد کن.');
+  }
+  $('sourceRef').value=acc;$('paste').value=txt;
+  var records=parseGenBank(txt);await processRecords(records,{sourceRef:acc,sourceText:'NCBI',rawFileSha:rawSha,format:'NCBI GenBank/GBFF'});
+ }catch(e){setStatus('دریافت/تحلیل انجام نشد: '+String(e&&e.message||e)+'\nراه جایگزین: از رکورد NCBI فایل GenBank/GBFF کامل را ذخیره کن و همین‌جا از بخش فایل بارگذاری کن.',true);}
+ finally{busy=false;$('fetch').disabled=false;$('analyze').disabled=false;$('current').disabled=false;}
+}
+async function loadFile(){
+ var f=$('file').files&&$('file').files[0];if(!f){setStatus('ابتدا یک فایل انتخاب کن.',true);return;}
+ try{
+  setStatus('در حال خواندن فایل اصلی '+f.name+'…');var buffer=await f.arrayBuffer(),rawSha=await sha256(buffer),text;
+  if(/\.zip$/i.test(f.name))text=await unzipAnnotatedZip(buffer);
+  else if(/\.gz$/i.test(f.name)){
+   if(typeof DecompressionStream==='undefined')throw new Error('این مرورگر فایل gzip را باز نمی‌کند؛ فایل را استخراج و دوباره وارد کن.');
+   text=new TextDecoder().decode(await new Response(new Blob([buffer]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+  }else text=new TextDecoder().decode(buffer);
+  $('paste').value=text;
+  var records=parseFasta(text),fmtName=/^\s*LOCUS\s+/m.test(text)?'GenBank/GBFF':'FASTA';
+  await processRecords(records,{sourceRef:$('sourceRef').value.trim(),sourceText:'uploaded file: '+f.name,rawFileSha:rawSha,format:fmtName});
+ }catch(e){setStatus('فایل خوانده نشد: '+String(e&&e.message||e),true);}
+}
+async function analyzePaste(){
+ try{var text=$('paste').value.trim();if(!text)throw new Error('توالی یا متن GenBank وارد نشده است.');var records=parseFasta(text);await processRecords(records,{sourceRef:$('sourceRef').value.trim(),sourceText:'pasted input',format:/^\s*LOCUS\s+/m.test(text)?'GenBank/GBFF':'FASTA or raw sequence'});}
+ catch(e){setStatus('اعتبارسنجی/تحلیل ناموفق بود: '+String(e&&e.message||e),true);}
+}
+function currentPlanetGenome(){
+ try{
+  if(window.parent&&window.parent!==window&&typeof window.parent.PlanetGenomeLabData==='function'){
+   var d=window.parent.PlanetGenomeLabData();if(!d||!Array.isArray(d.records)||!d.records.length)throw new Error('در آزمایشگاه فعلی هنوز ژنومی وارد نشده است.');
+   var records=d.records.map(function(r){return {id:r.id||'record',description:r.description||'',accession:'',organism:'',seq:String(r.seq||'').toUpperCase(),features:[],format:d.format||'sequence'};});
+   $('sourceRef').value=d.name||'ژنوم بارگذاری‌شده در Planet';processRecords(records,{sourceRef:d.name||'Planet current genome',sourceText:'current Planet Genome Lab memory',format:'current Planet sequence; annotation not retained by old importer'}).catch(function(e){setStatus(String(e.message||e),true);});
+   return;
+  }
+  throw new Error('صفحهٔ اصلی Planet دادهٔ واردشده در دسترس ندارد. فایل یا شناسه را وارد کن.');
+ }catch(e){setStatus(String(e&&e.message||e),true);}
+}
+function download(name,content,type){var blob=new Blob([content],{type:type||'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},2000);}
+$('close').addEventListener('click',function(){if(window.parent&&window.parent!==window){window.parent.postMessage({type:'planet-genome-evidence-close'},'*');}else{history.back();}});
+$('fetch').addEventListener('click',fetchAccession);
+$('file').addEventListener('change',loadFile);
+$('analyze').addEventListener('click',analyzePaste);
+$('current').addEventListener('click',currentPlanetGenome);
+$('reset').addEventListener('click',function(){$('paste').value='';$('accession').value='';$('sourceRef').value='';$('results').classList.add('hide');session=null;setStatus('ورودی پاک شد.');});
+$('json').addEventListener('click',function(){if(!session)return;download('planet-full-genome-evidence.json',JSON.stringify(session.report,null,2),'application/json;charset=utf-8');});
+$('fasta').addEventListener('click',function(){if(!session)return;download('planet-full-sequences.fasta',canonicalFasta(session.records),'text/plain;charset=utf-8');});
+$('tsv').addEventListener('click',function(){if(!session)return;var rows=['record_id\tfeature\tstart\tend\tstrand\tgene\tlocus_tag\tproduct\tprotein_id\tnote\tpseudo'];session.report.features.forEach(function(f){rows.push([f.record_id,f.key,f.start==null?'':f.start,f.end==null?'':f.end,f.strand,f.gene,f.locus_tag,f.product,f.protein_id,f.note,f.pseudo?'yes':'no'].map(function(x){return String(x==null?'':x).replace(/[\t\r\n]/g,' ');}).join('\t'));});download('planet-genome-features.tsv',rows.join('\n')+'\n','text/tab-separated-values;charset=utf-8');});
+window.addEventListener('keydown',function(e){if(e.key==='Escape'&&window.parent&&window.parent!==window)window.parent.postMessage({type:'planet-genome-evidence-close'},'*');});
+window.PlanetGenomeEvidenceCore={parseGenBank:parseGenBank,parseFasta:parseFasta,analyzeRecords:analyzeRecords,extractIntervals:extractIntervals,mergeCoverage:mergeCoverage};
+})();
+</script>
+</body>
+</html>
