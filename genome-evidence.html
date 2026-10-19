@@ -174,7 +174,7 @@ async function analyzeRecords(records,onProgress){
   }
   var win=10000,wCount=0,wMin=101,wMax=-1,wSum=0,wSumSq=0;
   for(j=0;j<s.length;j+=win){
-   var part=s.slice(j,Math.min(j+win,s.length)),valid=part.match(/[ACGT]/g)||[],cgPart=part.match(/[GC]/g)||[],gcPct=valid.length?100*cgPart.length/valid.length:null;
+   var part=s.slice(j,Math.min(j+win,s.length)),valid=part.match(/[ACGTU]/g)||[],cgPart=part.match(/[GC]/g)||[],gcPct=valid.length?100*cgPart.length/valid.length:null;
    if(gcPct!==null){wCount++;wMin=Math.min(wMin,gcPct);wMax=Math.max(wMax,gcPct);wSum+=gcPct;wSumSq+=gcPct*gcPct;}
   }
   var cov=mergeCoverage(rec.features||[],s.length);codingCovered+=cov;totalCDS+=cds.length;
@@ -192,7 +192,7 @@ async function analyzeRecords(records,onProgress){
 }
 function sha256(buffer){if(!window.crypto||!crypto.subtle)return Promise.resolve(null);return crypto.subtle.digest('SHA-256',buffer).then(function(h){return Array.prototype.map.call(new Uint8Array(h),function(x){return x.toString(16).padStart(2,'0');}).join('');}).catch(function(){return null;});}
 function toBytes(text){return new TextEncoder().encode(text);}
-function canonicalFasta(records){return records.map(function(r){return '>'+r.id+(r.description&&r.description!==r.id?' '+r.description:'')+'\n'+r.seq;}).join('\n')+'\n';}
+function canonicalFasta(records){return records.map(function(r){var d=String(r.description||'');if(d===r.id)d='';else if(d.indexOf(r.id)===0)d=d.slice(r.id.length).trim();return '>'+r.id+(d?' '+d:'')+'\n'+r.seq;}).join('\n')+'\n';}
 function safeText(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function accessionFrom(records,typed){var t=String(typed||'').trim();if(t)return t;for(var i=0;i<records.length;i++){if(records[i].accession)return records[i].accession;}return '';}
 function sourceUrl(ref){var t=String(ref||'').trim();if(/^https?:\/\//i.test(t))return t;if(/^(GCF|GCA)_\d+\.\d+$/i.test(t))return 'https://www.ncbi.nlm.nih.gov/datasets/genome/'+encodeURIComponent(t)+'/';if(/^(NC_|NZ_|NR_|NM_|XM_|XR_|NG_|NT_|NW_|CP|CM|AP|LR)[A-Za-z0-9_.-]+$/i.test(t))return 'https://www.ncbi.nlm.nih.gov/nuccore/'+encodeURIComponent(t);return '';}
@@ -227,6 +227,7 @@ async function processRecords(records,meta){
   if(total<=50000000){seqSha=await sha256(toBytes(canon).buffer);}
   var resolvedRef=meta.sourceRef||records.map(function(r){return r.accession||'';}).filter(Boolean)[0]||'';
   report.provenance={source_ref:resolvedRef,source_url:sourceUrl(resolvedRef)||'',format:meta.format||'',accessions:records.map(function(r){return r.accession||'';}).filter(Boolean),organisms:records.map(function(r){return r.organism||'';}).filter(Boolean),sequence_sha256:seqSha,raw_file_sha256:meta.rawFileSha||null};
+  report.references={methodological:[{title:'NCBI GenBank feature table specification',url:'https://www.ncbi.nlm.nih.gov/genbank/feature_table/'},{title:'NCBI Entrez Programming Utilities documentation',url:'https://www.ncbi.nlm.nih.gov/books/NBK25499/'}],not_used_by_this_report:[{title:'KBase metabolic-model workflows',url:'https://docs.kbase.us/workflows/metabolic-models',purpose:'Potential future stage; not executed for this report.'},{title:'eggNOG-mapper methodology',url:'https://eggnog-mapper.cgmlab.org/how/',purpose:'Potential future functional annotation; not executed for this report.'}]};
   report.reproducibility={sequence_sha256_status:seqSha?'computed over normalized FASTA representation':'not computed: normalized sequence exceeds 50 million bases or WebCrypto unavailable',normalization:'uppercase sequence; FASTA header identifiers and full sequence retained; each record sequence is represented on one line for the canonical checksum.',sequence_embedded_in_report:false,download_available:'Separate full FASTA export contains every accepted nucleotide.'};
   if(!seqSha&&window.crypto&&crypto.subtle&&total>50000000)report.reproducibility.note='No bases were skipped in the analyses; checksum was omitted to limit memory pressure on mobile devices.';
   renderReport(report,{records:records,sourceRef:resolvedRef,sourceText:meta.sourceText||'',rawFileSha:meta.rawFileSha||null,sequenceSha:seqSha,format:meta.format||'sequence'});
