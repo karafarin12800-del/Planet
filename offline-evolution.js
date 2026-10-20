@@ -5,7 +5,6 @@
   const MAX_OFFLINE_SECONDS = 7 * 24 * 60 * 60;
   const MAX_STEPS = 240;
   let running = false;
-  let lastCheckpoint = 0;
 
   function saveCheckpoint() {
     try {
@@ -16,7 +15,6 @@
         age: Number(lifeAgeMa) || 0,
         speed: Number(lifeSpeed) || 8
       }));
-      lastCheckpoint = now;
     } catch (error) {
       console.warn('Offline checkpoint save skipped:', error);
     }
@@ -45,12 +43,11 @@
     let index = 0;
     running = true;
     catchUpInProgress = true;
-    const token = {};
     function finish() {
       running = false;
       catchUpInProgress = false;
       lifeAgeMa = targetAge;
-      lifeStarted = wasStarted && targetAge < 4540;
+      lifeStarted = wasStarted && lifeStarted && targetAge < 4540;
       evolutionAccumulator = 0;
       updateLifeUI();
       renderSpeciesCatalog(true);
@@ -60,6 +57,11 @@
     }
     function advance() {
       if (!running) return;
+      // Respect a manual pause made while catch-up is running.
+      if (!lifeStarted && targetAge < 4540) {
+        running = false; catchUpInProgress = false; evolutionAccumulator = 0;
+        updateLifeUI(); persistLifeState(); saveCheckpoint(); return;
+      }
       try {
         lifeAgeMa = startAge + (targetAge - startAge) * ((index + 1) / steps);
         evolutionaryStep({ deferUI: true });
