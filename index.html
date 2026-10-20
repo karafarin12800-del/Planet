@@ -1296,7 +1296,7 @@ html[lang="en"] .scene-coords{direction:ltr}
    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
    let n;
    while ((n = walker.nextNode())) {
-     if (n.parentElement && n.parentElement.closest('#languageToggle,input,textarea,select,script,style,code,pre')) continue;
+     if (n.parentElement && n.parentElement.closest('#languageToggle,input,textarea,select,script,style,code,pre,[data-no-translate],.planet-ai-msg.user')) continue;
      const before = n.nodeValue, after = transform(before, lang);
      if (before !== after) n.nodeValue = after;
    }
