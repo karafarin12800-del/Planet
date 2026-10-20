@@ -202,6 +202,10 @@
       feedingEfficiency: clamp(0.60 + 0.55 * ((signals[0] + signals[2]) / 2), 0.60, 1.15),
       waterNeed: clamp(0.15 + 0.72 * (1 - thermalTolerance), 0.15, 0.87),
       preferredTemperatureC: -5 + 40 * thermalTolerance,
+      preferredPH: 5 + 4 * signals[5],
+      preferredSalinityPsu: 0.5 + 39.5 * signals[2],
+      oxygenPreference: signals[0],
+      lightNeed: metabolism === "photosynthetic" ? 0.8 : 0.1,
       preferredHabitat: metabolism === "photosynthetic" ? "light-rich" : (motility > 0.55 ? "mobile" : "sheltered"),
       trophicStrategy: metabolism === "photosynthetic" ? "light-driven model autotrophy" :
         metabolism === "chemosynthetic" ? "chemical-energy model" : "resource-dependent model heterotrophy",
