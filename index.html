@@ -585,8 +585,11 @@ $('gpCreateLifeModel').addEventListener('click',()=>{
 (()=>{'use strict';
 const canvas=document.getElementById('space'), gl=canvas.getContext('webgl',{alpha:true,antialias:true,preserveDrawingBuffer:false});
 if(!gl){document.getElementById('viewDesc').textContent='مرورگر شما از WebGL پشتیبانی نمی‌کند. لطفاً در Chrome به‌روز باز کنید.';return;}
-const $=id=>document.getElementById(id);let paused=false,systemView=false,cloudsOn=true,atmosOn=true,orbitsOn=true,starsOn=true,orbitSpeed=60,elapsed=(()=>{try{return Number(localStorage.getItem('planet-sim-seconds')||0)||0;}catch(e){return 0;}})(),lastPersist=performance.now(),last=performance.now(),fpsFrames=0,fpsStart=performance.now(),drag=false,lastX=0,lastY=0,yaw=-.42,pitch=.12,zoom=1.0,targetYaw=yaw,targetPitch=pitch,zoomTarget=zoom,toastTimer,lifeFocusMode=false,savedFocus=null;
+const $=id=>document.getElementById(id);let paused=false,systemView=false,cloudsOn=true,atmosOn=true,orbitsOn=true,starsOn=true,orbitSpeed=60,elapsed=(()=>{try{const n=Number(localStorage.getItem('planet-sim-seconds')||0);return Number.isFinite(n)&&n>=0?Math.min(n,1e12):0;}catch(e){return 0;}})(),lastPersist=performance.now(),last=performance.now(),fpsFrames=0,fpsStart=performance.now(),drag=false,lastX=0,lastY=0,yaw=-.42,pitch=.12,zoom=1.0,targetYaw=yaw,targetPitch=pitch,zoomTarget=zoom,toastTimer,lifeFocusMode=false,savedFocus=null,webglContextLost=false;
 function toast(s){$('toast').textContent=s;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2100)}
+canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();webglContextLost=true;paused=true;try{if(typeof persistLifeState==='function')persistLifeState();}catch(e){}toast(isEnglishLifeSafe()?'Graphics were interrupted. State was saved; restoring the scene…':'گرافیک متوقف شد؛ وضعیت ذخیره شد و نمای سیاره بازیابی می‌شود…');});
+canvas.addEventListener('webglcontextrestored',()=>{try{if(typeof persistLifeState==='function')persistLifeState();}catch(e){}window.location.reload();});
+function isEnglishLifeSafe(){return String(document.documentElement.lang||'fa').toLowerCase().startsWith('en');}
 const vert=`attribute vec3 aPos; attribute vec3 aNorm; attribute vec2 aUV; uniform mat4 uMVP; uniform mat4 uModel; varying vec2 vUV; varying vec3 vN; varying vec3 vP; void main(){vec4 wp=uModel*vec4(aPos,1.0);vP=wp.xyz;vN=normalize(mat3(uModel)*aNorm);vUV=aUV;gl_Position=uMVP*vec4(aPos,1.0);}`;
 const frag=`precision mediump float; uniform sampler2D uTex; uniform vec3 uLight; uniform vec3 uEye; uniform float uKind; uniform float uAlpha; uniform float uTime; varying vec2 vUV; varying vec3 vN; varying vec3 vP; void main(){vec4 tex=texture2D(uTex,vUV);vec3 N=normalize(vN);vec3 L=normalize(uLight-vP);vec3 V=normalize(uEye-vP);float ndl=dot(N,L);if(uKind<0.5){float day=smoothstep(-0.18,0.16,ndl);float light=0.10+0.95*max(ndl,0.0);vec3 base=tex.rgb*light;float night=1.0-smoothstep(-0.22,0.06,ndl);vec3 col=base;float spec=pow(max(dot(reflect(-L,N),V),0.0),28.0)*0.16*day;col+=vec3(.47,.72,1.0)*spec;float haze=pow(1.0-max(dot(N,V),0.0),4.0);col=mix(col,col+vec3(.025,.09,.17),.35*haze);gl_FragColor=vec4(col,1.0);}else if(uKind<1.5){float alpha=tex.a*uAlpha;float light=.5+.5*max(ndl,0.0);gl_FragColor=vec4(tex.rgb*light,alpha);}else if(uKind<2.5){float fres=pow(1.0-max(dot(N,V),0.0),2.4);float day=.35+.65*max(ndl,0.0);vec3 c=mix(vec3(.09,.27,.72),vec3(.28,.77,1.0),fres);gl_FragColor=vec4(c, fres*.52*day*uAlpha);}else{gl_FragColor=vec4(tex.rgb,1.0);}}`;
 function shader(type,src){let s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s;}const prog=gl.createProgram();gl.attachShader(prog,shader(gl.VERTEX_SHADER,vert));gl.attachShader(prog,shader(gl.FRAGMENT_SHADER,frag));gl.linkProgram(prog);if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(prog));gl.useProgram(prog);
@@ -634,7 +637,7 @@ function loadOptionalMap(target,urls,onLoaded){
   img.onload=()=>{
    try{
     const hardwareLimit=gl.getParameter(gl.MAX_TEXTURE_SIZE)||2048;
-    const limit=Math.max(256,Math.min(4096,hardwareLimit));
+    const limit=Math.max(256,Math.min(Math.min(4096,hardwareLimit),innerWidth<=900?2048:4096));
     const pow2Floor=v=>Math.pow(2,Math.floor(Math.log2(Math.max(2,v))));
     const tw=pow2Floor(Math.min(img.naturalWidth||img.width,limit));
     const th=pow2Floor(Math.min(img.naturalHeight||img.height,limit));
@@ -676,7 +679,7 @@ const planets=[{name:'عطارد',period:87.97,r:.12,orbit:1.7,tex:planetTex[0],
 
 // Educational life-evolution overlay: visible organisms projected onto the Earth disc.
 const lifeCanvas=document.getElementById('lifeCanvas'), lifeCtx=lifeCanvas.getContext('2d');
-let lifeStarted=false,lifeAgeMa=0,lifeSpeed=8,lifeLast=performance.now(),lifeScrubbing=false,lifeSeekStartAge=0;
+let lifeStarted=false,lifeAgeMa=0,lifeSpeed=8,lifeLast=performance.now(),lifeScrubbing=false,lifeSeekStartAge=0,catchUpInProgress=false,catchUpRequestId=0,lastHudUpdate=0,lastStarDraw=0;
 const GENETIC_CODE={
 TTT:'F',TTC:'F',TTA:'L',TTG:'L',TCT:'S',TCC:'S',TCA:'S',TCG:'S',TAT:'Y',TAC:'Y',TAA:'*',TAG:'*',TGT:'C',TGC:'C',TGA:'*',TGG:'W',
 CTT:'L',CTC:'L',CTA:'L',CTG:'L',CCT:'P',CCC:'P',CCA:'P',CCG:'P',CAT:'H',CAC:'H',CAA:'Q',CAG:'Q',CGT:'R',CGC:'R',CGA:'R',CGG:'R',
@@ -773,7 +776,7 @@ const ecologyWorld={
  shore:makeHabitatEnvironment(2,{temperatureC:18,pH:7.8,salinityPsu:20,oxygenAvailability:.82,lightAvailability:.70,nutrientAvailability:.72}),
  land:makeHabitatEnvironment(3,{temperatureC:20,pH:6.5,salinityPsu:1,oxygenAvailability:.95,lightAvailability:.82,nutrientAvailability:.58})
 };
-function updateEnvironmentalConditions(){
+function updateEnvironmentalConditions(silent){
  const cycle=lifeAgeMa/145,early=lifeAgeMa<=1800?originScenarioSettings[originScenario]:null;
  for(const [index,env] of Object.values(ecologyWorld).entries()){
   const b=env.baselineConditions,phase=cycle+index*1.73,source=index===0&&early?early:b;
@@ -786,7 +789,7 @@ function updateEnvironmentalConditions(){
    nutrientAvailability:clamp(source.nutrientAvailability+Math.sin(phase*.53)*.18,0,1)
   };
  }
- const box=$('originScenarioSummary');if(box){const row=originScenarioSettings[originScenario];box.textContent=(isEnglishLife()?row.en:row.fa)+' '+(isEnglishLife()?'These are illustrative model settings, not measured global paleoclimate values.':'این مقادیر تنظیمات آزمایشی مدل‌اند، نه اندازه‌گیری اقلیم جهانی باستان.');}
+ if(!silent){const box=$('originScenarioSummary');if(box){const row=originScenarioSettings[originScenario];box.textContent=(isEnglishLife()?row.en:row.fa)+' '+(isEnglishLife()?'These are illustrative model settings, not measured global paleoclimate values.':'این مقادیر تنظیمات آزمایشی مدل‌اند، نه اندازه‌گیری اقلیم جهانی باستان.');}}
 }
 function actionQSeed(){return{forage:0,explore:0,rest:0,avoid:0,reproduce:0,cooperate:0};}
 function createAgent(species,parent){
@@ -976,9 +979,10 @@ function animalGeneticEvidence(key){
 function ensureAnimalLineages(){
  // Disabled: modern animal reference entries are not evolutionary outcomes.
 }
-function evolutionaryStep(){
- updateEnvironmentalConditions();
- if(lifeAgeMa<1000){const experiments=activeSpecies().filter(s=>s.artificial);if(!experiments.length)return;regrowResources();for(const s of experiments){if(!activeSpecies().includes(s))continue;simulateSpeciesEcology(s);s.generation++;}updateLifeUI();if($('speciesOverlay').classList.contains('open'))renderSpeciesCatalog();return;}
+function evolutionaryStep(options){
+ const deferUI=!!(options&&options.deferUI);
+ updateEnvironmentalConditions(deferUI);
+ if(lifeAgeMa<1000){const experiments=activeSpecies().filter(s=>s.artificial);if(!experiments.length)return;regrowResources();for(const s of experiments){if(!activeSpecies().includes(s))continue;simulateSpeciesEcology(s);s.generation++;}if(!deferUI){updateLifeUI();if($('speciesOverlay').classList.contains('open'))renderSpeciesCatalog();}return;}
  ensureFirstLineage();ensureDinosaurLineages();ensureAnimalLineages();evolutionGeneration++;regrowResources();
  const living=activeSpecies().slice();
  for(let i=living.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[living[i],living[j]]=[living[j],living[i]];}
@@ -1002,35 +1006,129 @@ function evolutionaryStep(){
    lastSpeciationGeneration=evolutionGeneration;
   }
  }
- updateLifeUI();if($('speciesOverlay').classList.contains('open'))renderSpeciesCatalog();
+ if(!deferUI){updateLifeUI();if($('speciesOverlay').classList.contains('open'))renderSpeciesCatalog();}
 }
 
 function serialiseAgent(a){return{id:a.id,dna:a.dna,x:a.x,y:a.y,energy:a.energy,health:a.health,age:a.age,growth:a.growth,maturity:a.maturity,lifeSpan:a.lifeSpan,cooldown:a.cooldown,q:a.q,memory:(a.memory||[]).slice(-6),action:a.action,reward:a.reward,previousEnergy:a.previousEnergy,previousHealth:a.previousHealth,previousOffspring:a.previousOffspring,offspring:a.offspring,decisions:a.decisions,successfulDecisions:a.successfulDecisions,alive:a.alive,stress:a.stress,fitness:a.fitness,angle:a.angle||0};}
 function persistLifeState(){try{const snapshot={age:lifeAgeMa,started:lifeStarted,speed:lifeSpeed,originScenario:originScenario,generation:evolutionGeneration,serial:speciesSerial,agentSerial:agentSerial,lastSpeciationGeneration:lastSpeciationGeneration,world:ecologyWorld,species:speciesCatalog.map(s=>({id:s.id,nameFa:s.nameFa,nameEn:s.nameEn,dna:s.dna,lineageDNA:s.lineageDNA,animalTaxonKey:s.animalTaxonKey,animalTaxon:s.animalTaxon,referenceGenome:s.referenceGenome,genomeStatus:s.genomeStatus,genomeModelNote:s.genomeModelNote,referenceSequence:s.referenceSequence,genomeProjectionEvidence:s.genomeProjectionEvidence,firstAppearanceMa:s.firstAppearanceMa,habitat:s.habitat,population:s.population,generation:s.generation,fitness:s.fitness,active:s.active,extinctAtMa:s.extinctAtMa,parentId:s.parentId,seed:s.seed,hue:s.hue,artificial:s.artificial,mutations:s.mutations,speciationCount:s.speciationCount,births:s.births,deaths:s.deaths,meanEnergy:s.meanEnergy,meanReward:s.meanReward,decisionCount:s.decisionCount,agents:(s.agents||[]).map(serialiseAgent)}))};localStorage.setItem('planet-life-state',JSON.stringify(snapshot));}catch(e){}}
-function restoreLifeState(){try{const raw=localStorage.getItem('planet-life-state');if(!raw)return;const data=JSON.parse(raw);lifeAgeMa=Math.max(0,Math.min(4540,Number(data.age)||0));lifeStarted=!!data.started;lifeSpeed=Math.max(1,Math.min(30,Number(data.speed)||8));originScenario=Object.prototype.hasOwnProperty.call(originScenarioSettings,data.originScenario)?data.originScenario:'mixed';evolutionGeneration=Math.max(0,Number(data.generation)||0);speciesSerial=Math.max(0,Number(data.serial)||0);agentSerial=Math.max(0,Number(data.agentSerial)||0);lastSpeciationGeneration=Number.isFinite(data.lastSpeciationGeneration)?data.lastSpeciationGeneration:-99;
- if(data.world&&typeof data.world==='object'){for(const type of ['ocean','shore','land']){const saved=data.world[type],current=ecologyWorld[type];if(saved&&Array.isArray(saved.food)&&Array.isArray(saved.hazards)){for(let i=0;i<Math.min(current.food.length,saved.food.length);i++)current.food[i].amount=clamp(Number(saved.food[i].amount)||0,0,current.food[i].max);}}}
+function restoreLifeState(){try{
+ const raw=localStorage.getItem('planet-life-state');if(!raw)return;
+ const data=JSON.parse(raw);
+ lifeAgeMa=Math.max(0,Math.min(4540,Number(data.age)||0));
+ lifeStarted=!!data.started;
+ lifeSpeed=Math.max(1,Math.min(30,Number(data.speed)||8));
+ originScenario=Object.prototype.hasOwnProperty.call(originScenarioSettings,data.originScenario)?data.originScenario:'mixed';
+ evolutionGeneration=Math.max(0,Number(data.generation)||0);
+ speciesSerial=Math.max(0,Number(data.serial)||0);
+ agentSerial=Math.max(0,Number(data.agentSerial)||0);
+ lastSpeciationGeneration=Number.isFinite(data.lastSpeciationGeneration)?data.lastSpeciationGeneration:-99;
+ if(data.world&&typeof data.world==='object'){
+  for(const type of ['ocean','shore','land']){
+   const saved=data.world[type],current=ecologyWorld[type];
+   if(saved&&Array.isArray(saved.food)&&Array.isArray(saved.hazards)){
+    for(let i=0;i<Math.min(current.food.length,saved.food.length);i++)current.food[i].amount=clamp(Number(saved.food[i].amount)||0,0,current.food[i].max);
+   }
+  }
+ }
  speciesCatalog.length=0;
- for(const record of (Array.isArray(data.species)?data.species:[])){
+ let restoreAgentBudget=MAX_LIVING_SPECIES*MAX_AGENTS_PER_SPECIES;
+ let restoredLiveSpecies=0;
+ const records=Array.isArray(data.species)?data.species.slice(-MAX_SPECIES):[];
+ for(const record of records){
   if(!record)continue;
   const presetAnimal=!!record.animalTaxonKey;
   const presetDinosaur=record.parentId==null&&['sauropod','theropod','armoredDino'].includes(record.form)&&/dinosaur|دایناسور/i.test(String(record.nameEn||record.nameFa||''));
   if(presetAnimal||presetDinosaur)continue;
-  const dna=normalizeGenome(record.dna),lineage=normalizeGenome(record.lineageDNA)||dna;if(!dna||!lineage)continue;
-  const ph=phenotypeFromDNA(lineage),s={...record,dna,lineageDNA:lineage,traits:ph,proteins:ph.proteins,agents:[],births:Number(record.births)||0,deaths:Number(record.deaths)||0,meanEnergy:Number(record.meanEnergy)||55,meanReward:Number(record.meanReward)||0,decisionCount:Number(record.decisionCount)||0};
+  const dna=normalizeGenome(record.dna),lineage=normalizeGenome(record.lineageDNA)||dna;
+  if(!dna||!lineage)continue;
+  const ph=phenotypeFromDNA(lineage);
+  const s={...record,dna,lineageDNA:lineage,traits:ph,proteins:ph.proteins,agents:[],births:Number(record.births)||0,deaths:Number(record.deaths)||0,meanEnergy:Number(record.meanEnergy)||55,meanReward:Number(record.meanReward)||0,decisionCount:Number(record.decisionCount)||0};
   speciesCatalog.push(s);
-  if(Array.isArray(record.agents))for(const savedAgent of record.agents.slice(0,MAX_AGENTS_PER_SPECIES)){
-   const agentDNA=normalizeGenome(savedAgent&&savedAgent.dna)||lineage;const agent=createAgent(s,null);
-   Object.assign(agent,savedAgent||{},{dna:agentDNA,traits:phenotypeFromDNA(agentDNA),q:{...actionQSeed(),...(savedAgent&&savedAgent.q||{})},memory:Array.isArray(savedAgent&&savedAgent.memory)?savedAgent.memory.slice(-agent.traits.memoryCapacity):[],x:clamp(Number(savedAgent&&savedAgent.x)||agent.x,.025,.975),y:clamp(Number(savedAgent&&savedAgent.y)||agent.y,.025,.975),energy:clamp(Number(savedAgent&&savedAgent.energy)||agent.energy,0,100),health:clamp(Number(savedAgent&&savedAgent.health)||agent.health,0,100),alive:savedAgent&&savedAgent.alive!==false});
-   agent.id=Number(savedAgent&&savedAgent.id)||agent.id;agentSerial=Math.max(agentSerial,agent.id);s.agents.push(agent);
+  const activeNow=s.active!==false&&s.firstAppearanceMa<=lifeAgeMa&&(!Number.isFinite(s.extinctAtMa)||s.extinctAtMa>lifeAgeMa);
+  if(!activeNow||restoredLiveSpecies>=MAX_LIVING_SPECIES||restoreAgentBudget<=0)continue;
+  restoredLiveSpecies++;
+  if(Array.isArray(record.agents)){
+   for(const savedAgent of record.agents.slice(0,Math.min(MAX_AGENTS_PER_SPECIES,restoreAgentBudget))){
+    if(!savedAgent||savedAgent.alive===false)continue;
+    const agentDNA=normalizeGenome(savedAgent.dna)||lineage;
+    const traits=phenotypeFromDNA(agentDNA);
+    const savedNumber=(key,fallback)=>Number.isFinite(Number(savedAgent[key]))?Number(savedAgent[key]):fallback;
+    const agent={
+     ...savedAgent,id:Number(savedAgent.id)||++agentSerial,dna:agentDNA,traits,
+     x:clamp(savedNumber('x',.5),.025,.975),y:clamp(savedNumber('y',.5),.025,.975),
+     energy:clamp(savedNumber('energy',50),0,100),health:clamp(savedNumber('health',80),0,100),
+     age:Math.max(0,savedNumber('age',0)),growth:clamp(savedNumber('growth',.5),.1,1),
+     maturity:clamp(savedNumber('maturity',0),0,1),lifeSpan:Math.max(1,savedNumber('lifeSpan',60)),
+     cooldown:Math.max(0,savedNumber('cooldown',0)),q:{...actionQSeed(),...(savedAgent.q||{})},
+     memory:Array.isArray(savedAgent.memory)?savedAgent.memory.slice(-traits.memoryCapacity):[],
+     action:ACTIONS.includes(savedAgent.action)?savedAgent.action:'explore',
+     reward:savedNumber('reward',0),previousEnergy:savedNumber('previousEnergy',50),
+     previousHealth:savedNumber('previousHealth',80),previousOffspring:savedNumber('previousOffspring',0),
+     offspring:Math.max(0,savedNumber('offspring',0)),decisions:Math.max(0,savedNumber('decisions',0)),
+     successfulDecisions:Math.max(0,savedNumber('successfulDecisions',0)),alive:true,
+     stress:clamp(savedNumber('stress',0),0,1),fitness:clamp(savedNumber('fitness',.5),0,1),angle:savedNumber('angle',0)
+    };
+    agentSerial=Math.max(agentSerial,agent.id);
+    s.agents.push(agent);restoreAgentBudget--;
+   }
   }
-  if(!s.agents.length&&s.population>0&&(!Number.isFinite(s.extinctAtMa)))for(let i=0;i<10;i++)s.agents.push(createAgent(s,null));
+  // Recreate only a small active sample. Never spawn agents for future or extinct lineages.
+  if(!s.agents.length&&s.population>0&&restoreAgentBudget>=4){
+   for(let i=0;i<4;i++)s.agents.push(createAgent(s,null));
+   restoreAgentBudget-=s.agents.length;
+  }
  }
  if(speciesCatalog.length)speciesSerial=Math.max(speciesSerial,...speciesCatalog.map(s=>s.id));
  $('lifeSpeed').value=String(lifeSpeed);$('lifeSpeedLabel').textContent='×'+lifeSpeed;
  }catch(e){console.warn('Life state could not be restored:',e);}
 }
 
-function catchUpEvolution(targetAge){if(targetAge<1000)return;ensureFirstLineage();ensureDinosaurLineages();ensureAnimalLineages();const initial=Math.max(1000,Math.min(lifeSeekStartAge||1000,targetAge));const span=Math.max(0,targetAge-initial);const steps=Math.min(240,Math.max(1,Math.floor(span/15)));for(let i=0;i<steps;i++){lifeAgeMa=initial+(span*(i+1)/steps);evolutionaryStep();}lifeAgeMa=targetAge;ensureFirstLineage();updateLifeUI();renderSpeciesCatalog();persistLifeState();}
+function cancelCatchUp(){catchUpRequestId++;catchUpInProgress=false;}
+function catchUpEvolution(targetAge){
+ const requestId=++catchUpRequestId;
+ catchUpInProgress=false;
+ const target=clamp(Number(targetAge)||0,0,4540);
+ if(target<1000){updateLifeUI();persistLifeState();return;}
+ const initial=Math.max(1000,Math.min(lifeSeekStartAge||1000,target));
+ const span=Math.max(0,target-initial);
+ const steps=Math.min(240,Math.max(1,Math.floor(span/15)));
+ const wasStarted=lifeStarted;
+ lifeStarted=false;
+ catchUpInProgress=true;
+ let stepIndex=0;
+ // Seed at the start of the simulated interval, not at the slider's final age.
+ lifeAgeMa=initial;
+ ensureFirstLineage();ensureDinosaurLineages();ensureAnimalLineages();
+ function finish(){
+  if(requestId!==catchUpRequestId)return;
+  lifeAgeMa=target;
+  ensureFirstLineage();
+  catchUpInProgress=false;
+  lifeStarted=wasStarted;
+  updateLifeUI();
+  renderSpeciesCatalog(true);
+  persistLifeState();
+ }
+ function advance(){
+  if(requestId!==catchUpRequestId)return;
+  try{
+   // One evolutionary generation per frame prevents a long synchronous main-thread stall.
+   lifeAgeMa=initial+(span*(stepIndex+1)/steps);
+   evolutionaryStep({deferUI:true});
+   stepIndex++;
+   if(stepIndex>=steps){finish();return;}
+   updateLifeUI();
+   requestAnimationFrame(advance);
+  }catch(error){
+   catchUpInProgress=false;
+   lifeStarted=wasStarted;
+   console.error('Timeline catch-up failed:',error);
+   updateLifeUI();
+   toast(isEnglishLife()?'Timeline simulation stopped safely. Please try a smaller jump.':'شبیه‌سازی خط زمانی متوقف شد؛ دوباره با پرش زمانی کوچک‌تر امتحان کن.');
+  }
+ }
+ requestAnimationFrame(advance);
+}
 
 function lifeTimeLabel(age){const lang=isEnglishLife();if(age>=1000)return (age/1000).toFixed(2)+(lang?' billion years after Earth formed':' میلیارد سال پس از شکل‌گیری زمین');return Math.round(age).toLocaleString(lang?'en-US':'fa-IR')+(lang?' million years after Earth formed':' میلیون سال پس از شکل‌گیری زمین');}
 function aaDescription(s){
@@ -1202,14 +1300,9 @@ function drawHabitatScene(time){
  if(time-lastHabitatUiUpdate>220){updateHabitatAgentDetails(s);lastHabitatUiUpdate=time;}
  requestAnimationFrame(drawHabitatScene);
 }
-function drawLife(t){
- const dpr=Math.min(devicePixelRatio||1,1.75),w=Math.floor(innerWidth*dpr),h=Math.floor(innerHeight*dpr);
- if(lifeCanvas.width!==w||lifeCanvas.height!==h){lifeCanvas.width=w;lifeCanvas.height=h;}
- lifeCtx.clearRect(0,0,w,h);
- if(systemView){requestAnimationFrame(drawLife);return;}
- const cx=w*.5,cy=h*.5,R=Math.min(h*.382,w*.32)*zoom,rot=elapsed*Math.PI*2/240;
- // Keep the Earth globe as a geographic/planetary view only. Organisms are shown in the separate habitat and species views, never stamped onto the globe.
- lifeCtx.shadowBlur=0;lifeCtx.globalAlpha=1;requestAnimationFrame(drawLife);
+function drawLife(){
+ // Retained as a safe one-shot cleanup for older code; the old frame loop only cleared a blank canvas.
+ lifeCtx.clearRect(0,0,lifeCanvas.width,lifeCanvas.height);
 }
 function updateLifeUI(){const stage=currentLifeStageIndex(lifeAgeMa),data=lifeStages[stage],lang=isEnglishLife();$('lifeStage').textContent=lang?data.en:data.fa;$('lifeDesc').textContent=lang?data.descEn:data.descFa;$('lifeStageNum').textContent=stage+' / '+(lifeStages.length-1);$('lifeTime').textContent=lifeTimeLabel(lifeAgeMa);$('lifeProgress').style.width=(lifeAgeMa/4540*100)+'%';$('lifeStatus').textContent=lifeAgeMa<740?(lang?'prebiotic':'پیش‌زیستی'):!lifeStarted?(lang?'paused':'متوقف'):lifeAgeMa>=4539?(lang?'present-day stage':'مرحلهٔ نزدیک به امروز'):(lang?'evolving':'در حال تکامل');$('lifeStart').textContent=lifeStarted?(lang?'Ⅱ Pause evolution':'Ⅱ توقف تکامل'):(lang?'▶ Start evolution':'▶ آغاز تکامل');$('speciesCount').textContent=String(speciesCatalog.length);if(!lifeScrubbing)$('lifeTimeline').value=String(Math.round(lifeAgeMa));$('lifeSeekLabel').textContent=Math.round(lifeAgeMa/4540*100)+'%';}
 $('lifeStart').addEventListener('click',()=>{
@@ -1222,16 +1315,16 @@ $('lifeStart').addEventListener('click',()=>{
   }
  }
  });
-$('lifeReset').addEventListener('click',()=>{lifeStarted=false;lifeAgeMa=0;lifeScrubbing=false;evolutionAccumulator=0;evolutionGeneration=0;lastSpeciationGeneration=-99;speciesCatalog.length=0;speciesSerial=0;activeHabitatId=null;$('speciesOverlay').classList.remove('open');$('habitatOverlay').classList.remove('open');habitatOpen=false;renderSpeciesCatalog();updateLifeUI();persistLifeState();});
+$('lifeReset').addEventListener('click',()=>{cancelCatchUp();lifeStarted=false;lifeAgeMa=0;lifeScrubbing=false;evolutionAccumulator=0;evolutionGeneration=0;lastSpeciationGeneration=-99;speciesCatalog.length=0;speciesSerial=0;activeHabitatId=null;$('speciesOverlay').classList.remove('open');$('habitatOverlay').classList.remove('open');habitatOpen=false;renderSpeciesCatalog();updateLifeUI();persistLifeState();});
 $('lifeSpeed').addEventListener('input',e=>{lifeSpeed=+e.target.value;$('lifeSpeedLabel').textContent='×'+lifeSpeed;persistLifeState();});
 const originScenarioSelect=$('originScenario');if(originScenarioSelect){originScenarioSelect.value=originScenario;originScenarioSelect.addEventListener('change',e=>{originScenario=Object.prototype.hasOwnProperty.call(originScenarioSettings,e.target.value)?e.target.value:'mixed';updateEnvironmentalConditions();persistLifeState();toast('سناریوی محیطی تغییر کرد؛ این انتخاب یک فرضیهٔ آزمایشی است.');});}
-const lifeTimeline=$('lifeTimeline');lifeTimeline.addEventListener('pointerdown',()=>{lifeSeekStartAge=lifeAgeMa;lifeScrubbing=true;});lifeTimeline.addEventListener('pointerup',()=>lifeScrubbing=false);lifeTimeline.addEventListener('pointercancel',()=>lifeScrubbing=false);lifeTimeline.addEventListener('input',e=>{if(!lifeScrubbing)lifeSeekStartAge=lifeAgeMa;lifeScrubbing=true;lifeAgeMa=+e.target.value;lifeStarted=lifeAgeMa>0;updateLifeUI();});lifeTimeline.addEventListener('change',()=>{const target=lifeAgeMa;lifeScrubbing=false;if(target>lifeSeekStartAge)catchUpEvolution(target);else{updateLifeUI();renderSpeciesCatalog();}persistLifeState();});
+const lifeTimeline=$('lifeTimeline');lifeTimeline.addEventListener('pointerdown',()=>{cancelCatchUp();lifeSeekStartAge=lifeAgeMa;lifeScrubbing=true;});lifeTimeline.addEventListener('pointerup',()=>lifeScrubbing=false);lifeTimeline.addEventListener('pointercancel',()=>lifeScrubbing=false);lifeTimeline.addEventListener('input',e=>{if(!lifeScrubbing)lifeSeekStartAge=lifeAgeMa;lifeScrubbing=true;lifeAgeMa=+e.target.value;lifeStarted=lifeAgeMa>0;updateLifeUI();});lifeTimeline.addEventListener('change',()=>{const target=lifeAgeMa;lifeScrubbing=false;if(target>lifeSeekStartAge)catchUpEvolution(target);else{cancelCatchUp();updateLifeUI();renderSpeciesCatalog();persistLifeState();}});
 $('lifeCatalogBtn').addEventListener('click',openSpeciesCatalog);$('closeSpecies').addEventListener('click',()=>$('speciesOverlay').classList.remove('open'));$('speciesOverlay').addEventListener('click',e=>{if(e.target===$('speciesOverlay'))$('speciesOverlay').classList.remove('open');});$('spawnTestSpecies').addEventListener('click',createLabSpecimen);
 $('createManualDNA').addEventListener('click',()=>{const dna=$('manualDNA').value.trim().toUpperCase().replace(/\s+/g,'');const normalized=normalizeGenome(dna);if(!normalized){toast(isEnglishLife()?'DNA must contain only A, C, G, T and match the supported genome length.':'DNA باید فقط شامل A/C/G/T و دارای طول ژنوم پشتیبانی‌شده باشد.');return;}if(speciesCatalog.length>=MAX_SPECIES){toast('بایگانی گونه‌ها پر است؛ ابتدا تکامل را بازنشانی کن.');return;}makeSpecies(normalized,{firstAppearanceMa:lifeAgeMa,habitat:currentHabitat(lifeAgeMa),population:250,artificial:true});$('manualDNA').value='';renderSpeciesCatalog();refreshGodTools();updateLifeUI();persistLifeState();toast('موجود آزمایشگاهی از DNA دستی ساخته شد.');});
 $('combineDNA').addEventListener('click',()=>{const a=speciesCatalog.find(s=>s.id===Number($('parentDNA1').value)&&s.active),b=speciesCatalog.find(s=>s.id===Number($('parentDNA2').value)&&s.active);if(!a||!b){toast('برای ترکیب، دو موجود زنده انتخاب کن.');return;}if(speciesCatalog.length>=MAX_SPECIES){toast('بایگانی گونه‌ها پر است؛ ابتدا تکامل را بازنشانی کن.');return;}const childDNA=Array.from({length:GENOME_LENGTH},(_,i)=>Math.random()<.5?a.dna[i]:b.dna[i]).join('');const arr=childDNA.split('');for(let i=0;i<arr.length;i++)if(Math.random()<.012)arr[i]='ACGT'[Math.floor(Math.random()*4)];makeSpecies(arr.join(''),{firstAppearanceMa:lifeAgeMa,habitat:a.habitat===b.habitat?a.habitat:currentHabitat(lifeAgeMa),population:220,generation:Math.max(a.generation,b.generation)+1,parentId:a.id,artificial:true,mutations:Math.max(1,Math.round(GENOME_LENGTH*.012))});renderSpeciesCatalog();refreshGodTools();updateLifeUI();persistLifeState();toast('نسل دیجیتال ترکیبی ساخته شد.');});
 $('extinctSpeciesBtn').addEventListener('click',()=>{const target=speciesCatalog.find(s=>s.id===Number($('extinctSpeciesSelect').value)&&s.active);if(!target){toast('یک موجود زنده انتخاب کن.');return;}target.extinctAtMa=lifeAgeMa;target.active=false;target.population=0;target.agents.forEach(a=>a.alive=false);renderSpeciesCatalog();refreshGodTools();updateLifeUI();persistLifeState();toast('موجود انتخاب‌شده در مدل منقرض شد.');});$('closeHabitat').addEventListener('click',closeHabitat);$('habitatOverlay').addEventListener('click',e=>{if(e.target===$('habitatOverlay'))closeHabitat();});
 restoreLifeState();updateLifeUI();renderSpeciesCatalog();window.addEventListener('pagehide',()=>{try{localStorage.setItem('planet-sim-seconds',String(elapsed));persistLifeState();}catch(e){}});
-function render(t){const now=t||performance.now(),dt=Math.min(.05,(now-last)/1000);last=now;if(!paused){elapsed+=dt*orbitSpeed;if(lifeStarted&&!lifeScrubbing){if(lifeAgeMa<4540)lifeAgeMa=Math.min(4540,lifeAgeMa+dt*lifeSpeed*3);evolutionAccumulator+=dt;while(evolutionAccumulator>=.75){evolutionAccumulator-=.75;evolutionaryStep();}}}updateLifeUI();if(now-lastPersist>=5000){try{localStorage.setItem('planet-sim-seconds',String(elapsed));}catch(e){}persistLifeState();lastPersist=now;}zoom+=(zoomTarget-zoom)*.10;const rot=elapsed*(Math.PI*2/240);const nextW=Math.floor(innerWidth*Math.min(devicePixelRatio||1,1.75)),nextH=Math.floor(innerHeight*Math.min(devicePixelRatio||1,1.75));if(canvas.width!==nextW||canvas.height!==nextH){canvas.width=nextW;canvas.height=nextH;gl.viewport(0,0,canvas.width,canvas.height);}gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+function render(t){if(webglContextLost)return;const now=t||performance.now(),dt=Math.min(.05,(now-last)/1000);last=now;if(!paused){elapsed+=dt*orbitSpeed;if(lifeStarted&&!lifeScrubbing&&!catchUpInProgress){if(lifeAgeMa<4540)lifeAgeMa=Math.min(4540,lifeAgeMa+dt*lifeSpeed*3);evolutionAccumulator+=dt;while(evolutionAccumulator>=.75){evolutionAccumulator-=.75;evolutionaryStep();}}}if(now-lastPersist>=5000){try{localStorage.setItem('planet-sim-seconds',String(elapsed));}catch(e){}persistLifeState();lastPersist=now;}zoom+=(zoomTarget-zoom)*.10;const rot=elapsed*(Math.PI*2/240);const nextW=Math.floor(innerWidth*Math.min(devicePixelRatio||1,1.75)),nextH=Math.floor(innerHeight*Math.min(devicePixelRatio||1,1.75));if(canvas.width!==nextW||canvas.height!==nextH){canvas.width=nextW;canvas.height=nextH;gl.viewport(0,0,canvas.width,canvas.height);}gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
 if(!systemView){let earthModel=mul(rotateY(rot),rotateX(.04));body(mul(earthModel,scale(1.20)),earthTex,0);if(cloudsOn){gl.depthMask(false);body(mul(mul(rotateY(rot*1.07+.4),rotateX(.04)),scale(1.225)),cloudTex,1,.80);gl.depthMask(true);}if(atmosOn){gl.depthMask(false);body(mul(rotateY(rot),scale(1.27)),earthTex,2,.85);gl.depthMask(true);} // Moon, foreground orbit companion
 const moonAngle=elapsed*.09+.9,moonPos=[Math.cos(moonAngle)*1.75,Math.sin(moonAngle*.7)*.22,Math.sin(moonAngle)*1.75];body(mul(mul(translate(...moonPos),rotateY(elapsed*.05)),scale(.095)),planetTex[0],0);
 }else{
@@ -1242,9 +1335,9 @@ planets.forEach((p,i)=>{const angle=p.phase+elapsed*(Math.PI*2/(p.period*240));c
 }
 // Stars via lightweight 2D overlay projected as fixed canvas pixels.
 // The fragment shader draws the scene; small stars are generated once in a separate overlay layer.
-updateReadouts(now,rot);if(now-fpsStart>1000){$('fps').textContent=Math.round(fpsFrames*1000/(now-fpsStart));fpsFrames=0;fpsStart=now;}fpsFrames++;requestAnimationFrame(render);}
+if(now-lastHudUpdate>=100){updateLifeUI();updateReadouts(now,rot);lastHudUpdate=now;}if(now-fpsStart>1000){$('fps').textContent=Math.round(fpsFrames*1000/(now-fpsStart));fpsFrames=0;fpsStart=now;}fpsFrames++;requestAnimationFrame(render);}
 // separate starfield layer for consistent crisp points, below controls.
-const starCanvas=document.createElement('canvas');starCanvas.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0';$('app').insertBefore(starCanvas,canvas);const sctx=starCanvas.getContext('2d');let starList=[];function seedStars(){starList=[];for(let i=0;i<460;i++)starList.push({x:Math.random(),y:Math.random(),r:Math.random()*1.25+.15,a:Math.random()*.6+.15,tw:Math.random()*5});}seedStars();function drawStars(t){const dpr=Math.min(devicePixelRatio||1,1.75),w=Math.floor(innerWidth*dpr),h=Math.floor(innerHeight*dpr);if(starCanvas.width!==w||starCanvas.height!==h){starCanvas.width=w;starCanvas.height=h;}sctx.clearRect(0,0,w,h);if(starsOn){for(const s of starList){const a=s.a*(.75+.25*Math.sin(t*.0006+s.tw));sctx.fillStyle=`rgba(174,213,255,${a})`;sctx.beginPath();sctx.arc(s.x*w,s.y*h,s.r*dpr,0,Math.PI*2);sctx.fill();}}requestAnimationFrame(drawStars);}requestAnimationFrame(drawStars);
+const starCanvas=document.createElement('canvas');starCanvas.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0';$('app').insertBefore(starCanvas,canvas);const sctx=starCanvas.getContext('2d');let starList=[];function seedStars(){starList=[];for(let i=0;i<460;i++)starList.push({x:Math.random(),y:Math.random(),r:Math.random()*1.25+.15,a:Math.random()*.6+.15,tw:Math.random()*5});}seedStars();function drawStars(t){if(t-lastStarDraw<80){requestAnimationFrame(drawStars);return;}lastStarDraw=t;const dpr=Math.min(devicePixelRatio||1,1.75),w=Math.floor(innerWidth*dpr),h=Math.floor(innerHeight*dpr);if(starCanvas.width!==w||starCanvas.height!==h){starCanvas.width=w;starCanvas.height=h;}sctx.clearRect(0,0,w,h);if(starsOn){for(const s of starList){const a=s.a*(.75+.25*Math.sin(t*.0006+s.tw));sctx.fillStyle=`rgba(174,213,255,${a})`;sctx.beginPath();sctx.arc(s.x*w,s.y*h,s.r*dpr,0,Math.PI*2);sctx.fill();}}requestAnimationFrame(drawStars);}requestAnimationFrame(drawStars);
 function updateReadouts(now,rot){const cycle=(elapsed%240),m=Math.floor(cycle/60),s=Math.floor(cycle%60),pad=n=>String(n).padStart(2,'0');$('rotationReadout').textContent=`${pad(m)}:${pad(s)} / 04:00`;$('phaseReadout').textContent=`${((elapsed*2*Math.PI/(365.256*240)*180/Math.PI+142.8)%360).toFixed(1)}°`;$('simReadout').textContent=`T + ${pad(Math.floor(elapsed/3600))}:${pad(Math.floor(elapsed/60)%60)}:${pad(Math.floor(elapsed%60))}`;$('cloudValue').innerHTML=`${Math.round(58+7*Math.sin(elapsed/41)+3*Math.sin(elapsed/17))}<small>%</small>`;$('tempValue').innerHTML=`${(15+.7*Math.sin(elapsed/100)).toFixed(1)}<small>°C</small>`;const population=12480*Math.exp(elapsed/30000);$('microbeCount').textContent=Math.round(population).toLocaleString('en-US');$('microbeRate').textContent=`+${(.4+.5*Math.max(0,Math.sin(elapsed/40))).toFixed(1)}% / cycle`;const hab=Math.round(94+2*Math.sin(elapsed/65));$('habitability').textContent=`${hab} / 100`;const phase=cycle<120?'روز':'شب',days=elapsed/240;$('dayCounter').textContent=days.toLocaleString(isEnglishLife()?'en-US':'fa-IR',{maximumFractionDigits:2});$('yearCounter').textContent=(days/365.256).toLocaleString(isEnglishLife()?'en-US':'fa-IR',{minimumFractionDigits:4,maximumFractionDigits:4});$('runLabel').textContent=paused?(isEnglishLife()?'Paused':'مکث‌شده'):(isEnglishLife()?'Simulation running · '+phase:'شبیه‌سازی فعال · '+phase);$('runDot').style.background=paused?'#f5c56a':'#6ae0b0';$('bottomScale').textContent=(isEnglishLife()?'TIME ×':'زمان ×')+orbitSpeed;}
 function updateLifeZoomLabel(){const b=$('lifeZoomBtn');if(b){const en=isEnglishLife();b.innerHTML=lifeFocusMode?(en?'<span>↩ Return to Earth view</span>':'<span>↩ بازگشت به نمای زمین</span>'):(en?'<span>🔎 Zoom to life</span>':'<span>🔎 زوم روی حیات</span>');}}
 function restoreFocus(){if(savedFocus){yaw=savedFocus.yaw;pitch=savedFocus.pitch;targetYaw=savedFocus.targetYaw===undefined?yaw:savedFocus.targetYaw;targetPitch=savedFocus.targetPitch===undefined?pitch:savedFocus.targetPitch;zoomTarget=savedFocus.zoomTarget===undefined?1:savedFocus.zoomTarget;}else{yaw=-.42;pitch=.12;targetYaw=yaw;targetPitch=pitch;zoomTarget=1;}savedFocus=null;zoom=Math.max(.4,Math.min(2.1,zoomTarget));}
@@ -1257,7 +1350,7 @@ $('earthView').onclick=()=>toggleView(false);$('systemView').onclick=()=>toggleV
 // Reset canvas dimensions on resize. Avoid resizing every frame once dimensions are stable.
 let resized=0;const oldRender=render;const _render=render;window.addEventListener('resize',()=>{const nextW=Math.floor(innerWidth*Math.min(devicePixelRatio||1,1.75)),nextH=Math.floor(innerHeight*Math.min(devicePixelRatio||1,1.75));if(canvas.width!==nextW||canvas.height!==nextH){canvas.width=nextW;canvas.height=nextH;gl.viewport(0,0,canvas.width,canvas.height);}});
 // Preserve canvas dimensions; they are recomputed here at low cost on each frame.
-$('bottomSystem').textContent='SOL / EARTH';requestAnimationFrame(render);requestAnimationFrame(drawLife);
+$('bottomSystem').textContent='SOL / EARTH';requestAnimationFrame(render);
 window.PlanetLifeAPI={
  getSpeciesSnapshot:function(){
   const now=lifeAgeMa;
