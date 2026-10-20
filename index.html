@@ -871,7 +871,7 @@ function decideAction(agent,s,env,neighbors){
  if(Math.random()<exploreChance)best=ACTIONS[Math.floor(Math.random()*ACTIONS.length)];
  return{action:best,food:foodHit,hazard:hazardHit,foodSignal,danger,hunger,healthNeed,perceive,bestScore};
 }
-function actAgent(agent,s,env,neighbors,context){
+function actAgent(agent,s,env,neighbors,context,speciesBaseFitness){
  learnFromOutcome(agent);
  agent.previousEnergy=agent.energy;agent.previousHealth=agent.health;agent.previousOffspring=agent.offspring;
  agent.age++;agent.cooldown=Math.max(0,agent.cooldown-1);
@@ -911,7 +911,7 @@ function actAgent(agent,s,env,neighbors,context){
  if(decision.danger>.15&&decision.hazard&&decision.hazard.distance<decision.hazard.item.radius+.05){agent.health-=decision.hazard.item.intensity*(1-t.protection)*4.5;agent.stress=1;}
  agent.energy=clamp(agent.energy,0,100);agent.health=clamp(agent.health,0,100);
  if(agent.energy<12){agent.health-= (12-agent.energy)*.12;agent.energy=Math.max(0,agent.energy);}
- agent.fitness=clamp(.25*calculateFitness(s,lifeAgeMa)+.42*(agent.energy/100)+.24*(agent.health/100)+.09*agent.traits.learning,0,1);
+ agent.fitness=clamp(.25*(Number.isFinite(speciesBaseFitness)?speciesBaseFitness:calculateFitness(s,lifeAgeMa))+.42*(agent.energy/100)+.24*(agent.health/100)+.09*agent.traits.learning,0,1);
  return{births,dead:agent.health<=0||agent.energy<=0||agent.age>agent.lifeSpan};
 }
 function regrowResources(){for(const env of Object.values(ecologyWorld))for(const p of env.food)p.amount=Math.min(p.max,p.amount+p.regrowth);}
@@ -928,11 +928,12 @@ function simulateSpeciesEcology(s){
  if(!Array.isArray(s.agents))s.agents=[];
  if(!s.agents.length&&s.population>10&&s.firstAppearanceMa<=lifeAgeMa&&(!Number.isFinite(s.extinctAtMa)||s.extinctAtMa>lifeAgeMa))for(let i=0;i<4;i++)s.agents.push(createAgent(s,null));
  const pending=[],context={pending},current=s.agents.slice();
+ const speciesBaseFitness=calculateFitness(s,lifeAgeMa);
  let births=0,deaths=0,energySum=0,rewardSum=0,fitnessSum=0;
  for(const agent of current){
   if(!agent.alive)continue;
   const neighbors=current.filter(n=>n!==agent&&n.alive&&Math.hypot(n.x-agent.x,n.y-agent.y)<.14);
-  const result=actAgent(agent,s,env,neighbors,context);births+=result.births;
+  const result=actAgent(agent,s,env,neighbors,context,speciesBaseFitness);births+=result.births;
   if(result.dead){agent.alive=false;deaths++;}
   energySum+=agent.energy;rewardSum+=agent.reward;fitnessSum+=agent.fitness;
  }
