@@ -90,4 +90,11 @@ const activity = read("app/src/main/java/com/planet/live/MainActivity.java");
 assert.ok(activity.includes("protected void onPause()") && activity.includes("webView.onPause()"), "Android pauses WebView activity work in background");
 assert.ok(activity.includes("protected void onResume()") && activity.includes("webView.onResume()"), "Android resumes WebView activity work when foregrounded");
 
+// Large genomes are scanned incrementally rather than by allocating full-length regex match arrays.
+assert.ok(html.includes("async function parseGenome(text,name,formatHint)"), "full-genome parser is asynchronous");
+assert.ok(html.includes("for(let offset=0;offset<seq.length;offset+=200000)"), "genome statistics are scanned in bounded chunks");
+assert.ok(html.includes("await yieldToBrowser()"), "long sequence scans yield to the WebView event loop");
+assert.ok(html.includes("const g=await parseGenome(text,name,format);"), "file import awaits the incremental genome parser");
+assert.ok(!html.includes("records.map(r=>r.seq).join('')"), "RNA/DNA classification does not concatenate a duplicate full genome");
+
 console.log("PLANET UI regression tests passed: catalog scroll stability, aligned genome buttons, removed life zoom, complete guide, and GPU-safe Earth texture.");
