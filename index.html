@@ -441,7 +441,7 @@
        }catch(seedError){$('gpAnimalStatus').textContent='ساخت بذر خودکار کامل نشد: '+String(seedError.message||seedError);}
        window.__planetAutoBacterialSeed=false;
      }
-   }catch(e){if(window.__planetAutoBacterialSeed){window.__planetAutoBacterialSeed=false;$('gpAnimalStatus').textContent='دریافت خودکار ژنوم باکتری ناموفق بود؛ مدل در صورت ادامه با بذر میکروبی مصنوعی و برچسب‌گذاری‌شده شروع می‌شود.';}setStatus('دریافت خودکار انجام نشد: '+e.message+'\nممکن است اتصال، محدودیت سرویس یا دسترسی مرورگر مانع باشد. فایل FASTA/GenBank دانلودشده را می‌توانی از بخش فایل وارد کنی.');}
+   }catch(e){if(window.__planetAutoBacterialSeed){window.__planetAutoBacterialSeed=false;window.__planetBacterialSeedFetchStarted=false;$('gpAnimalStatus').textContent='دریافت خودکار ژنوم باکتری ناموفق بود؛ مدل در صورت ادامه با بذر میکروبی مصنوعی و برچسب‌گذاری‌شده شروع می‌شود.';}setStatus('دریافت خودکار انجام نشد: '+e.message+'\nممکن است اتصال، محدودیت سرویس یا دسترسی مرورگر مانع باشد. فایل FASTA/GenBank دانلودشده را می‌توانی از بخش فایل وارد کنی.');}
    finally{setBusy(false);}
  });
  $('gpLoadFile').addEventListener('click',async()=>{
