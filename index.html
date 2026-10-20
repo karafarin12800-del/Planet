@@ -1038,7 +1038,32 @@ function evolutionaryStep(options){
 }
 
 function serialiseAgent(a){return{id:a.id,dna:a.dna,x:a.x,y:a.y,energy:a.energy,health:a.health,age:a.age,growth:a.growth,maturity:a.maturity,lifeSpan:a.lifeSpan,cooldown:a.cooldown,q:a.q,memory:(a.memory||[]).slice(-6),action:a.action,reward:a.reward,previousEnergy:a.previousEnergy,previousHealth:a.previousHealth,previousOffspring:a.previousOffspring,offspring:a.offspring,decisions:a.decisions,successfulDecisions:a.successfulDecisions,alive:a.alive,stress:a.stress,fitness:a.fitness,angle:a.angle||0};}
-function persistLifeState(){try{const snapshot={age:lifeAgeMa,started:lifeStarted,speed:lifeSpeed,originScenario:originScenario,generation:evolutionGeneration,serial:speciesSerial,agentSerial:agentSerial,lastSpeciationGeneration:lastSpeciationGeneration,world:ecologyWorld,species:speciesCatalog.map(s=>({id:s.id,nameFa:s.nameFa,nameEn:s.nameEn,dna:s.dna,lineageDNA:s.lineageDNA,animalTaxonKey:s.animalTaxonKey,animalTaxon:s.animalTaxon,referenceGenome:s.referenceGenome,genomeStatus:s.genomeStatus,genomeModelNote:s.genomeModelNote,referenceSequence:s.referenceSequence,genomeProjectionEvidence:s.genomeProjectionEvidence,firstAppearanceMa:s.firstAppearanceMa,habitat:s.habitat,population:s.population,generation:s.generation,fitness:s.fitness,active:s.active,extinctAtMa:s.extinctAtMa,parentId:s.parentId,seed:s.seed,hue:s.hue,artificial:s.artificial,mutations:s.mutations,speciationCount:s.speciationCount,births:s.births,deaths:s.deaths,meanEnergy:s.meanEnergy,meanReward:s.meanReward,decisionCount:s.decisionCount,agents:(s.agents||[]).map(serialiseAgent)}))};localStorage.setItem('planet-life-state',JSON.stringify(snapshot));}catch(e){}}
+function persistLifeState(){
+ try{
+  let agentBudget=MAX_LIVING_SPECIES*MAX_AGENTS_PER_SPECIES;
+  const species=speciesCatalog.slice(-MAX_SPECIES).map(s=>{
+   const aliveAtCurrentAge=s.firstAppearanceMa<=lifeAgeMa&&(!Number.isFinite(s.extinctAtMa)||s.extinctAtMa>lifeAgeMa);
+   const agents=aliveAtCurrentAge&&agentBudget>0
+    ?(s.agents||[]).filter(a=>a&&a.alive!==false).slice(0,Math.min(MAX_AGENTS_PER_SPECIES,agentBudget)).map(serialiseAgent)
+    :[];
+   agentBudget=Math.max(0,agentBudget-agents.length);
+   return{
+    id:s.id,nameFa:s.nameFa,nameEn:s.nameEn,dna:s.dna,lineageDNA:s.lineageDNA,
+    animalTaxonKey:s.animalTaxonKey,animalTaxon:s.animalTaxon,referenceGenome:s.referenceGenome,
+    genomeStatus:s.genomeStatus,genomeModelNote:s.genomeModelNote,referenceSequence:s.referenceSequence,
+    genomeProjectionEvidence:s.genomeProjectionEvidence,firstAppearanceMa:s.firstAppearanceMa,
+    habitat:s.habitat,population:s.population,generation:s.generation,fitness:s.fitness,active:s.active,
+    extinctAtMa:s.extinctAtMa,parentId:s.parentId,seed:s.seed,hue:s.hue,artificial:s.artificial,
+    mutations:s.mutations,speciationCount:s.speciationCount,births:s.births,deaths:s.deaths,
+    meanEnergy:s.meanEnergy,meanReward:s.meanReward,decisionCount:s.decisionCount,agents:agents
+   };
+  });
+  const snapshot={age:lifeAgeMa,started:lifeStarted,speed:lifeSpeed,originScenario:originScenario,
+   generation:evolutionGeneration,serial:speciesSerial,agentSerial:agentSerial,
+   lastSpeciationGeneration:lastSpeciationGeneration,world:ecologyWorld,species:species};
+  localStorage.setItem('planet-life-state',JSON.stringify(snapshot));
+ }catch(e){console.warn('Life state save skipped:',e);}
+}
 function restoreLifeState(){try{
  const raw=localStorage.getItem('planet-life-state');if(!raw)return;
  const data=JSON.parse(raw);
