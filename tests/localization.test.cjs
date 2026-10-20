@@ -22,10 +22,11 @@ for (const pair of pairs) {
   assert.ok(pair[0].length > 0 && pair[1].length > 0, "translation values are non-empty");
 }
 
+const hasPersian = value => [...value].some(c => c.charCodeAt(0) >= 0x600 && c.charCodeAt(0) <= 0x6ff);
 function translate(text, direction) {
   const ordered = pairs.slice().sort((a, b) => (direction === "en" ? b[0].length - a[0].length : b[1].length - a[1].length));
   let out = text;
-  const isWord = c => !!c && /[\\p{L}\\p{N}_]/u.test(c);
+  const isWord = c => !!c && (/[A-Za-z0-9_]/.test(c) || (c.charCodeAt(0) >= 0x600 && c.charCodeAt(0) <= 0x6ff));
   for (const pair of ordered) {
     const from = direction === "en" ? pair[0] : pair[1];
     const to = direction === "en" ? pair[1] : pair[0];
@@ -55,9 +56,8 @@ const required = [
 ];
 for (const [fa, en] of required) {
   assert.ok(pairs.some(pair => pair[0] === fa && pair[1] === en), `missing required translation: ${fa}`);
-  assert.ok(!/[\\u0600-\\u06FF]/.test(translate(fa, "en")), `source was not translated: ${fa}`);
+  assert.ok(!hasPersian(translate(fa, "en")), `source was not translated: ${fa}`);
   assert.equal(translate(en, "fa"), fa, `target did not translate back exactly: ${en}`);
-}
 }
 
 assert.ok(index.includes('src="./planet-localization.js"'), "main app loads the shared dictionary");
@@ -73,7 +73,7 @@ assert.ok(sw.includes('"./planet-localization.js"'), "PWA cache precaches the sh
 assert.ok(sw.includes("planet-pwa-v15-full-language-switch"), "PWA cache version is refreshed");
 
 const dynamic = translate("خطا در موتور محلی: حافظهٔ محلی در دسترس نیست.", "en");
-assert.ok(!/[\\u0600-\\u06FF]/.test(dynamic), "combined dynamic error messages are translated");
+assert.ok(!hasPersian(dynamic), "combined dynamic error messages are translated");
 const digitText = translate("روز مدل ۱۲۳", "en");
 assert.equal(digitText, "model days 123", "Persian digits become English digits without altering accession inputs");
 assert.equal(translate("شبکه", "en"), "شبکه", "short dictionary terms do not corrupt larger Persian words");
