@@ -355,11 +355,27 @@
  async function loadText(text,name,format,source){
    const g=parseGenome(text,name,format);applyGenome(g,source||'ورودی کاربر');
  }
+ async function gpFetchBody(url,options,kind,timeoutMs){
+ const controller=typeof AbortController!=='undefined'?new AbortController():null;
+ let timer=null;
+ const request=(async()=>{
+  const init={...(options||{})};if(controller)init.signal=controller.signal;
+  const response=await fetch(url,init);
+  const body=kind==='arrayBuffer'?await response.arrayBuffer():kind==='json'?await response.json():await response.text();
+  return{ok:response.ok,status:response.status,body:body};
+ })();
+ const timeout=new Promise((resolve,reject)=>{
+  timer=setTimeout(()=>{if(controller)controller.abort();reject(new Error('درخواست اینترنتی پس از '+Math.round((timeoutMs||30000)/1000)+' ثانیه متوقف شد.'));},timeoutMs||30000);
+ });
+ try{return await Promise.race([request,timeout]);}
+ catch(error){if(error&&error.name==='AbortError')throw new Error('مهلت دریافت پاسخ اینترنتی تمام شد.');throw error;}
+ finally{if(timer)clearTimeout(timer);}
+}
  async function fetchAssembly(acc){
    const url='https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/'+encodeURIComponent(acc)+'/download?include_annotation_type=GENOME_FASTA';
-   const res=await fetch(url);
-   if(!res.ok)throw new Error('سرویس NCBI Datasets پاسخ HTTP '+res.status+' داد.');
-   const raw=await res.arrayBuffer(),decoded=await bufferToText(raw,acc+'.zip');
+   const fetched=await gpFetchBody(url,null,'arrayBuffer',90000);
+   if(!fetched.ok)throw new Error('سرویس NCBI Datasets پاسخ HTTP '+fetched.status+' داد.');
+   const raw=fetched.body,decoded=await bufferToText(raw,acc+'.zip');
    return {text:decoded.text,format:decoded.format};
  }
  async function fetchNucleotideNCBI(acc){
@@ -371,9 +387,9 @@
      return /^>/m.test(t)&&!/^<!doctype|^<html|^\\s*\\{/i.test(t)&&/[ACGTUNRYKMSWBDHVX]/i.test(t.replace(/^>[^\\n]*(?:\\n|$)/gm,'').replace(/\\s/g,''));
    };
    const fetchFasta=async(url,label)=>{
-     const response=await fetch(url);
-     const body=await response.text();
-     if(!response.ok)throw new Error(label+' HTTP '+response.status+(body?': '+body.slice(0,180).replace(/\\s+/g,' '):''));
+     const result=await gpFetchBody(url,null,'text',30000);
+     const body=result.body;
+     if(!result.ok)throw new Error(label+' HTTP '+result.status+(body?': '+body.slice(0,180).replace(/\\s+/g,' '):''));
      if(!validFasta(body))throw new Error(label+' پاسخ FASTA معتبر برنگرداند.');
      return body;
    };
@@ -386,9 +402,9 @@
    for(const term of [acc+'[Accession]',baseAcc+'[Accession]']){
      try{
        const searchUrl='https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nuccore&term='+encodeURIComponent(term)+'&retmode=json';
-       const sr=await fetch(searchUrl);
-       if(!sr.ok)throw new Error('NCBI ESearch HTTP '+sr.status);
-       const sj=await sr.json();
+       const searchResult=await gpFetchBody(searchUrl,null,'json',20000);
+       if(!searchResult.ok)throw new Error('NCBI ESearch HTTP '+searchResult.status);
+       const sj=searchResult.body;
        const uid=sj&&sj.esearchresult&&sj.esearchresult.idlist&&sj.esearchresult.idlist[0];
        if(!uid)throw new Error('برای '+term+' رکوردی پیدا نشد.');
        const url='https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id='+encodeURIComponent(uid)+'&rettype=fasta&retmode=text';
@@ -400,8 +416,8 @@
  }
  async function fetchENA(acc){
    const url='https://www.ebi.ac.uk/ena/browser/api/fasta/'+encodeURIComponent(acc)+'?download=true';
-   const res=await fetch(url);if(!res.ok)throw new Error('سرویس ENA پاسخ HTTP '+res.status+' داد.');
-   const txt=await res.text();
+   const result=await gpFetchBody(url,null,'text',30000);if(!result.ok)throw new Error('سرویس ENA پاسخ HTTP '+result.status+' داد.');
+   const txt=result.body;
    if(!txt.trim().startsWith('>'))throw new Error('پاسخ ENA به شکل FASTA نیست.');
    return {text:txt,format:'FASTA · ENA Browser API'};
  }
@@ -951,7 +967,6 @@ function calculateFitness(s,age){
 }
 function activeSpecies(){return speciesCatalog.filter(s=>s.firstAppearanceMa<=lifeAgeMa&&(!Number.isFinite(s.extinctAtMa)||s.extinctAtMa>lifeAgeMa));}
 function ensureFirstLineage(){
- if(window.__planetBacterialSeedFetchStarted&&window.__planetAutoBacterialSeed)return;
  const natural=activeSpecies().find(s=>!s.artificial&&s.parentId===null);
  if(natural||lifeAgeMa<1000||speciesCatalog.length>=MAX_SPECIES)return;
  let cached=null;try{cached=JSON.parse(localStorage.getItem('planet-bacterial-seed-cache')||'null');}catch(e){}
