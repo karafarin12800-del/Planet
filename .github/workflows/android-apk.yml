@@ -158,6 +158,11 @@ jobs:
           node --check --input-type=module < services/image-generation-worker/index.js
           node tests/image-generation-contract.test.cjs
 
+      - name: Validate shared localization engine and translations
+        run: |
+          node --check planet-localization.js
+          node tests/localization.test.cjs
+
       - name: Validate all inline JavaScript in app HTML
         shell: bash
         run: |
