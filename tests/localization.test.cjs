@@ -10,6 +10,9 @@ const evidence = read("genome-evidence.html");
 const privacy = read("privacy.html");
 const workflow = read(".github/workflows/android-apk.yml");
 const sw = read("sw.js");
+const activity = read("app/src/main/java/com/planet/live/MainActivity.java");
+const aiWorker = read("ai-worker/worker.js");
+const imageWorker = read("cloudflare-worker/index.js");
 
 const match = dictionarySource.match(/const pairs=(\[[\s\S]*?\]);const enFrom/);
 assert.ok(match, "shared translation dictionary is present and parseable");
@@ -71,6 +74,11 @@ assert.ok(privacy.includes('src="./planet-localization.js"'), "privacy page load
 assert.ok(workflow.includes("cp index.html planet-localization.js"), "Android package includes the shared dictionary");
 assert.ok(sw.includes('"./planet-localization.js"'), "PWA cache precaches the shared dictionary");
 assert.ok(sw.includes("planet-pwa-v15-full-language-switch"), "PWA cache version is refreshed");
+assert.ok(activity.includes('document.documentElement.lang || \'fa\''), "native Android toast follows the selected UI language");
+assert.ok(activity.includes('"File picker is unavailable"') && activity.includes('"فایل‌گزین در دسترس نیست"'), "native file-picker error has both languages");
+assert.ok(aiWorker.includes("سرور هنوز Secret کلید OpenAI را تنظیم نکرده است."), "online AI error messages remain sourced from the worker");
+assert.ok(imageWorker.includes("پاسخی دریافت نشد؛ لطفاً دوباره تلاش کن."), "image-worker fallback response is covered by the shared dictionary");
+assert.ok(dictionarySource.includes(".planet-ai-msg.user"), "user-authored assistant messages are not auto-translated");
 
 const dynamic = translate("خطا در موتور محلی: حافظهٔ محلی در دسترس نیست.", "en");
 assert.ok(!hasPersian(dynamic), "combined dynamic error messages are translated");
