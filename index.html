@@ -1148,11 +1148,14 @@ function speciesIllustration(s){
 }
 function renderSpeciesArtworks(container){
  if(!container)return;
- const dpr=Math.min(window.devicePixelRatio||1,2);
+ const dpr=Math.min(window.devicePixelRatio||1,2),viewport=container.getBoundingClientRect();
  container.querySelectorAll('canvas[data-species-art]').forEach(canvas=>{
   const id=Number(canvas.getAttribute('data-species-art')),s=speciesCatalog.find(item=>item.id===id);
   if(!s)return;
-  const rect=canvas.getBoundingClientRect(),cssW=Math.max(48,Math.round(rect.width||64)),cssH=Math.max(48,Math.round(rect.height||64));
+  const rect=canvas.getBoundingClientRect();
+  // Draw only the rows currently on screen (plus a small prefetch margin); the archive may contain 240 species.
+  if(rect.bottom<viewport.top-120||rect.top>viewport.bottom+120)return;
+  const cssW=Math.max(48,Math.round(rect.width||64)),cssH=Math.max(48,Math.round(rect.height||64));
   const w=Math.max(1,Math.round(cssW*dpr)),h=Math.max(1,Math.round(cssH*dpr));
   if(canvas.width!==w)canvas.width=w;if(canvas.height!==h)canvas.height=h;
   const c=canvas.getContext('2d');if(!c)return;
@@ -1178,6 +1181,8 @@ let speciesListUserScrollingUntil=0,speciesCatalogLastRenderAt=0;
 function renderSpeciesCatalog(force){
  const box=$('speciesList'),count=$('speciesCount');if(count)count.textContent=String(speciesCatalog.length);const extinctCount=speciesCatalog.filter(x=>Number.isFinite(x.extinctAtMa)&&x.extinctAtMa<=lifeAgeMa).length;const extinctBadge=$('extinctSpeciesCount');if(extinctBadge)extinctBadge.textContent=String(extinctCount);if(!box)return;
  const now=performance.now();
+ // The hidden archive should not create hundreds of DOM nodes and canvas contexts during startup.
+ if(!force&&!$('speciesOverlay').classList.contains('open'))return;
  // Simulation ticks can happen several times per second. Do not replace list DOM while the user scrolls.
  if(!force&&(now<speciesListUserScrollingUntil||(speciesCatalogLastRenderAt&&now-speciesCatalogLastRenderAt<2000)))return;
  const previousScrollTop=box.scrollTop;
@@ -1199,7 +1204,7 @@ function renderSpeciesCatalog(force){
  renderSpeciesArtworks(box);box.querySelectorAll('[data-species-id]').forEach(btn=>btn.addEventListener('click',()=>openHabitat(Number(btn.getAttribute('data-species-id')))));
 }
 function refreshGodTools(){const alive=speciesCatalog.filter(s=>s.active&&!(Number.isFinite(s.extinctAtMa)&&s.extinctAtMa<=lifeAgeMa));for(const id of ['parentDNA1','parentDNA2']){const el=$(id);if(!el)continue;const prev=el.value;el.innerHTML=alive.map(s=>'<option value="'+s.id+'">'+speciesName(s)+' · '+s.form+'</option>').join('');if(alive.some(s=>String(s.id)===prev))el.value=prev;}const ext=$('extinctSpeciesSelect');if(ext){const candidates=speciesCatalog.filter(s=>s.active&&!(Number.isFinite(s.extinctAtMa)&&s.extinctAtMa<=lifeAgeMa));ext.innerHTML=candidates.map(s=>'<option value="'+s.id+'">'+speciesName(s)+' · '+s.form+'</option>').join('');}const n=$('extinctSpeciesCount');if(n)n.textContent=String(speciesCatalog.filter(x=>Number.isFinite(x.extinctAtMa)&&x.extinctAtMa<=lifeAgeMa).length);}
-function openSpeciesCatalog(){const list=$('speciesList');if(list&&!list.dataset.scrollStableBound){list.addEventListener('scroll',()=>{speciesListUserScrollingUntil=performance.now()+1200;},{passive:true});list.dataset.scrollStableBound='1';}$('speciesOverlay').classList.add('open');renderSpeciesCatalog(true);refreshGodTools();}
+function openSpeciesCatalog(){const list=$('speciesList');if(list&&!list.dataset.scrollStableBound){list.addEventListener('scroll',()=>{speciesListUserScrollingUntil=performance.now()+1200;if(list.dataset.artRenderScheduled)return;list.dataset.artRenderScheduled='1';setTimeout(()=>{list.dataset.artRenderScheduled='';if($('speciesOverlay').classList.contains('open'))renderSpeciesArtworks(list);},180);},{passive:true});list.dataset.scrollStableBound='1';}$('speciesOverlay').classList.add('open');renderSpeciesCatalog(true);refreshGodTools();}
 function createLabSpecimen(){if(speciesCatalog.length>=MAX_SPECIES){if(isEnglishLife())toast('The species archive is full for this run. Reset evolution to start a new archive.');else toast('بایگانی گونه‌ها در این اجرا پر شده است؛ برای شروع دوباره تکامل را بازنشانی کن.');return;}makeSpecies(randomGenome(),{firstAppearanceMa:lifeAgeMa,habitat:currentHabitat(lifeAgeMa),population:100+Math.floor(Math.random()*500),artificial:true});renderSpeciesCatalog();updateLifeUI();persistLifeState();if(isEnglishLife())toast('Created an experimental genome; this is not natural abiogenesis.');else toast('ژنوم آزمایشی ساخته شد؛ این پیدایش طبیعی حیات نیست.');}
 const habitatCanvas=$('habitatCanvas'),habitatCtx=habitatCanvas.getContext('2d');
 let selectedAgentId=null,lastHabitatUiUpdate=0;
