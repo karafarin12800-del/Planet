@@ -1305,8 +1305,8 @@ html[lang="en"] .scene-coords{direction:ltr}
    if (root.querySelectorAll) {
      const attrs = ['aria-label','title','placeholder','alt','value'];
      const targets = [];
-     if (root.nodeType === Node.ELEMENT_NODE && root.matches('[aria-label],[title],[placeholder],[alt],button[value],input[value]')) targets.push(root);
-     root.querySelectorAll('[aria-label],[title],[placeholder],[alt],button[value],input[value]').forEach(el => targets.push(el));
+     if (root.nodeType === Node.ELEMENT_NODE && root.matches('[aria-label],[title],[placeholder],[alt],button[value],input[type="button"][value],input[type="submit"][value]')) targets.push(root);
+     root.querySelectorAll('[aria-label],[title],[placeholder],[alt],button[value],input[type="button"][value],input[type="submit"][value]').forEach(el => targets.push(el));
      targets.forEach(el => attrs.forEach(attr => {
        const val = el.getAttribute(attr);
        if (val) { const next = transform(val, lang); if (next !== val) el.setAttribute(attr, next); }
@@ -1334,6 +1334,7 @@ html[lang="en"] .scene-coords{direction:ltr}
    button.addEventListener('click', () => setLanguage(lang === 'fa' ? 'en' : 'fa'));
    try { lang = localStorage.getItem('planet-language') === 'en' ? 'en' : 'fa'; } catch(e) { lang = 'fa'; }
    setLanguage(lang);
+   window.addEventListener('storage', event => { if (event.key === 'planet-language' && event.newValue) setLanguage(event.newValue); });
    const observer = new MutationObserver(records => {
      for (const record of records) {
        if (record.type === 'characterData') {
