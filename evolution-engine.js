@@ -28,9 +28,8 @@
     "replication_and_growth", "thermal_tolerance", "learning_and_memory", "social_cooperation"
   ];
   const ALLOWED_FORMS = new Set([
-    "microbe","bacterium","aquatic","fish","amphibian","reptile","plant","tree","fungus",
-    "dinosaur","sauropod","theropod","armoredDino","mammal","dog","cat","horse","elephant",
-    "bird","insect","humanoid"
+    "microbe","aquatic","digital-multicellular","digital-filament",
+    "digital-photosynthetic-colony","digital-motile-form"
   ]);
 
   function clamp(value, min, max) {
@@ -207,6 +206,8 @@
       trophicStrategy: metabolism === "photosynthetic" ? "light-driven model autotrophy" :
         metabolism === "chemosynthetic" ? "chemical-energy model" : "resource-dependent model heterotrophy",
       size: (0.12 + 0.95 * signals[3]) * stageSize(age),
+      cellSizeMicrometers: Number((0.5 + 4.5 * signals[3]).toFixed(2)),
+      estimatedBodyLengthMm: age < 3900 ? null : Number((0.01 + 2.5 * ((0.12 + 0.95 * signals[3]) * stageSize(age))).toFixed(3)),
       photosynthetic: metabolism === "photosynthetic",
       swims: motility > 0.48,
       model: {
@@ -214,31 +215,21 @@
         sourceLengthBp: GENOME_LENGTH,
         verifiedBiologicalPhenotype: false,
         confidence: "low; illustrative digital mapping only",
-        limitation: "These 168 bases are a toy genome. The module labels are not verified genes or validated genotype-to-phenotype rules."
+        limitation: "These 168 bases are a toy genome, not a real bacterial genome. The module labels are not verified genes or validated genotype-to-phenotype rules. Cell and body sizes are uncalibrated model estimates."
       }
     };
   }
   function inferForm(phenotype, ageMa, habitat) {
     const p = phenotype || {};
-    const a = p.appearance || {};
     const age = clamp(ageMa, 0, 4540);
     const home = habitat || "ocean";
-    if (age < 1000) return "microbe";
-    if (age < 3900) return home === "ocean" && p.motility > 0.54 ? "aquatic" : "microbe";
-    if (age < 4070) return home === "land" ? "fungus" : (p.motility > 0.54 ? "fish" : "aquatic");
-    if (age < 4120) return home === "land" ? (p.protection > 0.56 && a.bodyHeight > 0.9 ? "tree" : "plant") : "fish";
-    if (age < 4170) return home === "land" ? "tree" : "fish";
-    if (age < 4220) return home === "ocean" ? "fish" : "amphibian";
-    if (age < 4305) return home === "ocean" ? "fish" : (p.motility > 0.48 ? "reptile" : "amphibian");
-    if (age < 4473) {
-      if (home !== "land") return "fish";
-      if (a.neckLength > 1.00 && a.bodyLength > 1.05) return "sauropod";
-      if (a.armorCoverage > 0.52) return "armoredDino";
-      return "theropod";
-    }
-    if (age < 4535) return home === "ocean" ? "fish" : (a.wingSpan > 0.92 ? "bird" : "mammal");
-    if (age < 4539.5) return home === "ocean" ? "fish" : (p.cognition > 0.63 && p.motility > 0.68 ? "humanoid" : "mammal");
-    return home === "ocean" ? "fish" : (p.cognition > 0.64 && p.motility > 0.68 ? "humanoid" : "mammal");
+    // Time is a model coordinate, not a lookup table for real taxa.
+    // Body-plan labels are generic; no horse/dog/dinosaur/human is inferred.
+    if (age < 3900) return "microbe";
+    if (home === "ocean") return p.motility > 0.54 ? "aquatic" : "microbe";
+    if (p.photosynthetic) return "digital-photosynthetic-colony";
+    if (home === "shore") return p.motility > 0.52 ? "digital-motile-form" : "digital-filament";
+    return p.motility > 0.55 && p.protection > 0.50 ? "digital-multicellular" : "digital-filament";
   }
   function mutateSyntheticGenome(dna, rate, random) {
     const seq = normalizeSyntheticGenome(dna);
