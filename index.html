@@ -253,7 +253,8 @@
    if(b.length>=2&&b[0]===31&&b[1]===139){return {text:decodeUtf8(await decompress(buffer,'gzip')),format:'FASTA/GenBank · gzip'};}
    return {text:decodeUtf8(buffer),format:(name||'').toLowerCase().endsWith('.gbk')?'GenBank':'متن/FASTA'};
  }
- function parseGenome(text,name,formatHint){
+ function yieldToBrowser(){return new Promise(resolve=>setTimeout(resolve,0));}
+ async function parseGenome(text,name,formatHint){
    const source=String(text||'').replace(/^\uFEFF/,'');
    let records=[],format='FASTA',cds=0;
    if(/^\s*LOCUS\s+\S+/mi.test(source)&&/^\s*ORIGIN\b/mi.test(source)){
@@ -284,21 +285,31 @@
      format='FASTA / raw sequence';
    }
    if(!records.length)throw new Error('هیچ توالی‌ای پیدا نشد. قالب FASTA یا GenBank را بررسی کن.');
-   let total=0,gc=0,n=0,amb=0,invalid=0;
-   const sizes=[];
+   let total=0,gc=0,n=0,amb=0,invalid=0,hasU=false,hasT=false;
+   const sizes=[],validBases='ACGTRYSWKMBDHVNU',ambiguousBases='RYSWKMBDHVN';
+   // Scan sequence data without allocating enormous regex match arrays; yield regularly so Android WebView can paint and respond.
    for(const r of records){
-     const bad=r.seq.match(/[^ACGTRYSWKMBDHVNU]/gi);if(bad)invalid+=bad.length;
-     if(invalid)continue;
-     const s=r.seq;total+=s.length;sizes.push(s.length);
-     gc+=(s.match(/[GC]/gi)||[]).length;
-     n+=(s.match(/N/gi)||[]).length;
-     amb+=(s.match(/[RYSWKMBDHVN]/gi)||[]).length;
+     const seq=r.seq;total+=seq.length;sizes.push(seq.length);
+     for(let offset=0;offset<seq.length;offset+=200000){
+       const end=Math.min(seq.length,offset+200000);
+       for(let i=offset;i<end;i++){
+         const code=seq.charCodeAt(i);
+         if(code===71||code===67)gc++;
+         if(code===78){n++;amb++;}
+         else if(code===85)hasU=true;
+         else if(code===84)hasT=true;
+         const base=String.fromCharCode(code);
+         if(validBases.indexOf(base)<0)invalid++;
+         else if(ambiguousBases.indexOf(base)>=0&&base!=='N')amb++;
+       }
+       if(end<seq.length)await yieldToBrowser();
+     }
    }
    if(invalid)throw new Error(fmt(invalid)+' نماد نامعتبر در توالی پیدا شد؛ فقط حروف استاندارد IUPAC ژنوم پذیرفته می‌شوند.');
    if(total<1)throw new Error('توالی خالی است.');
    sizes.sort((a,b)=>b-a);let sum=0,n50=0;
    for(const size of sizes){sum+=size;if(sum>=total/2){n50=size;break;}}
-   return {name:name||records[0].description||records[0].id,format:formatHint||format,records,total,gc,gcPct:100*gc/total,n,amb,n50,cds:format==='GenBank'?cds:null,type:/U/i.test(records.map(r=>r.seq).join(''))&&!/[T]/i.test(records.map(r=>r.seq).join(''))?'RNA':'DNA',loadedAt:new Date().toISOString()};
+   return {name:name||records[0].description||records[0].id,format:formatHint||format,records,total,gc,gcPct:100*gc/total,n,amb,n50,cds:format==='GenBank'?cds:null,type:hasU&&!hasT?'RNA':'DNA',loadedAt:new Date().toISOString()};
  }
  function openAnimalGenomeDB(){
    return new Promise((resolve,reject)=>{
@@ -353,7 +364,7 @@
    setStatus('ژنوم با موفقیت خوانده و بررسی اولیه شد. '+fmt(g.total)+' باز در '+fmt(g.records.length)+' رکورد.');
  }
  async function loadText(text,name,format,source){
-   const g=parseGenome(text,name,format);applyGenome(g,source||'ورودی کاربر');
+   const g=await parseGenome(text,name,format);applyGenome(g,source||'ورودی کاربر');
  }
  async function gpFetchBody(url,options,kind,timeoutMs){
  const controller=typeof AbortController!=='undefined'?new AbortController():null;
