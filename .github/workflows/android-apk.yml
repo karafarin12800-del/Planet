@@ -87,11 +87,29 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --location --retry 3 --retry-delay 2 \
-            "https://cdn.solarsystemscope.com/textures/download/8k_earth_daymap.jpg" \
-            --output /tmp/planet-earth-daymap-8k.jpg
           python3 -m venv /tmp/planet-texture-venv
           /tmp/planet-texture-venv/bin/python -m pip install --quiet --disable-pip-version-check Pillow
+          SOURCE="/tmp/planet-earth-daymap-8k.jpg"
+          # Some CDN responses can be HTML with HTTP 200. Validate the actual image before using it.
+          curl --fail --location --retry 2 --retry-all-errors --retry-delay 2 \
+            "https://cdn.solarsystemscope.com/textures/download/8k_earth_daymap.jpg" \
+            --output "$SOURCE" || true
+          if ! /tmp/planet-texture-venv/bin/python - "$SOURCE" <<'PY'
+          import sys
+          from PIL import Image
+          try:
+              with Image.open(sys.argv[1]) as image:
+                  ok = image.format == "JPEG" and image.size == (8192, 4096)
+          except Exception:
+              ok = False
+          raise SystemExit(0 if ok else 1)
+          PY
+          then
+            echo "Primary texture URL did not return a valid 8K JPEG; using the Wikimedia Commons mirror."
+            curl --fail --location --retry 3 --retry-all-errors --retry-delay 2 \
+              "https://upload.wikimedia.org/wikipedia/commons/0/04/Solarsystemscope_texture_8k_earth_daymap.jpg" \
+              --output "$SOURCE"
+          fi
           /tmp/planet-texture-venv/bin/python - <<'PY'
           from pathlib import Path
           from PIL import Image
@@ -99,8 +117,8 @@ jobs:
           source = Path("/tmp/planet-earth-daymap-8k.jpg")
           target = Path("app/src/main/assets/earth-daymap-4k.jpg")
           with Image.open(source) as image:
-              if image.size != (8192, 4096):
-                  raise SystemExit(f"Unexpected source texture dimensions: {image.size}")
+              if image.format != "JPEG" or image.size != (8192, 4096):
+                  raise SystemExit(f"Unexpected source texture: format={image.format}, size={image.size}")
               image.convert("RGB").resize((4096, 2048), Image.Resampling.LANCZOS).save(
                   target, format="JPEG", quality=91, optimize=True, progressive=True
               )
