@@ -86,8 +86,7 @@ public final class MainActivity extends Activity {
                 } catch (ActivityNotFoundException ex) {
                     MainActivity.this.fileChooserCallback = null;
                     filePathCallback.onReceiveValue(null);
-                    Toast.makeText(MainActivity.this,
-                            "فایل‌گزین در دسترس نیست", Toast.LENGTH_LONG).show();
+                    showFileChooserUnavailableToast();
                 }
                 return true;
             }
@@ -95,6 +94,18 @@ public final class MainActivity extends Activity {
 
         setContentView(webView);
         webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
+    }
+
+    private void showFileChooserUnavailableToast() {
+        if (webView == null) {
+            Toast.makeText(this, "فایل‌گزین در دسترس نیست", Toast.LENGTH_LONG).show();
+            return;
+        }
+        webView.evaluateJavascript("(document.documentElement.lang || 'fa')", value -> {
+            boolean english = "\"en\"".equals(value) || "en".equals(value);
+            String message = english ? "File picker is unavailable" : "فایل‌گزین در دسترس نیست";
+            Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
+        });
     }
 
     @Override

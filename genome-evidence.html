@@ -17,6 +17,7 @@ button,input,textarea{font:inherit}button{border:1px solid #3b657c;border-radius
 <main>
 <header class="head">
 <div><h1>🧬 گزارش مستند ژنوم | Planet</h1><p>تحلیل تمام توالی ورودی، همراه با منشأ داده، اثرانگشت و محدودیت‌های علمی</p></div>
+<button id="planetLanguageToggle" type="button" aria-label="Switch language to English">EN</button>
 <button id="close" class="closebtn" type="button">بستن</button>
 </header>
 <section class="panel">
@@ -320,5 +321,7 @@ window.addEventListener('keydown',function(e){if(e.key==='Escape'&&window.parent
 window.PlanetGenomeEvidenceCore={parseGenBank:parseGenBank,parseFasta:parseFasta,analyzeRecords:analyzeRecords,extractIntervals:extractIntervals,mergeCoverage:mergeCoverage};
 })();
 </script>
+<script src="./planet-localization.js"></script>
+<script>window.PlanetLanguage.initStandalone();</script>
 </body>
 </html>

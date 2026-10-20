@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'planet-localization.js'
+      - 'planet-localization.js'
       - 'genome-evidence.html'
       - 'evolution-engine.js'
       - 'procedural-organism-3d.js'
@@ -77,7 +79,7 @@ jobs:
       - name: Bundle the current web simulation into the Android app
         run: |
           mkdir -p app/src/main/assets
-          cp index.html evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
+          cp index.html planet-localization.js evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
           cp genome-evidence.html app/src/main/assets/
 
       - name: Bundle high-resolution Earth day map for mobile
@@ -155,6 +157,11 @@ jobs:
           node --check planet-image-generation.js
           node --check --input-type=module < services/image-generation-worker/index.js
           node tests/image-generation-contract.test.cjs
+
+      - name: Validate shared localization engine and translations
+        run: |
+          node --check planet-localization.js
+          node tests/localization.test.cjs
 
       - name: Validate all inline JavaScript in app HTML
         shell: bash
