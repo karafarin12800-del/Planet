@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "PLANET — آزمایشگاه جهان‌های زنده",
-  "short_name": "PLANET",
-  "description": "شبیه‌ساز سیاره و منظومه شمسی با زیست‌بوم دیجیتال، تصمیم‌گیری و تکامل آموزشی | Planet and digital-life evolution lab",
+  "name": "Planet Genome",
+  "short_name": "Planet Genome",
+  "description": "Planet Genome — آزمایشگاه ژنوم، شبیه‌سازی حیات و تکامل موجودات بر پایه داده‌های ژنتیکی و محیطی",
   "lang": "fa",
   "dir": "rtl",
   "start_url": "./",
