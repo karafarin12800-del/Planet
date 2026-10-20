@@ -75,6 +75,14 @@ assert.ok(restoreStart >= 0 && restoreEnd > restoreStart, "bounded state restore
 const restoreCode = html.slice(restoreStart, restoreEnd);
 assert.ok(restoreCode.includes("slice(-MAX_SPECIES)"), "corrupt/legacy archives are capped before restore");
 assert.ok(restoreCode.includes("s.firstAppearanceMa<=lifeAgeMa"), "future lineages do not spawn agents during restore");
+const persistStart = html.indexOf("function persistLifeState()");
+const persistEnd = html.indexOf("function restoreLifeState()", persistStart);
+assert.ok(persistStart >= 0 && persistEnd > persistStart, "bounded persistence function exists");
+const persistCode = html.slice(persistStart, persistEnd);
+assert.ok(persistCode.includes("let agentBudget=MAX_LIVING_SPECIES*MAX_AGENTS_PER_SPECIES"), "saved agents have a hard global upper bound");
+assert.ok(persistCode.includes("aliveAtCurrentAge"), "future/extinct lineages do not serialize dormant agent populations");
+assert.ok(persistCode.includes(".filter(a=>a&&a.alive!==false)"), "only living agent state is serialized");
+assert.ok(persistCode.includes("Life state save skipped"), "storage failures are diagnosed rather than silently swallowed");
 assert.ok(restoreCode.includes("restoreAgentBudget"), "restoration has a global agent budget");
 assert.ok(!restoreCode.includes("const agent=createAgent(s,null)"), "saved agents are restored without constructing throwaway agents");
 assert.ok(html.includes("now-lastHudUpdate>=100"), "expensive HUD DOM updates are throttled");
