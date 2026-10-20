@@ -1014,7 +1014,7 @@ function evolutionaryStep(options){
  const deferUI=!!(options&&options.deferUI);
  updateEnvironmentalConditions(deferUI);
  if(lifeAgeMa<1000){const experiments=activeSpecies().filter(s=>s.artificial);if(!experiments.length)return;regrowResources();for(const s of experiments){if(!activeSpecies().includes(s))continue;simulateSpeciesEcology(s);s.generation++;}if(!deferUI){updateLifeUI();if($('speciesOverlay').classList.contains('open'))renderSpeciesCatalog();}return;}
- ensureFirstLineage();ensureDinosaurLineages();ensureAnimalLineages();evolutionGeneration++;regrowResources();
+ ensureFirstLineage();evolutionGeneration++;regrowResources();
  const living=activeSpecies().slice();
  for(let i=living.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[living[i],living[j]]=[living[j],living[i]];}
  for(const s of living){
@@ -1154,7 +1154,7 @@ function catchUpEvolution(targetAge){
  let stepIndex=0;
  // Seed at the start of the simulated interval, not at the slider's final age.
  lifeAgeMa=initial;
- ensureFirstLineage();ensureDinosaurLineages();ensureAnimalLineages();
+ ensureFirstLineage();
  function finish(){
   if(requestId!==catchUpRequestId)return;
   lifeAgeMa=target;
