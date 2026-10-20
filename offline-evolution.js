@@ -82,8 +82,7 @@
     requestAnimationFrame(advance);
   }
 
-  // Checkpoints are written while active and immediately when the app is hidden.
-  saveCheckpoint();
+  // Preserve the previous checkpoint until resume() has measured the elapsed interval.
   window.setInterval(saveCheckpoint, 5000);
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden') {
