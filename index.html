@@ -1337,7 +1337,7 @@ html[lang="en"] .scene-coords{direction:ltr}
      for (const record of records) {
        if (record.type === 'characterData') {
          const node = record.target;
-         if (node.parentElement && node.parentElement.closest('#languageToggle,input,textarea,select,script,style,code,pre')) continue;
+         if (node.parentElement && node.parentElement.closest('#languageToggle,input,textarea,select,script,style,code,pre,[data-no-translate],.planet-ai-msg.user')) continue;
          const translated = transform(node.nodeValue, lang);
          if (translated !== node.nodeValue) node.nodeValue = translated;
        } else if (record.type === 'attributes') {
