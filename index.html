@@ -722,6 +722,8 @@ const lifeStages=[
 {at:4537,fa:'فرم‌های پیچیده‌تر دیجیتال',en:'More complex digital forms',descFa:'در بخش پایانی خط زمانی، فرم‌های دیجیتال پیچیده‌تر ممکن است ظاهر شوند. این‌ها انسان یا نیای انسان نیستند و بازسازی تاریخ واقعی انسان محسوب نمی‌شوند.',descEn:'In the late timeline, more complex digital forms may appear. They are not humans or human ancestors and do not reconstruct actual human history.'},
 {at:4539,fa:'زیست‌کرهٔ نزدیک به امروز',en:'Near-modern biosphere',descFa:'به انتهای بازهٔ ۴٫۵۴ میلیاردسالهٔ مدل رسیده‌ای. این بازه، تاریخ زمین را ساده می‌کند و همهٔ رویدادهای واقعی را بازسازی نمی‌کند.',descEn:'The model has reached the end of its 4.54-billion-year span. It simplifies Earth history and does not reproduce every real event.'}
 ];
+// Keep timeline stages chronological; the previous array placed the 4.25 Ga entry after 4.47 Ga.
+lifeStages.sort((a,b)=>a.at-b.at);
 function isEnglishLife(){return document.documentElement.lang==='en';}
 function currentLifeStageIndex(age){let idx=0;for(let i=0;i<lifeStages.length;i++){if(age>=lifeStages[i].at)idx=i;}return idx;}
 function currentHabitat(age){if(age<1700)return 'ocean';if(age<3900)return 'ocean';if(age<4250)return 'shore';return 'land';}
