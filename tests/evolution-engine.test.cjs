@@ -60,8 +60,10 @@ assert.equal(proxy.evidence.sourceSequenceUsedAsFullGenotype, false);
 
 assert.ok(["digital-multicellular", "digital-filament", "digital-photosynthetic-colony"].includes(engine.inferForm(p1, 4310, "land")),
   "late terrestrial lineages must receive generic digital morphologies, not real taxon names");
-assert.ok(p1.cellSizeMicrometers >= 0.5 && p1.cellSizeMicrometers <= 5,
-  "cell-size estimate must remain within the illustrative microbial range");
+assert.equal(p1.cellSizeMicrometers, null,
+  "synthetic DNA must not be presented as a measured or calibrated cell size");
+assert.equal(p1.cellSizeEvidence.status, "not-measured");
+assert.equal(p1.cellSizeEvidence.displayScale, "illustrative-only");
 assert.ok(p1.preferredPH >= 5 && p1.preferredPH <= 9, "model pH preference must be bounded");
 assert.ok(p1.preferredSalinityPsu >= 0.5 && p1.preferredSalinityPsu <= 40, "model salinity preference must be bounded");
 assert.equal(typeof p1.estimatedBodyLengthMm, "number",
