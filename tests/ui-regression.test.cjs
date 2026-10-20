@@ -42,7 +42,7 @@ assert.ok(html.includes("اندازهٔ واقعی سلول: نامشخص"), "sy
 assert.ok(html.includes("id=" + '"originScenario"'), "early-Earth scenario selector is available");
 assert.ok(html.includes("originScenarioSettings"), "scenario choices change model environment inputs");
 assert.ok(html.includes("NASA — محیط‌های احتمالی آغاز حیات"), "origin-of-life scenario links to scientific evidence");
-assert.ok(html.includes("این‌ها تنظیمات آزمایشی مدل‌اند"), "scenario settings are labeled as illustrative rather than established paleoclimate");
+assert.ok(html.includes("این مقادیر تنظیمات آزمایشی مدل‌اند"), "scenario settings are labeled as illustrative rather than established paleoclimate");
 
 // Higher-resolution day map is loaded locally in APK and has an online fallback.
 assert.ok(html.includes("./earth-daymap-4k.jpg"), "Earth texture can load from Android assets");
