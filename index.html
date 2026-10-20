@@ -149,10 +149,11 @@
       <div class="gp-note">محدودیت علمی: بررسی حرف‌ها، طول و GC به‌تنهایی کامل‌بودن اسمبلی، هویت گونه یا عملکرد ژن‌ها را اثبات نمی‌کند. ژنوم واقعی در این بخش تحلیل می‌شود؛ برای پرهیز از ادعای نادرست، صفات و رفتار باکتری از روی توالی به‌طور کامل پیش‌بینی نمی‌شوند. مدل تکامل زیر یک مدل آماریِ آموزشی است.</div>
     </section>
     <section id="gpAnimalLink" class="gp-card" hidden>
-      <h3>۴) اتصال توالی واقعی به گونهٔ جانوری</h3>
+      <h3>۴) اتصال توالی واقعی به تاکسون مرجع</h3>
       <p class="gp-muted">پس از واردکردن توالی، آن را به گونهٔ مناسب پیوند بده. توالی واقعی جدا از DNA مصنوعی کوتاهِ موتور تکامل نگهداری می‌شود تا دادهٔ علمی با مدل آموزشی اشتباه نشود.</p>
       <label for="gpAnimalTaxon">گونه‌ای که این توالی به آن تعلق دارد</label>
       <select id="gpAnimalTaxon">
+        <option value="ecoli">باکتری ای‌کولای K-12 — Escherichia coli</option>
         <option value="earlyFish">ماهی گورخر — Danio rerio</option>
         <option value="amphibian">قورباغهٔ پنجه‌دار — Xenopus tropicalis</option>
         <option value="insect">مگس سرکه — Drosophila melanogaster</option>
@@ -429,7 +430,18 @@
        }
      }
      await loadText(result.text,acc,result.format,source);
-   }catch(e){setStatus('دریافت خودکار انجام نشد: '+e.message+'\nممکن است اتصال، محدودیت سرویس یا دسترسی مرورگر مانع باشد. فایل FASTA/GenBank دانلودشده را می‌توانی از بخش فایل وارد کنی.');}
+     if(window.__planetAutoBacterialSeed){
+       try{
+         const seedResult=window.PlanetLifeAPI&&window.PlanetLifeAPI.createBacterialSeedFromGenome
+           ?window.PlanetLifeAPI.createBacterialSeedFromGenome(window.PlanetGenomeLabData())
+           :{ok:false,message:'موتور زیست‌کره هنوز آماده نیست.'};
+         $('gpAnimalStatus').textContent=seedResult.ok
+           ?'بذر میکروبی دیجیتال از ژنوم مرجع باکتری ساخته شد. ژنوتیپ شبیه‌سازی فقط پروکسی ۱۶۸ بازی است؛ فنوتیپ واقعی از آن استنتاج نشده است.'
+           :'ساخت بذر خودکار کامل نشد: '+String(seedResult.message||'خطای ناشناخته');
+       }catch(seedError){$('gpAnimalStatus').textContent='ساخت بذر خودکار کامل نشد: '+String(seedError.message||seedError);}
+       window.__planetAutoBacterialSeed=false;
+     }
+   }catch(e){if(window.__planetAutoBacterialSeed){window.__planetAutoBacterialSeed=false;$('gpAnimalStatus').textContent='دریافت خودکار ژنوم باکتری ناموفق بود؛ مدل در صورت ادامه با بذر میکروبی مصنوعی و برچسب‌گذاری‌شده شروع می‌شود.';}setStatus('دریافت خودکار انجام نشد: '+e.message+'\nممکن است اتصال، محدودیت سرویس یا دسترسی مرورگر مانع باشد. فایل FASTA/GenBank دانلودشده را می‌توانی از بخش فایل وارد کنی.');}
    finally{setBusy(false);}
  });
  $('gpLoadFile').addEventListener('click',async()=>{
@@ -886,9 +898,18 @@ else if(hab==='shore'){f+=t.motility*.13+t.protection*.13;if(t.metabolism==='pho
 else{f+=t.motility*.16+t.protection*.12+t.sensing*.08;if(t.thermalTolerance<.25)f-=.12;}
 f+=t.replication*.12;f-=Math.abs(t.thermalTolerance-(hab==='ocean'?.52:hab==='shore'?.60:.68))*.22;return Math.max(.05,Math.min(1,f));}
 function activeSpecies(){return speciesCatalog.filter(s=>s.firstAppearanceMa<=lifeAgeMa&&(!Number.isFinite(s.extinctAtMa)||s.extinctAtMa>lifeAgeMa));}
-function ensureFirstLineage(){const natural=activeSpecies().find(s=>!s.artificial&&s.parentId===null);if(!natural&&lifeAgeMa>=1000&&speciesCatalog.length<MAX_SPECIES){makeSpecies(randomGenome(),{firstAppearanceMa:lifeAgeMa,habitat:'ocean',population:900});}}
-function ensureDinosaurLineages(){
- // Disabled: curated dinosaur entries must not masquerade as evolutionary outcomes.
+function ensureFirstLineage(){
+ if(window.__planetBacterialSeedFetchStarted&&window.__planetAutoBacterialSeed)return;
+ const natural=activeSpecies().find(s=>!s.artificial&&s.parentId===null);
+ if(natural||lifeAgeMa<1000||speciesCatalog.length>=MAX_SPECIES)return;
+ let cached=null;try{cached=JSON.parse(localStorage.getItem('planet-bacterial-seed-cache')||'null');}catch(e){}
+ const dna=cached&&normalizeGenome(cached.proxyDNA);
+ const s=makeSpecies(dna||randomGenome(),{firstAppearanceMa:lifeAgeMa,habitat:'ocean',population:900});
+ if(cached&&dna){
+  s.bacterialSeed=true;s.genomeStatus='bacterial-reference-proxy';s.referenceSequence=cached.referenceSequence||null;
+  s.genomeModelNote='بذر از توالی مرجع باکتری مشتق شده، اما ژنوتیپ مدل فقط پروکسی مصنوعی ۱۶۸ بازی است؛ فنوتیپ واقعی از ژنوم کامل استنتاج نشده است.';
+  s.nameFa='تبار دیجیتال میکروبی '+String(s.id).padStart(3,'0');s.nameEn='Digital microbial lineage '+String(s.id).padStart(3,'0');
+ }
 }
 function animalGeneticEvidence(key){
  const maps={
@@ -1142,7 +1163,16 @@ function drawLife(t){
  lifeCtx.shadowBlur=0;lifeCtx.globalAlpha=1;requestAnimationFrame(drawLife);
 }
 function updateLifeUI(){const stage=currentLifeStageIndex(lifeAgeMa),data=lifeStages[stage],lang=isEnglishLife();$('lifeStage').textContent=lang?data.en:data.fa;$('lifeDesc').textContent=lang?data.descEn:data.descFa;$('lifeStageNum').textContent=stage+' / '+(lifeStages.length-1);$('lifeTime').textContent=lifeTimeLabel(lifeAgeMa);$('lifeProgress').style.width=(lifeAgeMa/4540*100)+'%';$('lifeStatus').textContent=lifeAgeMa<740?(lang?'prebiotic':'پیش‌زیستی'):!lifeStarted?(lang?'paused':'متوقف'):lifeAgeMa>=4539?(lang?'present-day stage':'مرحلهٔ نزدیک به امروز'):(lang?'evolving':'در حال تکامل');$('lifeStart').textContent=lifeStarted?(lang?'Ⅱ Pause evolution':'Ⅱ توقف تکامل'):(lang?'▶ Start evolution':'▶ آغاز تکامل');$('speciesCount').textContent=String(speciesCatalog.length);if(!lifeScrubbing)$('lifeTimeline').value=String(Math.round(lifeAgeMa));$('lifeSeekLabel').textContent=Math.round(lifeAgeMa/4540*100)+'%';}
-$('lifeStart').addEventListener('click',()=>{lifeStarted=!lifeStarted;lifeLast=performance.now();updateLifeUI();persistLifeState();});
+$('lifeStart').addEventListener('click',()=>{
+ const starting=!lifeStarted;lifeStarted=!lifeStarted;lifeLast=performance.now();updateLifeUI();persistLifeState();
+ if(starting&&!speciesCatalog.length&&!window.__planetBacterialSeedFetchStarted){
+  let cached=false;try{cached=!!localStorage.getItem('planet-bacterial-seed-cache');}catch(e){}
+  if(!cached){
+   const accession=$('gpAccession'),fetchButton=$('gpFetch');
+   if(accession&&fetchButton){window.__planetBacterialSeedFetchStarted=true;window.__planetAutoBacterialSeed=true;accession.value='NC_000913.3';fetchButton.click();}
+  }
+ }
+ });
 $('lifeReset').addEventListener('click',()=>{lifeStarted=false;lifeAgeMa=0;lifeScrubbing=false;evolutionAccumulator=0;evolutionGeneration=0;lastSpeciationGeneration=-99;speciesCatalog.length=0;speciesSerial=0;activeHabitatId=null;$('speciesOverlay').classList.remove('open');$('habitatOverlay').classList.remove('open');habitatOpen=false;renderSpeciesCatalog();updateLifeUI();persistLifeState();});
 $('lifeSpeed').addEventListener('input',e=>{lifeSpeed=+e.target.value;$('lifeSpeedLabel').textContent='×'+lifeSpeed;persistLifeState();});
 const lifeTimeline=$('lifeTimeline');lifeTimeline.addEventListener('pointerdown',()=>{lifeSeekStartAge=lifeAgeMa;lifeScrubbing=true;});lifeTimeline.addEventListener('pointerup',()=>lifeScrubbing=false);lifeTimeline.addEventListener('pointercancel',()=>lifeScrubbing=false);lifeTimeline.addEventListener('input',e=>{if(!lifeScrubbing)lifeSeekStartAge=lifeAgeMa;lifeScrubbing=true;lifeAgeMa=+e.target.value;lifeStarted=lifeAgeMa>0;updateLifeUI();});lifeTimeline.addEventListener('change',()=>{const target=lifeAgeMa;lifeScrubbing=false;if(target>lifeSeekStartAge)catchUpEvolution(target);else{updateLifeUI();renderSpeciesCatalog();}persistLifeState();});
@@ -1216,6 +1246,24 @@ window.PlanetLifeAPI={
    organism.nameEn='Experimental digital lineage #'+String(organism.id).padStart(3,'0');
    renderSpeciesCatalog();updateLifeUI();persistLifeState();$('speciesOverlay').classList.add('open');
    return{ok:true,id:organism.id,form:form,name:organism.nameFa,note:projection.note};
+  }catch(error){return{ok:false,message:String(error&&error.message||error)};}
+ },
+ createBacterialSeedFromGenome:function(data){
+  if(!data||!Array.isArray(data.records)||!data.records.length)return{ok:false,message:'توالی باکتری از NCBI دریافت نشد.'};
+  if(speciesCatalog.length>=MAX_SPECIES)return{ok:false,message:'بایگانی موجودات پر است؛ ابتدا اجرای تکامل را بازنشانی کن.'};
+  try{
+   const projection=window.PlanetEvolutionModel.projectReferenceGenome(data);
+   const sourceLabel=String(data.name||'NC_000913.3 · Escherichia coli K-12').slice(0,100);
+   const sourceSequence={...projection.summary,sourceLabel:sourceLabel};
+   localStorage.setItem('planet-bacterial-seed-cache',JSON.stringify({proxyDNA:projection.proxyDNA,referenceSequence:sourceSequence,source:'NC_000913.3'}));
+   const organism=makeSpecies(projection.proxyDNA,{firstAppearanceMa:Math.max(1000,lifeAgeMa),habitat:'ocean',population:900,form:'microbe',artificial:false});
+   organism.bacterialSeed=true;organism.genomeStatus='bacterial-reference-proxy';organism.referenceSequence=sourceSequence;
+   organism.genomeProjectionEvidence=projection.evidence;
+   organism.genomeModelNote='توالی مرجع باکتری فقط منبع ساخت پروکسی ۱۶۸ بازی است؛ این ژنوم کوتاه، ژنوم کامل باکتری نیست و فنوتیپ واقعی را پیش‌بینی نمی‌کند.';
+   organism.nameFa='تبار دیجیتال میکروبی '+String(organism.id).padStart(3,'0');
+   organism.nameEn='Digital microbial lineage '+String(organism.id).padStart(3,'0');
+   renderSpeciesCatalog();updateLifeUI();persistLifeState();
+   return{ok:true,id:organism.id,name:organism.nameFa,form:organism.form,note:organism.genomeModelNote};
   }catch(error){return{ok:false,message:String(error&&error.message||error)};}
  }
 };
