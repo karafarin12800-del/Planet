@@ -111,6 +111,9 @@ assert.ok(html.includes("lowPowerDevice?512:1024"), "cloud texture generation is
 
 assert.ok(!html.includes("records.map(r=>r.seq).join('')"), "RNA/DNA classification does not concatenate a duplicate full genome");
 
+assert.ok(html.includes("const speciesBaseFitness=calculateFitness(s,lifeAgeMa)"), "species baseline fitness is computed once per ecology step");
+assert.ok(html.includes("actAgent(agent,s,env,neighbors,context,speciesBaseFitness)"), "individual agents reuse the species fitness calculation");
+assert.ok(!html.includes("agent.fitness=clamp(.25*calculateFitness(s,lifeAgeMa)"), "fitness calculation is not repeated for every individual in a species");
 assert.ok(html.includes("while(evolutionAccumulator>=.75&&lifeAgeMa<4540)"), "the ecology loop stops stepping after the geological timeline reaches its endpoint");
 assert.ok(html.includes("if(lifeStarted&&lifeAgeMa>=4540){lifeStarted=false;evolutionAccumulator=0"), "restored or completed timelines pause automatically at the endpoint");
 console.log("PLANET UI regression tests passed: catalog scroll stability, aligned genome buttons, removed life zoom, complete guide, and GPU-safe Earth texture.");
