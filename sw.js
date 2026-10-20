@@ -1,4 +1,4 @@
-const CACHE_NAME = "planet-pwa-v13-genome-evidence";
+const CACHE_NAME = "planet-pwa-v14-ui-earth-texture";
 const APP_SHELL = ["./index.html", "./evolution-engine.js", "./procedural-organism-3d.js", "./planet-image-generation.js", "./offline-ai.js", "./manifest.webmanifest", "./icon.svg", "./privacy.html", "./genome-evidence.html"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));

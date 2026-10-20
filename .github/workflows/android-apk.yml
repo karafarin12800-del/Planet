@@ -80,6 +80,35 @@ jobs:
           cp index.html evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
           cp genome-evidence.html app/src/main/assets/
 
+      - name: Bundle high-resolution Earth day map for mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-delay 2 \
+            "https://cdn.solarsystemscope.com/textures/download/8k_earth_daymap.jpg" \
+            --output /tmp/planet-earth-daymap-8k.jpg
+          python3 -m venv /tmp/planet-texture-venv
+          /tmp/planet-texture-venv/bin/python -m pip install --quiet --disable-pip-version-check Pillow
+          /tmp/planet-texture-venv/bin/python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+
+          source = Path("/tmp/planet-earth-daymap-8k.jpg")
+          target = Path("app/src/main/assets/earth-daymap-4k.jpg")
+          with Image.open(source) as image:
+              if image.size != (8192, 4096):
+                  raise SystemExit(f"Unexpected source texture dimensions: {image.size}")
+              image.convert("RGB").resize((4096, 2048), Image.Resampling.LANCZOS).save(
+                  target, format="JPEG", quality=91, optimize=True, progressive=True
+              )
+          with Image.open(target) as image:
+              if image.size != (4096, 2048):
+                  raise SystemExit(f"Earth texture resize failed: {image.size}")
+          if target.stat().st_size < 100_000:
+              raise SystemExit("Earth texture output is unexpectedly small.")
+          print(f"Bundled {target} with dimensions 4096x2048 ({target.stat().st_size:,} bytes).")
+          PY
+
       - name: Validate full-genome lab JavaScript syntax
         shell: bash
         run: |
@@ -111,6 +140,7 @@ jobs:
           PY
           for script in /tmp/planet-genome-evidence-*.js; do node --check "$script"; done
           node tests/genome-evidence.test.cjs
+          node tests/ui-regression.test.cjs
 
       - name: Validate genome-to-organism evolution engine
         run: |
