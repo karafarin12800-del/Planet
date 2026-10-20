@@ -753,8 +753,31 @@ avoid:{fa:'دوری از خطر',en:'Avoiding danger'},
 reproduce:{fa:'تولیدمثل',en:'Reproducing'},
 cooperate:{fa:'همکاری با هم‌نوع',en:'Cooperating'}
 };
-function makeHabitatEnvironment(offset){const food=[];for(let i=0;i<24;i++){const x=(.07+((i*.61803398875+offset*.13)% .86)),y=(.06+((i*.41421356237+offset*.21)% .88));food.push({x,y,amount:.40+((i*7+offset*3)%11)/18,max:.85,regrowth:.008+((i+offset)%4)*.003});}const hazards=[];for(let i=0;i<5;i++)hazards.push({x:.12+((i*.271+offset*.19)% .76),y:.10+((i*.347+offset*.11)% .80),intensity:.25+((i*3+offset)%6)*.09,radius:.04+((i+offset)%3)*.012});return{food,hazards};}
-const ecologyWorld={ocean:makeHabitatEnvironment(1),shore:makeHabitatEnvironment(2),land:makeHabitatEnvironment(3)};
+function makeHabitatEnvironment(offset,baseline){
+ const food=[];for(let i=0;i<24;i++){const x=(.07+((i*.61803398875+offset*.13)% .86)),y=(.06+((i*.41421356237+offset*.21)% .88));food.push({x,y,amount:.40+((i*7+offset*3)%11)/18,max:.85,regrowth:.008+((i+offset)%4)*.003});}
+ const hazards=[];for(let i=0;i<5;i++)hazards.push({x:.12+((i*.271+offset*.19)% .76),y:.10+((i*.347+offset*.11)% .80),intensity:.25+((i*3+offset)%6)*.09,radius:.04+((i+offset)%3)*.012});
+ const base={temperatureC:18,pH:7.0,salinityPsu:10,oxygenAvailability:.65,lightAvailability:.5,nutrientAvailability:.6,...(baseline||{})};
+ return{food,hazards,baselineConditions:base,conditions:{...base}};
+}
+const ecologyWorld={
+ ocean:makeHabitatEnvironment(1,{temperatureC:12,pH:8.1,salinityPsu:35,oxygenAvailability:.55,lightAvailability:.35,nutrientAvailability:.65}),
+ shore:makeHabitatEnvironment(2,{temperatureC:18,pH:7.8,salinityPsu:20,oxygenAvailability:.82,lightAvailability:.70,nutrientAvailability:.72}),
+ land:makeHabitatEnvironment(3,{temperatureC:20,pH:6.5,salinityPsu:1,oxygenAvailability:.95,lightAvailability:.82,nutrientAvailability:.58})
+};
+function updateEnvironmentalConditions(){
+ const cycle=lifeAgeMa/145;
+ for(const [index,env] of Object.values(ecologyWorld).entries()){
+  const b=env.baselineConditions,phase=cycle+index*1.73;
+  env.conditions={
+   temperatureC:clamp(b.temperatureC+Math.sin(phase)*5,-5,45),
+   pH:clamp(b.pH+Math.sin(phase*.73)*.30,0,14),
+   salinityPsu:clamp(b.salinityPsu+Math.sin(phase*.61)*2,0,45),
+   oxygenAvailability:clamp(b.oxygenAvailability+Math.sin(phase*.47)*.15,0,1),
+   lightAvailability:clamp(b.lightAvailability+Math.sin(phase*.39)*.22,0,1),
+   nutrientAvailability:clamp(b.nutrientAvailability+Math.sin(phase*.53)*.18,0,1)
+  };
+ }
+}
 function actionQSeed(){return{forage:0,explore:0,rest:0,avoid:0,reproduce:0,cooperate:0};}
 function createAgent(species,parent){
  const dna=normalizeGenome(parent?parent.dna:species.lineageDNA||species.dna)||species.dna;
@@ -892,11 +915,25 @@ function simulateSpeciesEcology(s){
 function actionLabel(action){const row=ACTION_TEXT[action]||ACTION_TEXT.explore;return isEnglishLife()?row.en:row.fa;}
 
 function speciesName(s){return isEnglishLife()?s.nameEn:s.nameFa;}
-function calculateFitness(s,age){const t=phenotypeFromDNA(s.lineageDNA||s.dna),hab=s.habitat||currentHabitat(age);let f=.48;
-if(hab==='ocean'){f+=t.swims?.12:-.04;f+=t.protection*.12;if(age>1600&&t.photosynthetic)f+=.18;if(age>2140&&t.metabolism==='anaerobic')f-=.12;}
-else if(hab==='shore'){f+=t.motility*.13+t.protection*.13;if(t.metabolism==='photosynthetic')f+=.10;}
-else{f+=t.motility*.16+t.protection*.12+t.sensing*.08;if(t.thermalTolerance<.25)f-=.12;}
-f+=t.replication*.12;f-=Math.abs(t.thermalTolerance-(hab==='ocean'?.52:hab==='shore'?.60:.68))*.22;return Math.max(.05,Math.min(1,f));}
+function calculateFitness(s,age){
+ const t=phenotypeFromDNA(s.lineageDNA||s.dna),hab=s.habitat||currentHabitat(age);
+ let f=.48;
+ if(hab==='ocean'){f+=t.swims?.12:-.04;f+=t.protection*.12;if(age>1600&&t.photosynthetic)f+=.18;if(age>2140&&t.metabolism==='anaerobic')f-=.12;}
+ else if(hab==='shore'){f+=t.motility*.13+t.protection*.13;if(t.metabolism==='photosynthetic')f+=.10;}
+ else{f+=t.motility*.16+t.protection*.12+t.sensing*.08;if(t.thermalTolerance<.25)f-=.12;}
+ const env=ecologyWorld[hab],c=env&&env.conditions;
+ if(c){
+  const temperatureFit=1-clamp(Math.abs(t.preferredTemperatureC-c.temperatureC)/45,0,1);
+  const pHFit=1-clamp(Math.abs(t.preferredPH-c.pH)/4,0,1);
+  const salinityFit=1-clamp(Math.abs(t.preferredSalinityPsu-c.salinityPsu)/40,0,1);
+  const oxygenFit=1-clamp(Math.abs(t.oxygenPreference-c.oxygenAvailability),0,1);
+  f+=temperatureFit*.10+pHFit*.08+salinityFit*.07+oxygenFit*.06;
+  f+=t.photosynthetic?c.lightAvailability*.10:(1-c.lightAvailability)*.025;
+  f+=c.nutrientAvailability*.06;
+ }
+ f+=t.replication*.12;f-=Math.abs(t.thermalTolerance-(hab==='ocean'?.52:hab==='shore'?.60:.68))*.22;
+ return Math.max(.05,Math.min(1,f));
+}
 function activeSpecies(){return speciesCatalog.filter(s=>s.firstAppearanceMa<=lifeAgeMa&&(!Number.isFinite(s.extinctAtMa)||s.extinctAtMa>lifeAgeMa));}
 function ensureFirstLineage(){
  if(window.__planetBacterialSeedFetchStarted&&window.__planetAutoBacterialSeed)return;
@@ -930,6 +967,7 @@ function ensureAnimalLineages(){
  // Disabled: modern animal reference entries are not evolutionary outcomes.
 }
 function evolutionaryStep(){
+ updateEnvironmentalConditions();
  if(lifeAgeMa<1000){const experiments=activeSpecies().filter(s=>s.artificial);if(!experiments.length)return;regrowResources();for(const s of experiments){if(!activeSpecies().includes(s))continue;simulateSpeciesEcology(s);s.generation++;}updateLifeUI();if($('speciesOverlay').classList.contains('open'))renderSpeciesCatalog();return;}
  ensureFirstLineage();ensureDinosaurLineages();ensureAnimalLineages();evolutionGeneration++;regrowResources();
  const living=activeSpecies().slice();
@@ -1073,7 +1111,8 @@ function updateHabitatAgentDetails(s){
  $('habitatBrain').textContent=lang
  ?'Digital individual #'+a.id+' senses nearby food and risk, tracks energy and health, then selects an action. Current action: '+actionLabel(a.action)+'. Best learned action value: '+best.key+' ('+best.value.toFixed(2)+'). Decision index: '+Math.round(a.traits.cognition*100)+'%. This is a bounded reinforcement-learning policy, not consciousness.'
  :'فرد دیجیتال شمارهٔ '+a.id+' غذا و خطر نزدیک، انرژی و سلامت خود را ارزیابی می‌کند و سپس یک عمل را برمی‌گزیند. عمل فعلی: '+actionLabel(a.action)+'؛ بهترین ارزش یادگرفته‌شده: '+actionLabel(best.key)+' ('+best.value.toFixed(2)+'). شاخص شناخت دیجیتال: '+Math.round(a.traits.cognition*100)+'٪. این یک سیاست یادگیری تقویتی محدود است، نه آگاهی واقعی.';
- $('habitatIntro').textContent=(lang?'Digital habitat for ':'زیستگاه دیجیتال برای ')+speciesName(s)+' — '+aaDescription(s);
+ const ec=ecologyWorld[s.habitat]&&ecologyWorld[s.habitat].conditions;
+ $('habitatIntro').textContent=(lang?'Digital habitat for ':'زیستگاه دیجیتال برای ')+speciesName(s)+' — '+aaDescription(s)+(ec?(lang?' · Environment: '+ec.temperatureC.toFixed(1)+' °C, pH '+ec.pH.toFixed(2)+', salinity '+ec.salinityPsu.toFixed(1)+' PSU, O₂ '+Math.round(ec.oxygenAvailability*100)+'%, light '+Math.round(ec.lightAvailability*100)+'%, nutrients '+Math.round(ec.nutrientAvailability*100)+'%':' · محیط: دما '+ec.temperatureC.toFixed(1)+' °C، pH '+ec.pH.toFixed(2)+'، شوری '+ec.salinityPsu.toFixed(1)+' PSU، اکسیژن '+Math.round(ec.oxygenAvailability*100)+'٪، نور '+Math.round(ec.lightAvailability*100)+'٪، مواد مغذی '+Math.round(ec.nutrientAvailability*100)+'٪'):'');
  $('habitatPopulation').textContent=Math.round(s.population).toLocaleString(lang?'en-US':'fa-IR');
  $('habitatGeneration').textContent=String(s.generation);
  $('habitatFitness').textContent=Math.round(s.fitness*100)+'%';
