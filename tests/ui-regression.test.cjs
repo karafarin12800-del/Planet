@@ -57,4 +57,31 @@ assert.ok(workflow.includes("resize((4096, 2048)"), "CI creates a 4K power-of-tw
 assert.ok(sw.includes("planet-pwa-v15-full-language-switch"), "PWA cache key was bumped");
 assert.ok(imageContract.includes("planet-pwa-v15-full-language-switch"), "existing image contract agrees with new cache version");
 
+// Performance regressions: large timeline jumps must yield to the browser between generations.
+const catchUpStart = html.indexOf("function catchUpEvolution(targetAge)");
+const catchUpEnd = html.indexOf("function lifeTimeLabel", catchUpStart);
+assert.ok(catchUpStart >= 0 && catchUpEnd > catchUpStart, "timeline catch-up function exists");
+const catchUpCode = html.slice(catchUpStart, catchUpEnd);
+assert.ok(catchUpCode.includes("requestAnimationFrame(advance)"), "timeline simulation is time-sliced across frames");
+assert.ok(catchUpCode.includes("evolutionaryStep({deferUI:true})"), "catch-up steps suppress repeated DOM redraws");
+assert.ok(!catchUpCode.includes("for(let i=0;i<steps;i++)"), "timeline jumps must not run all generations synchronously");
+assert.ok(html.includes("!catchUpInProgress"), "the normal simulation pauses while timeline catch-up is active");
+assert.ok(html.includes("cancelCatchUp();lifeStarted=false;lifeAgeMa=0"), "reset cancels a pending catch-up task");
+
+// Restoring a saved timeline must not spawn dozens of agents for future lineages or recalculate their phenotype twice.
+const restoreStart = html.indexOf("function restoreLifeState()");
+const restoreEnd = html.indexOf("function cancelCatchUp()", restoreStart);
+assert.ok(restoreStart >= 0 && restoreEnd > restoreStart, "bounded state restore exists");
+const restoreCode = html.slice(restoreStart, restoreEnd);
+assert.ok(restoreCode.includes("slice(-MAX_SPECIES)"), "corrupt/legacy archives are capped before restore");
+assert.ok(restoreCode.includes("s.firstAppearanceMa<=lifeAgeMa"), "future lineages do not spawn agents during restore");
+assert.ok(restoreCode.includes("restoreAgentBudget"), "restoration has a global agent budget");
+assert.ok(!restoreCode.includes("const agent=createAgent(s,null)"), "saved agents are restored without constructing throwaway agents");
+assert.ok(html.includes("now-lastHudUpdate>=100"), "expensive HUD DOM updates are throttled");
+assert.ok(html.includes("t-lastStarDraw<80"), "the starfield is not redrawn at full display refresh rate");
+assert.ok(!html.includes("requestAnimationFrame(drawLife)"), "the unused empty Earth overlay loop is disabled");
+assert.ok(html.includes("innerWidth<=900?2048:4096"), "mobile WebGL textures are capped at 2K");
+assert.ok(html.includes("webglcontextlost"), "WebGL loss is handled rather than leaving a silent frozen scene");
+assert.ok(html.includes("now-speciesCatalogLastRenderAt<2000"), "large species catalog is not rebuilt several times per second");
+
 console.log("PLANET UI regression tests passed: catalog scroll stability, aligned genome buttons, removed life zoom, complete guide, and GPU-safe Earth texture.");
