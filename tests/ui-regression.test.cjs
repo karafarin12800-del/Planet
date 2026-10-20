@@ -97,4 +97,6 @@ assert.ok(html.includes("await yieldToBrowser()"), "long sequence scans yield to
 assert.ok(html.includes("const g=await parseGenome(text,name,format);"), "file import awaits the incremental genome parser");
 assert.ok(!html.includes("records.map(r=>r.seq).join('')"), "RNA/DNA classification does not concatenate a duplicate full genome");
 
+assert.ok(html.includes("while(evolutionAccumulator>=.75&&lifeAgeMa<4540)"), "the ecology loop stops stepping after the geological timeline reaches its endpoint");
+assert.ok(html.includes("if(lifeStarted&&lifeAgeMa>=4540){lifeStarted=false;evolutionAccumulator=0"), "restored or completed timelines pause automatically at the endpoint");
 console.log("PLANET UI regression tests passed: catalog scroll stability, aligned genome buttons, removed life zoom, complete guide, and GPU-safe Earth texture.");
