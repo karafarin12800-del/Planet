@@ -26,6 +26,7 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'genome-evidence.html'
       - 'index.html'
       - 'evolution-engine.js'
       - 'procedural-organism-3d.js'
