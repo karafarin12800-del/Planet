@@ -704,10 +704,10 @@ const lifeStages=[
 {at:4120,fa:'گیاهان بلند و درختان نخستین',en:'Tall plants and early trees',descFa:'با تغییر صفات ژنومیِ مدل، فرم‌های گیاهی بلندتر و شبیه درخت روی خشکی نمایش داده می‌شوند. این گذار برای آموزش ساده‌سازی شده است.',descEn:'As simulated genomic traits change, taller tree-like forms appear on land. This transition is simplified for learning.'},
 {at:4170,fa:'تنوع بیشتر آبزیان و ماهی‌ها',en:'Diversifying aquatic life and fish',descFa:'در محیط آبی، فرم‌های کشیده‌تر و شناگر نمادین می‌شوند؛ مدل ژنوم واقعی ماهی‌ها را بازسازی نمی‌کند.',descEn:'In aquatic habitats, elongated swimming forms become visible; the model does not reconstruct real fish genomes.'},
 {at:4220,fa:'خزندگان نخستین',en:'Early reptiles',descFa:'فرم‌های خشکی‌زیِ کشیده‌تر با دُم نمادین نمایش داده می‌شوند. زمان‌بندی تقریبی است و هدف، نمایش تنوع فرم بدن است.',descEn:'Elongated land-dwelling forms with illustrative tails appear. Timing is approximate and intended to show body-form diversity.'},
-{at:4305,fa:'عصر دایناسورها',en:'Age of dinosaurs',descFa:'در این بازهٔ آموزشی، چند تبار دیجیتال دایناسور با فرم‌های گیاه‌خوار گردن‌بلند، دوندهٔ گوشت‌خوار و زره‌پوش ظاهر می‌شوند. زمان‌ها تقریبی‌اند و این موجودات بازسازی ژنوم گونه‌های فسیلی واقعی نیستند.',descEn:'In this educational interval, several digital dinosaur lineages appear: long-necked herbivores, running carnivores and armored forms. Timing is approximate; these are not reconstructions of real fossil-species genomes.'},
+{at:4305,fa:'تنوع فرم‌های چندسلولی دیجیتال',en:'Diversification of digital multicellular forms',descFa:'در این بازه، فرم‌های بدنی دیجیتال متنوع‌تر می‌شوند. شکل‌های تولیدشده گونه‌های فسیلی را بازسازی نمی‌کنند و نام‌گذاری آن‌ها به‌عنوان دایناسور واقعی مجاز نیست.',descEn:'In this interval, digital body plans diversify. These shapes are not reconstructions of fossil species and must not be named as real dinosaurs.'},
 {at:4473,fa:'پس از انقراض کرتاسه–پالئوژن',en:'After the Cretaceous–Paleogene extinction',descFa:'در خط زمانی ساده‌شده، تبارهای دایناسور غیرپرنده از زیست‌کرهٔ فعال حذف می‌شوند؛ پرندگان در علم امروز از تبار دایناسورها به‌شمار می‌روند، اما مدل حاضر آن‌ها را جداگانه بازسازی نمی‌کند.',descEn:'In this simplified timeline, non-avian dinosaur lineages leave the active biosphere. Modern science classifies birds as dinosaurs, but this model does not separately reconstruct bird lineages.'},
 {at:4250,fa:'جانوران بزرگ‌تر و اکوسیستم‌های پیچیده',en:'Larger animals and complex ecosystems',descFa:'اندازهٔ دیداری جانداران با صفات ژنومی، رشد و مرحلهٔ زمانی مدل تغییر می‌کند؛ این به معنای پیش‌بینی تکامل واقعی نیست.',descEn:'Organism scale varies with genomic traits, growth and model time; this is not a prediction of real evolution.'},
-{at:4537,fa:'فرم‌های انسان‌مانند نمادین',en:'Illustrative human-like forms',descFa:'در چند میلیون سال پایانیِ خط زمانی، فرم‌های دوپای انسان‌مانند فقط به‌عنوان نمایش دیداری ظاهر می‌شوند. این یک گونهٔ واقعی، پیش‌بینی ژنتیکی یا بازسازی دقیق تاریخ انسان نیست.',descEn:'In the final few million years of the timeline, illustrative human-like bipedal forms appear as a visual teaching aid. This is not a real species, a genetic prediction or a precise reconstruction of human history.'},
+{at:4537,fa:'فرم‌های پیچیده‌تر دیجیتال',en:'More complex digital forms',descFa:'در بخش پایانی خط زمانی، فرم‌های دیجیتال پیچیده‌تر ممکن است ظاهر شوند. این‌ها انسان یا نیای انسان نیستند و بازسازی تاریخ واقعی انسان محسوب نمی‌شوند.',descEn:'In the late timeline, more complex digital forms may appear. They are not humans or human ancestors and do not reconstruct actual human history.'},
 {at:4539,fa:'زیست‌کرهٔ نزدیک به امروز',en:'Near-modern biosphere',descFa:'به انتهای بازهٔ ۴٫۵۴ میلیاردسالهٔ مدل رسیده‌ای. این بازه، تاریخ زمین را ساده می‌کند و همهٔ رویدادهای واقعی را بازسازی نمی‌کند.',descEn:'The model has reached the end of its 4.54-billion-year span. It simplifies Earth history and does not reproduce every real event.'}
 ];
 function isEnglishLife(){return document.documentElement.lang==='en';}
@@ -888,14 +888,7 @@ f+=t.replication*.12;f-=Math.abs(t.thermalTolerance-(hab==='ocean'?.52:hab==='sh
 function activeSpecies(){return speciesCatalog.filter(s=>s.firstAppearanceMa<=lifeAgeMa&&(!Number.isFinite(s.extinctAtMa)||s.extinctAtMa>lifeAgeMa));}
 function ensureFirstLineage(){const natural=activeSpecies().find(s=>!s.artificial&&s.parentId===null);if(!natural&&lifeAgeMa>=1000&&speciesCatalog.length<MAX_SPECIES){makeSpecies(randomGenome(),{firstAppearanceMa:lifeAgeMa,habitat:'ocean',population:900});}}
 function ensureDinosaurLineages(){
- const dinosaurStart=4305,dinosaurEnd=4473;
- if(lifeAgeMa<dinosaurStart||speciesCatalog.some(s=>['dinosaur','sauropod','theropod','armoredDino'].includes(s.form)))return;
- const lineages=[
-  {form:'sauropod',fa:'دایناسور گردن‌بلند گیاه‌خوار',en:'Long-necked herbivorous dinosaur',habitat:'land',population:1700},
-  {form:'theropod',fa:'دایناسور دوندهٔ گوشت‌خوار',en:'Running carnivorous dinosaur',habitat:'land',population:1250},
-  {form:'armoredDino',fa:'دایناسور زره‌پوش',en:'Armored dinosaur',habitat:'land',population:1450}
- ];
- for(const spec of lineages){if(speciesCatalog.length>=MAX_SPECIES)break;const d=makeSpecies(randomGenome(),{firstAppearanceMa:dinosaurStart,habitat:spec.habitat,population:spec.population,form:spec.form});d.nameFa=spec.fa;d.nameEn=spec.en;d.extinctAtMa=dinosaurEnd;d.dinosaurEra=true;}
+ // Disabled: curated dinosaur entries must not masquerade as evolutionary outcomes.
 }
 function animalGeneticEvidence(key){
  const maps={
@@ -913,27 +906,7 @@ function animalGeneticEvidence(key){
  return (maps[key]||[]).map(x=>({...x,evidenceType:'gene-trait association; not a variant call'}));
 }
 function ensureAnimalLineages(){
- // These are curated living-animal reference genomes, not reconstructed genomes for extinct taxa.
- // Geological ages are approximate and expressed as million years after Earth formed.
- const taxa=[
-  {key:'earlyFish',form:'fish',fa:'ماهی استخوانی (مدل آموزشی)',en:'Bony fish (educational model)',habitat:'ocean',population:1800,first:4180,accession:'GCF_000002035.6',assembly:'GRCz11',taxon:'Danio rerio',note:'مرجع ژنومی ماهی گورخر؛ نمایندهٔ آموزشی ماهیان استخوانی، نه نیای مستقیم همهٔ ماهی‌ها.'},
-  {key:'amphibian',form:'amphibian',fa:'دوزیست (مدل آموزشی)',en:'Amphibian (educational model)',habitat:'shore',population:1300,first:4170,accession:'GCF_000004195.4',assembly:'UCB_Xtro_10.0',taxon:'Xenopus tropicalis',note:'مرجع ژنومی قورباغهٔ پنجه‌دار غربی؛ زمان پیدایش تبار دوزیستان بسیار قدیمی‌تر و تقریبی است.'},
-  {key:'insect',form:'insect',fa:'حشره (مگس سرکه)',en:'Insect (fruit fly)',habitat:'land',population:2400,first:4480,accession:'GCF_000001215.4',assembly:'Release 6',taxon:'Drosophila melanogaster',note:'ژنوم مرجع مگس سرکه؛ نمایندهٔ حشرات امروزی است.'},
-  {key:'mammal',form:'mammal',fa:'پستاندار (مدل آموزشی)',en:'Mammal (educational model)',habitat:'land',population:1500,first:4320,accession:'GCF_000001635.27',assembly:'GRCm39',taxon:'Mus musculus',note:'مرجع ژنومی موش خانگی؛ نمایندهٔ پستانداران امروزی، نه ژنوم نیای مشترک پستانداران.'},
-  {key:'bird',form:'bird',fa:'پرنده (مرغ خانگی)',en:'Bird (chicken)',habitat:'land',population:1900,first:4340,accession:'GCF_016699485.2',assembly:'bGalGal1.mat.broiler.GRCg7b',taxon:'Gallus gallus',note:'مرجع ژنومی مرغ؛ پرندگان از نظر تکاملی دایناسورهای زنده‌اند.'},
-  {key:'dog',form:'dog',fa:'سگ اهلی',en:'Domestic dog',habitat:'land',population:950,first:4539.97,accession:'GCF_000002285.5',assembly:'ROS_Cfam_1.0',taxon:'Canis lupus familiaris',note:'ژنوم مرجع سگ؛ تاریخ اهلی‌سازی و ریشهٔ جمعیت‌های سگ پیچیده و محل پژوهش است.'},
-  {key:'cat',form:'cat',fa:'گربهٔ اهلی',en:'Domestic cat',habitat:'land',population:900,first:4539.98,accession:'GCF_018350175.1',assembly:'F.catus_Fca126_mat1.0',taxon:'Felis catus',note:'ژنوم مرجع گربهٔ اهلی.'},
-  {key:'horse',form:'horse',fa:'اسب اهلی',en:'Domestic horse',habitat:'land',population:850,first:4539.98,accession:'GCF_002863925.1',assembly:'EquCab3.0',taxon:'Equus caballus',note:'ژنوم مرجع اسب؛ تاریخ اهلی‌سازی در این خط زمانی نمایش ساده‌شده دارد.'},
-  {key:'elephant',form:'elephant',fa:'فیل آفریقایی',en:'African savanna elephant',habitat:'land',population:500,first:4535,accession:'GCF_000001905.1',assembly:'LoxAfr3.0',taxon:'Loxodonta africana',note:'ژنوم مرجع فیل آفریقایی؛ زمان ورود به خط زمانی تقریبی است.'},
-  {key:'human',form:'humanoid',fa:'انسان خردمند (Homo sapiens)',en:'Modern human (Homo sapiens)',habitat:'land',population:700,first:4539.7,accession:'GCF_000001405.40',assembly:'GRCh38.p14',taxon:'Homo sapiens',note:'ژنوم مرجع انسان؛ پیدایش گونهٔ ما حدود ۳۰۰ هزار سال پیش برآورد می‌شود.'}
- ];
- for(const spec of taxa){
-  if(lifeAgeMa<spec.first||speciesCatalog.some(s=>s.animalTaxonKey===spec.key))continue;
-  if(speciesCatalog.length>=MAX_SPECIES)break;
-  const s=makeSpecies(randomGenome(),{firstAppearanceMa:spec.first,habitat:spec.habitat,population:spec.population,form:spec.form});
-  s.nameFa=spec.fa;s.nameEn=spec.en;s.animalTaxonKey=spec.key;s.animalTaxon=spec.taxon;s.referenceGenome={provider:'NCBI RefSeq',accession:spec.accession,assembly:spec.assembly,url:'https://www.ncbi.nlm.nih.gov/datasets/genome/'+spec.accession+'/',note:spec.note};
-  s.genomeStatus='synthetic-model-reference-linked';s.genomeModelNote='مدل ژنتیکی داخلی کوتاه و آموزشی است؛ توالی مرجع کامل با این DNA مصنوعی جایگزین نشده و فنوتیپ از توالی مرجع استنتاج نمی‌شود.';s.geneticEvidence=animalGeneticEvidence(spec.key);
- }
+ // Disabled: modern animal reference entries are not evolutionary outcomes.
 }
 function evolutionaryStep(){
  if(lifeAgeMa<1000){const experiments=activeSpecies().filter(s=>s.artificial);if(!experiments.length)return;regrowResources();for(const s of experiments){if(!activeSpecies().includes(s))continue;simulateSpeciesEcology(s);s.generation++;}updateLifeUI();if($('speciesOverlay').classList.contains('open'))renderSpeciesCatalog();return;}
@@ -969,7 +942,11 @@ function restoreLifeState(){try{const raw=localStorage.getItem('planet-life-stat
  if(data.world&&typeof data.world==='object'){for(const type of ['ocean','shore','land']){const saved=data.world[type],current=ecologyWorld[type];if(saved&&Array.isArray(saved.food)&&Array.isArray(saved.hazards)){for(let i=0;i<Math.min(current.food.length,saved.food.length);i++)current.food[i].amount=clamp(Number(saved.food[i].amount)||0,0,current.food[i].max);}}}
  speciesCatalog.length=0;
  for(const record of (Array.isArray(data.species)?data.species:[])){
-  if(!record)continue;const dna=normalizeGenome(record.dna),lineage=normalizeGenome(record.lineageDNA)||dna;if(!dna||!lineage)continue;
+  if(!record)continue;
+  const presetAnimal=!!record.animalTaxonKey;
+  const presetDinosaur=record.parentId==null&&['sauropod','theropod','armoredDino'].includes(record.form)&&/dinosaur|دایناسور/i.test(String(record.nameEn||record.nameFa||''));
+  if(presetAnimal||presetDinosaur)continue;
+  const dna=normalizeGenome(record.dna),lineage=normalizeGenome(record.lineageDNA)||dna;if(!dna||!lineage)continue;
   const ph=phenotypeFromDNA(lineage),s={...record,dna,lineageDNA:lineage,traits:ph,proteins:ph.proteins,agents:[],births:Number(record.births)||0,deaths:Number(record.deaths)||0,meanEnergy:Number(record.meanEnergy)||55,meanReward:Number(record.meanReward)||0,decisionCount:Number(record.decisionCount)||0};
   speciesCatalog.push(s);
   if(Array.isArray(record.agents))for(const savedAgent of record.agents.slice(0,MAX_AGENTS_PER_SPECIES)){
@@ -987,7 +964,17 @@ function restoreLifeState(){try{const raw=localStorage.getItem('planet-life-stat
 function catchUpEvolution(targetAge){if(targetAge<1000)return;ensureFirstLineage();ensureDinosaurLineages();ensureAnimalLineages();const initial=Math.max(1000,Math.min(lifeSeekStartAge||1000,targetAge));const span=Math.max(0,targetAge-initial);const steps=Math.min(240,Math.max(1,Math.floor(span/15)));for(let i=0;i<steps;i++){lifeAgeMa=initial+(span*(i+1)/steps);evolutionaryStep();}lifeAgeMa=targetAge;ensureFirstLineage();updateLifeUI();renderSpeciesCatalog();persistLifeState();}
 
 function lifeTimeLabel(age){const lang=isEnglishLife();if(age>=1000)return (age/1000).toFixed(2)+(lang?' billion years after Earth formed':' میلیارد سال پس از شکل‌گیری زمین');return Math.round(age).toLocaleString(lang?'en-US':'fa-IR')+(lang?' million years after Earth formed':' میلیون سال پس از شکل‌گیری زمین');}
-function aaDescription(s){const t=s.traits,lang=isEnglishLife();let m=t.metabolism;if(lang){m={anaerobic:'anaerobic',fermentative:'fermentative',chemosynthetic:'chemosynthetic',photosynthetic:'photosynthetic'}[m];}else{m={anaerobic:'بی‌هوازی',fermentative:'تخمیری',chemosynthetic:'شیمی‌پرور',photosynthetic:'نورپرور'}[m];}const base=lang?'Metabolism: '+m+' · Motility: '+Math.round(t.motility*100)+'% · Protection: '+Math.round(t.protection*100)+'%':'سوخت‌وساز: '+m+' · حرکت: '+Math.round(t.motility*100)+'٪ · حفاظت: '+Math.round(t.protection*100)+'٪';return base+(s.genomeStatus==='reference-proxy'?(lang?' · 168-bp proxy; phenotype confidence very low':' · پروکسی ۱۶۸ بازی؛ اطمینان فنوتیپی بسیار کم'):'');}
+function aaDescription(s){
+ const t=s.traits,lang=isEnglishLife();let m=t.metabolism;
+ if(lang){m={anaerobic:'anaerobic',fermentative:'fermentative',chemosynthetic:'chemosynthetic',photosynthetic:'photosynthetic'}[m];}
+ else{m={anaerobic:'بی‌هوازی',fermentative:'تخمیری',chemosynthetic:'شیمی‌پرور',photosynthetic:'نورپرور'}[m];}
+ const base=lang?'Metabolism: '+m+' · Motility index: '+Math.round(t.motility*100)+'% · Protection index: '+Math.round(t.protection*100)+'%':'سوخت‌وساز: '+m+' · شاخص حرکت: '+Math.round(t.motility*100)+'٪ · شاخص حفاظت: '+Math.round(t.protection*100)+'٪';
+ const cell=Number(t.cellSizeMicrometers);
+ const sizeText=Number.isFinite(cell)?(lang?'Model-estimated cell size: '+cell.toFixed(2)+' µm (not a measured biological value)':'اندازهٔ سلول برآوردیِ مدل: '+cell.toFixed(2)+' میکرومتر (اندازه‌گیری زیستی واقعی نیست)'):'';
+ const body=Number(t.estimatedBodyLengthMm);
+ const bodyText=Number.isFinite(body)?(lang?'Digital body-length estimate: '+body.toFixed(3)+' mm; uncalibrated':'طول بدن دیجیتالِ برآوردی: '+body.toFixed(3)+' میلی‌متر؛ بدون کالیبراسیون زیستی'):'';
+ return [base,sizeText,bodyText,s.genomeStatus==='reference-proxy'?(lang?'168-bp proxy; very low biological confidence':'پروکسی ۱۶۸ بازی؛ اطمینان زیستی بسیار پایین'):''].filter(Boolean).join(' · ');
+}
 function speciesIllustration(s){
  const lang=isEnglishLife(),label=lang?'DNA-derived procedural organism':'جاندارِ رویه‌ای بر پایهٔ DNA';
  return '<div class="species-art"><canvas class="species-art-canvas" data-species-art="'+Number(s.id)+'" role="img" aria-label="'+label+'"></canvas></div>';
@@ -1221,11 +1208,12 @@ window.PlanetLifeAPI={
    const form=accepted.includes(formHint)?formHint:'microbe';
    const aquatic=['fish','aquatic'].includes(form);
    const habitat=aquatic?'ocean':form==='amphibian'?'shore':'land';
-   const label=String(data.name||'Imported reference sequence').slice(0,90);
+   const sourceLabel=String(data.name||'Imported reference sequence').slice(0,90);
    const organism=makeSpecies(projection.proxyDNA,{firstAppearanceMa:lifeAgeMa,habitat:habitat,population:600,form:form,artificial:true});
-   organism.genomeStatus='reference-proxy';organism.referenceSequence=projection.summary;
+   organism.genomeStatus='reference-proxy';organism.referenceSequence={...projection.summary,sourceLabel:sourceLabel};
    organism.genomeProjectionEvidence=projection.evidence;organism.genomeModelNote=projection.note;
-   organism.nameFa=label+' · مدل فرضی #'+organism.id;organism.nameEn=label+' · proxy '+organism.id;
+   organism.nameFa='تبار دیجیتال آزمایشی #'+String(organism.id).padStart(3,'0');
+   organism.nameEn='Experimental digital lineage #'+String(organism.id).padStart(3,'0');
    renderSpeciesCatalog();updateLifeUI();persistLifeState();$('speciesOverlay').classList.add('open');
    return{ok:true,id:organism.id,form:form,name:organism.nameFa,note:projection.note};
   }catch(error){return{ok:false,message:String(error&&error.message||error)};}
