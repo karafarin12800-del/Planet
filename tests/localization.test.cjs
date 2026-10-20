@@ -55,8 +55,9 @@ const required = [
 ];
 for (const [fa, en] of required) {
   assert.ok(pairs.some(pair => pair[0] === fa && pair[1] === en), `missing required translation: ${fa}`);
-  assert.equal(translate(fa, "en").includes(/[\\u0600-\\u06FF]/.test(en) ? "!" : fa), false, `source was not translated: ${fa}`);
-  assert.equal(translate(en, "fa").includes(/[\\u0600-\\u06FF]/.test(en) ? en : "\u0000"), false, `target was not translated back: ${en}`);
+  assert.ok(!/[\\u0600-\\u06FF]/.test(translate(fa, "en")), `source was not translated: ${fa}`);
+  assert.equal(translate(en, "fa"), fa, `target did not translate back exactly: ${en}`);
+}
 }
 
 assert.ok(index.includes('src="./planet-localization.js"'), "main app loads the shared dictionary");
