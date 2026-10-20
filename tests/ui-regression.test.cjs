@@ -32,6 +32,18 @@ assert.ok(html.includes("محدودیت علمی مهم"), "guide states biologi
 assert.ok(html.includes("#helpOverlay .planet-help-modal p,#helpOverlay .planet-help-modal li{font-size:14px"), "help text is larger on desktop");
 assert.ok(html.includes("font-size:13px;line-height:1.9"), "help text remains readable on small screens");
 
+// Earth/system camera transitions restore the previous camera and do not strand the app in focus mode.
+assert.ok(html.includes("function restoreFocus()"), "camera restoration is centralized");
+assert.ok(html.includes("if(!sys&&lifeFocusMode)"), "Earth view explicitly exits close-up mode");
+assert.ok(html.includes("targetYaw=savedFocus.targetYaw"), "camera target angles are restored along with current angles");
+
+// Cell size is not fabricated from the synthetic 168-bp toy genome.
+assert.ok(html.includes("اندازهٔ واقعی سلول: نامشخص"), "synthetic lineages disclose unknown real cell size");
+assert.ok(html.includes("id=" + '"originScenario"'), "early-Earth scenario selector is available");
+assert.ok(html.includes("originScenarioSettings"), "scenario choices change model environment inputs");
+assert.ok(html.includes("NASA — محیط‌های احتمالی آغاز حیات"), "origin-of-life scenario links to scientific evidence");
+assert.ok(html.includes("این‌ها تنظیمات آزمایشی مدل‌اند"), "scenario settings are labeled as illustrative rather than established paleoclimate");
+
 // Higher-resolution day map is loaded locally in APK and has an online fallback.
 assert.ok(html.includes("./earth-daymap-4k.jpg"), "Earth texture can load from Android assets");
 assert.ok(html.includes("https://cdn.solarsystemscope.com/textures/download/8k_earth_daymap.jpg"), "Earth texture has official-host fallback");
