@@ -46,9 +46,9 @@ assert.ok(html.includes("این مقادیر تنظیمات آزمایشی مد�
 
 // Higher-resolution day map is loaded locally in APK and has an online fallback.
 assert.ok(html.includes("./earth-daymap-4k.jpg"), "Earth texture can load from Android assets");
-assert.ok(html.includes("https://cdn.solarsystemscope.com/textures/download/8k_earth_daymap.jpg"), "Earth texture has official-host fallback");
+assert.ok(html.includes("https://www.solarsystemscope.com/textures/download/2k_earth_daymap.jpg"), "web fallback avoids decoding an unnecessary 8K image on mobile");
 assert.ok(html.includes("Math.min(4096,hardwareLimit)"), "texture upload is capped for mobile GPU safety");
-assert.ok(html.includes("Earth surface map 4K"), "loaded Earth texture status supports English");
+assert.ok(html.includes("Earth texture · "+'" + dims + "'), "Earth texture status reports the actual uploaded dimensions");
 assert.ok(html.includes("منبع بافت روز زمین: Solar System Scope"), "Earth texture attribution is included");
 
 assert.ok(workflow.includes("earth-daymap-4k.jpg"), "Android build includes the downscaled map");
