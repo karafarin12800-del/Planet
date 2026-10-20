@@ -210,7 +210,13 @@
       trophicStrategy: metabolism === "photosynthetic" ? "light-driven model autotrophy" :
         metabolism === "chemosynthetic" ? "chemical-energy model" : "resource-dependent model heterotrophy",
       size: (0.12 + 0.95 * signals[3]) * stageSize(age),
-      cellSizeMicrometers: Number((0.5 + 4.5 * signals[3]).toFixed(2)),
+      cellSizeMicrometers: null,
+      cellSizeEvidence: {
+        status: "not-measured",
+        valueMicrometers: null,
+        reason: "The 168-bp genome is synthetic and has no validated genotype-to-cell-size calibration. Real cell size depends on taxon, growth phase and environment; it cannot be inferred exactly from this model DNA.",
+        displayScale: "illustrative-only"
+      },
       estimatedBodyLengthMm: age < 3900 ? null : Number((0.01 + 2.5 * ((0.12 + 0.95 * signals[3]) * stageSize(age))).toFixed(3)),
       photosynthetic: metabolism === "photosynthetic",
       swims: motility > 0.48,
