@@ -72,7 +72,7 @@ assert.match(html,/getSpeciesSnapshot:function\(\)/,"the simulator exposes its o
 assert.match(html,/procedural-organism-3d\.js/,"the 3D engine is loaded by the app");
 assert.match(html,/id="habitatShow3D"/,"each habitat view can request a procedural model");
 assert.match(html,/مدل سه‌بعدی در استودیوی نمایش مستقل/,"3D model preview is labeled as a separate studio view");
-const lifeStart = html.indexOf("function drawLife(t)");
+const lifeStart = html.indexOf("function drawLife()");
 const lifeEnd = html.indexOf("function updateLifeUI()", lifeStart);
 assert.ok(lifeStart >= 0 && lifeEnd > lifeStart, "Earth globe renderer can be isolated for regression checks");
 const globeRenderer = html.slice(lifeStart, lifeEnd);

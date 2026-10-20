@@ -60,8 +60,10 @@ assert.equal(proxy.evidence.sourceSequenceUsedAsFullGenotype, false);
 
 assert.ok(["digital-multicellular", "digital-filament", "digital-photosynthetic-colony"].includes(engine.inferForm(p1, 4310, "land")),
   "late terrestrial lineages must receive generic digital morphologies, not real taxon names");
-assert.ok(p1.cellSizeMicrometers >= 0.5 && p1.cellSizeMicrometers <= 5,
-  "cell-size estimate must remain within the illustrative microbial range");
+assert.equal(p1.cellSizeMicrometers, null,
+  "synthetic DNA must not be presented as a measured or calibrated cell size");
+assert.equal(p1.cellSizeEvidence.status, "not-measured");
+assert.equal(p1.cellSizeEvidence.displayScale, "illustrative-only");
 assert.ok(p1.preferredPH >= 5 && p1.preferredPH <= 9, "model pH preference must be bounded");
 assert.ok(p1.preferredSalinityPsu >= 0.5 && p1.preferredSalinityPsu <= 40, "model salinity preference must be bounded");
 assert.equal(typeof p1.estimatedBodyLengthMm, "number",
@@ -71,7 +73,7 @@ const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 assert.match(html, /function renderSpeciesArtworks\(container\)/, "species cards must use the procedural renderer");
 assert.match(html, /renderSpeciesArtworks\(box\)/, "species cards must draw canvas thumbnails after DOM creation");
 const habitatStartForTest = html.indexOf("function drawHabitatScene(time)");
-const habitatEndForTest = html.indexOf("function drawLife(t)", habitatStartForTest);
+const habitatEndForTest = html.indexOf("function drawLife()", habitatStartForTest);
 assert.ok(habitatStartForTest >= 0 && habitatEndForTest > habitatStartForTest, "habitat and globe renderer functions must be present");
 assert.match(html.slice(habitatStartForTest, habitatEndForTest), /PlanetEvolutionModel\.drawOrganism/, "habitat agents must render their form, not a shared cell ellipse");
 

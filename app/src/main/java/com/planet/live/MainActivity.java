@@ -142,6 +142,22 @@ public final class MainActivity extends Activity {
     }
 
     @Override
+    protected void onPause() {
+        if (webView != null) {
+            webView.onPause();
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (webView != null) {
+            webView.onResume();
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         if (fileChooserCallback != null) {
             fileChooserCallback.onReceiveValue(null);
