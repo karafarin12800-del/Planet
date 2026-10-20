@@ -24,7 +24,7 @@ assert.ok(worker.includes("https://api.openai.com/v1/images/generations"), "work
 assert.ok(worker.includes('env.OPENAI_IMAGE_MODEL || "gpt-image-2.5-flare"'), "worker defaults to a documented image-generation model");
 assert.ok(worker.includes('"Authorization": "Bearer " + env.OPENAI_API_KEY'), "provider key is read only from server environment");
 assert.ok(worker.includes("https://appassets.androidplatform.net"), "Android WebView AssetLoader origin is allowed");
-assert.ok(workflow.includes("cp index.html evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js"),
+assert.ok(workflow.includes("cp index.html planet-localization.js evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js"),
   "Android build bundles the runtime image-generation client");
 assert.ok(workflow.includes("node --check planet-image-generation.js"), "CI validates image client syntax");
 assert.ok(workflow.includes("node tests/image-generation-contract.test.cjs"), "CI runs this integration contract test");
