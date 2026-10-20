@@ -1288,10 +1288,8 @@ html[lang="en"] .scene-coords{direction:ltr}
  let lang = 'fa';
  const $ = id => document.getElementById(id);
  function transform(s, to) {
-   let out = s;
-   const list = to === 'en' ? enFrom : faFrom;
-   for (const p of list) out = out.split(to === 'en' ? p[0] : p[1]).join(to === 'en' ? p[1] : p[0]);
-   return out;
+   return window.PlanetLanguage.transform(s, to);
+
  }
  function translateTree(root) {
    if (!root) return;
