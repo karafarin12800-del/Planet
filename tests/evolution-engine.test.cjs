@@ -58,7 +58,14 @@ assert.equal(proxy.summary.sourceGenomeBp, 420);
 assert.equal(proxy.evidence.verifiedBiologicalPhenotype, false);
 assert.equal(proxy.evidence.sourceSequenceUsedAsFullGenotype, false);
 
-assert.ok(["sauropod", "theropod", "armoredDino"].includes(engine.inferForm(p1, 4310, "land")), "dinosaur-era terrestrial genomes must select a modeled dinosaur body plan");
+assert.ok(["digital-multicellular", "digital-filament", "digital-photosynthetic-colony"].includes(engine.inferForm(p1, 4310, "land")),
+  "late terrestrial lineages must receive generic digital morphologies, not real taxon names");
+assert.ok(p1.cellSizeMicrometers >= 0.5 && p1.cellSizeMicrometers <= 5,
+  "cell-size estimate must remain within the illustrative microbial range");
+assert.ok(p1.preferredPH >= 5 && p1.preferredPH <= 9, "model pH preference must be bounded");
+assert.ok(p1.preferredSalinityPsu >= 0.5 && p1.preferredSalinityPsu <= 40, "model salinity preference must be bounded");
+assert.equal(typeof p1.estimatedBodyLengthMm, "number",
+  "multicellular-stage organisms expose an explicitly uncalibrated body-size estimate");
 
 const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 assert.match(html, /function renderSpeciesArtworks\(container\)/, "species cards must use the procedural renderer");
