@@ -611,9 +611,44 @@ function valueNoise(w,h,gridX,gridY){let vals=[];for(let y=0;y<=gridY;y++){vals[
 function cloudTexture(){const w=1024,h=512,c=makeCanvas(w,h),ctx=c.getContext('2d'),img=ctx.createImageData(w,h);const n1=valueNoise(w,h,12,6),n2=valueNoise(w,h,27,14),n3=valueNoise(w,h,55,27);for(let i=0;i<w*h;i++){let v=n1[i]*.58+n2[i]*.29+n3[i]*.13;let a=Math.max(0,Math.min(210,(v-.53)*920));img.data[i*4]=222+Math.floor(v*28);img.data[i*4+1]=232+Math.floor(v*20);img.data[i*4+2]=244;img.data[i*4+3]=a;}ctx.putImageData(img,0,0);return c;}
 function lightsTexture(){const c=makeCanvas(1024,512),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);for(let i=0;i<850;i++){const x=Math.random()*c.width,y=Math.random()*c.height;const radius=Math.random()<.12?1.5:.55;ctx.fillStyle=`rgba(255,185,94,${.4+Math.random()*.6})`;ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.fill();}return c;}
 const earthTex=textureFromCanvas(earthTexture()),cloudTex=textureFromCanvas(cloudTexture());
-// Best-effort photoreal textures; the procedural textures above remain as a fully offline fallback.
-function loadOptionalMap(target,url,onLoaded){const img=new Image();img.crossOrigin='anonymous';img.onload=()=>{try{gl.bindTexture(gl.TEXTURE_2D,target);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.generateMipmap(gl.TEXTURE_2D);if(onLoaded)onLoaded();}catch(e){console.warn('Optional texture skipped:',e);}};img.onerror=()=>console.info('Optional texture unavailable; keeping procedural fallback.');img.src=url;}
-loadOptionalMap(earthTex,'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg',()=>$('mapSource').textContent='satellite-style map');loadOptionalMap(cloudTex,'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_clouds_1024.png',()=>{$('cloudSource').textContent='real cloud map';});
+// Higher-detail Earth day map: Android bundles a 4K derivative of Solar System Scope's 8K map (CC BY 4.0).
+// Web builds first try the bundled path and then the official hosted copy. The procedural canvas remains an offline fallback.
+function loadOptionalMap(target,urls,onLoaded){
+ const candidates=Array.isArray(urls)?urls:[urls];let attempt=0;
+ function loadNext(){
+  if(attempt>=candidates.length){console.info('Optional texture unavailable; keeping procedural fallback.');return;}
+  const url=candidates[attempt++],img=new Image();img.decoding='async';
+  if(/^https?:/i.test(url))img.crossOrigin='anonymous';
+  img.onload=()=>{
+   try{
+    const hardwareLimit=gl.getParameter(gl.MAX_TEXTURE_SIZE)||2048;
+    const limit=Math.max(256,Math.min(4096,hardwareLimit));
+    const pow2Floor=v=>Math.pow(2,Math.floor(Math.log2(Math.max(2,v))));
+    const tw=pow2Floor(Math.min(img.naturalWidth||img.width,limit));
+    const th=pow2Floor(Math.min(img.naturalHeight||img.height,limit));
+    let source=img;
+    if(tw!==img.width||th!==img.height){
+     const canvas=makeCanvas(tw,th),ctx=canvas.getContext('2d');
+     ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+     ctx.drawImage(img,0,0,tw,th);source=canvas;
+    }
+    gl.bindTexture(gl.TEXTURE_2D,target);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,source);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    if(onLoaded)onLoaded({url:url,width:tw,height:th});
+   }catch(e){console.warn('Optional texture skipped:',e);loadNext();}
+  };
+  img.onerror=loadNext;img.src=url;
+ }
+ loadNext();
+}
+loadOptionalMap(earthTex,['./earth-daymap-4k.jpg','https://cdn.solarsystemscope.com/textures/download/8k_earth_daymap.jpg'],()=>{$('mapSource').textContent='نقشهٔ سطح زمین 4K';});
+loadOptionalMap(cloudTex,'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_clouds_1024.png',()=>{$('cloudSource').textContent='real cloud map'});
 function combineTex(base,lights){const c=makeCanvas(1024,512),ctx=c.getContext('2d');ctx.drawImage(base,0,0,1024,512);ctx.globalAlpha=.0;ctx.drawImage(lights,0,0);return textureFromCanvas(c);}// city-light alpha remains in the unused source alpha texture
 const otherTex=[];function sunTexture(){const c=makeCanvas(512,256),ctx=c.getContext('2d');let g=ctx.createLinearGradient(0,0,0,256);g.addColorStop(0,'#e87933');g.addColorStop(.32,'#ffb347');g.addColorStop(.58,'#ffd46c');g.addColorStop(1,'#f18a36');ctx.fillStyle=g;ctx.fillRect(0,0,512,256);for(let i=0;i<170;i++){ctx.strokeStyle=`rgba(255,235,152,${Math.random()*.17})`;ctx.lineWidth=1+Math.random()*4;ctx.beginPath();let y=Math.random()*256;ctx.moveTo(0,y);ctx.bezierCurveTo(110,y-25,330,y+25,512,y+Math.random()*18-9);ctx.stroke();}return textureFromCanvas(c);}const sunTex=sunTexture();function simplePlanet(color1,color2){const c=makeCanvas(512,256),ctx=c.getContext('2d');let g=ctx.createLinearGradient(0,0,0,256);g.addColorStop(0,color1);g.addColorStop(.5,color2);g.addColorStop(1,color1);ctx.fillStyle=g;ctx.fillRect(0,0,512,256);for(let i=0;i<110;i++){ctx.strokeStyle=`rgba(255,255,255,${Math.random()*.08})`;ctx.lineWidth=1+Math.random()*7;ctx.beginPath();let y=Math.random()*256;ctx.moveTo(0,y);ctx.bezierCurveTo(130,y-20,350,y+20,512,y+Math.random()*20-10);ctx.stroke();}randNoise(c,11);return textureFromCanvas(c);}const planetTex=[simplePlanet('#7e8d9b','#c7c6b8'),simplePlanet('#b18d52','#e5c28b'),earthTex,simplePlanet('#a8543e','#d28a62'),simplePlanet('#bc9864','#dfc99a'),simplePlanet('#b7a17c','#e5d3ad')];
 // Matrix helpers, column-major for WebGL.
