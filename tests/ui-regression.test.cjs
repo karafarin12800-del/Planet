@@ -103,6 +103,12 @@ assert.ok(html.includes("async function parseGenome(text,name,formatHint)"), "fu
 assert.ok(html.includes("for(let offset=0;offset<seq.length;offset+=200000)"), "genome statistics are scanned in bounded chunks");
 assert.ok(html.includes("await yieldToBrowser()"), "long sequence scans yield to the WebView event loop");
 assert.ok(html.includes("const g=await parseGenome(text,name,format);"), "file import awaits the incremental genome parser");
+assert.ok(html.includes("const lowPowerDevice=window.innerWidth<=900"), "phones use a low-power startup rendering path");
+assert.ok(html.includes("const landPixels=ctx.getImageData(0,0,w,h).data"), "procedural Earth texture uses one raster readback");
+assert.ok(!html.includes("ctx.getImageData(x|0,y|0,1,1)"), "procedural Earth generation avoids hundreds of synchronous 1x1 canvas readbacks");
+assert.ok(html.includes("lowPowerDevice?1024:2048"), "Earth fallback generation is smaller on phones");
+assert.ok(html.includes("lowPowerDevice?512:1024"), "cloud texture generation is smaller on phones");
+
 assert.ok(!html.includes("records.map(r=>r.seq).join('')"), "RNA/DNA classification does not concatenate a duplicate full genome");
 
 assert.ok(html.includes("while(evolutionAccumulator>=.75&&lifeAgeMa<4540)"), "the ecology loop stops stepping after the geological timeline reaches its endpoint");
