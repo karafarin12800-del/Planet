@@ -14,6 +14,7 @@ on:
       - 'services/image-generation-worker/**'
       - 'tests/**'
       - 'offline-ai.js'
+      - 'offline-evolution.js'
       - 'manifest.webmanifest'
       - 'sw.js'
       - 'icon.svg'
@@ -80,8 +81,11 @@ jobs:
       - name: Bundle the current web simulation into the Android app
         run: |
           mkdir -p app/src/main/assets
-          cp index.html planet-localization.js evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
+          cp index.html planet-localization.js evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js offline-evolution.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
           cp genome-evidence.html app/src/main/assets/
+
+      - name: Validate offline evolution lifecycle controller syntax
+        run: node --check offline-evolution.js
 
       - name: Bundle high-resolution Earth day map for mobile
         shell: bash
