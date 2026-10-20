@@ -1179,7 +1179,7 @@ function renderSpeciesCatalog(force){
  const box=$('speciesList'),count=$('speciesCount');if(count)count.textContent=String(speciesCatalog.length);const extinctCount=speciesCatalog.filter(x=>Number.isFinite(x.extinctAtMa)&&x.extinctAtMa<=lifeAgeMa).length;const extinctBadge=$('extinctSpeciesCount');if(extinctBadge)extinctBadge.textContent=String(extinctCount);if(!box)return;
  const now=performance.now();
  // Simulation ticks can happen several times per second. Do not replace list DOM while the user scrolls.
- if(!force&&(now<speciesListUserScrollingUntil||(speciesCatalogLastRenderAt&&now-speciesCatalogLastRenderAt<750)))return;
+ if(!force&&(now<speciesListUserScrollingUntil||(speciesCatalogLastRenderAt&&now-speciesCatalogLastRenderAt<2000)))return;
  const previousScrollTop=box.scrollTop;
  const lang=isEnglishLife();
  if(!speciesCatalog.length){box.innerHTML='<div class="species-empty">'+(lang?'No organisms have emerged yet. Start evolution and advance the geological timeline to the early-life window, or make an explicitly experimental random specimen.':'هنوز موجودی پدید نیامده است. تکامل را شروع کن و زمان زمین‌شناختی را به بازهٔ پیدایش حیات برسان، یا یک نمونهٔ تصادفیِ آزمایشگاهی بساز.')+'</div>';box.scrollTop=0;speciesCatalogLastRenderAt=now;return;}
