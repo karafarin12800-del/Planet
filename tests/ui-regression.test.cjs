@@ -83,5 +83,11 @@ assert.ok(!html.includes("requestAnimationFrame(drawLife)"), "the unused empty E
 assert.ok(html.includes("innerWidth<=900?2048:4096"), "mobile WebGL textures are capped at 2K");
 assert.ok(html.includes("webglcontextlost"), "WebGL loss is handled rather than leaving a silent frozen scene");
 assert.ok(html.includes("now-speciesCatalogLastRenderAt<2000"), "large species catalog is not rebuilt several times per second");
+assert.ok(html.includes("if(!force&&!$('speciesOverlay').classList.contains('open'))return"), "hidden species archive does not build hundreds of cards during startup");
+assert.ok(html.includes("rect.bottom<viewport.top-120||rect.top>viewport.bottom+120"), "off-screen organism thumbnails are deferred");
+assert.ok(html.includes("artRenderScheduled"), "visible thumbnails are rendered lazily during scroll");
+const activity = read("app/src/main/java/com/planet/live/MainActivity.java");
+assert.ok(activity.includes("protected void onPause()") && activity.includes("webView.onPause()"), "Android pauses WebView activity work in background");
+assert.ok(activity.includes("protected void onResume()") && activity.includes("webView.onResume()"), "Android resumes WebView activity work when foregrounded");
 
 console.log("PLANET UI regression tests passed: catalog scroll stability, aligned genome buttons, removed life zoom, complete guide, and GPU-safe Earth texture.");
