@@ -73,7 +73,7 @@ const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 assert.match(html, /function renderSpeciesArtworks\(container\)/, "species cards must use the procedural renderer");
 assert.match(html, /renderSpeciesArtworks\(box\)/, "species cards must draw canvas thumbnails after DOM creation");
 const habitatStartForTest = html.indexOf("function drawHabitatScene(time)");
-const habitatEndForTest = html.indexOf("function drawLife(t)", habitatStartForTest);
+const habitatEndForTest = html.indexOf("function drawLife()", habitatStartForTest);
 assert.ok(habitatStartForTest >= 0 && habitatEndForTest > habitatStartForTest, "habitat and globe renderer functions must be present");
 assert.match(html.slice(habitatStartForTest, habitatEndForTest), /PlanetEvolutionModel\.drawOrganism/, "habitat agents must render their form, not a shared cell ellipse");
 
