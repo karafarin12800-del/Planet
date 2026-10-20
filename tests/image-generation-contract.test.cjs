@@ -29,7 +29,7 @@ assert.ok(workflow.includes("cp index.html planet-localization.js evolution-engi
 assert.ok(workflow.includes("node --check planet-image-generation.js"), "CI validates image client syntax");
 assert.ok(workflow.includes("node tests/image-generation-contract.test.cjs"), "CI runs this integration contract test");
 assert.ok(sw.includes("planet-image-generation.js"), "PWA app-shell cache contains the runtime client");
-assert.ok(sw.includes("planet-pwa-v15-full-language-switch"), "service-worker cache version is bumped for UI and Earth texture changes");
+assert.ok(sw.includes("planet-pwa-v16-freeze-fixes"), "service-worker cache version is bumped for UI and Earth texture changes");
 assert.ok(sw.includes("./genome-evidence.html"), "PWA app-shell cache contains the genome evidence report");
 assert.ok(threeD.includes("implicit tissue field + marching tetrahedra; no taxon-specific mesh template selected"),
   "3D model generation uses runtime procedural geometry without taxon-specific templates");
