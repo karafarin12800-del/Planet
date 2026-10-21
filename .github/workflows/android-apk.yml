@@ -271,3 +271,5 @@ jobs:
           path: dist/*
           if-no-files-found: error
           retention-days: 30
+
+# Rebuild Android release with configured upload signing secrets.
