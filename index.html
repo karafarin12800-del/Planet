@@ -69,6 +69,42 @@
 }
 #planet-ai-launch::before{content:"✦";font-size:16px;line-height:1}
 #planet-ai-panel{z-index:99991 !important}
+
+/* Release polish: clearer branding, readable Earth overlay, and separated mobile controls */
+.brand-name{font-size:clamp(12px,1.35vw,17px);letter-spacing:clamp(1px,.18vw,2.4px);white-space:nowrap}
+.scene-title{padding:10px 12px;border:1px solid rgba(117,202,229,.12);border-radius:14px;background:linear-gradient(105deg,rgba(3,10,23,.70),rgba(3,10,23,.28) 76%,transparent);text-shadow:0 2px 10px rgba(0,0,0,.72)}
+.scene-title .eyebrow{color:#86efff;text-shadow:0 1px 8px #00121f}
+.scene-title p{color:#e0eaf7;text-shadow:0 1px 5px #000;line-height:1.9}
+.scene-coords{filter:drop-shadow(0 1px 5px #000)}
+.bottom-bar{flex-wrap:wrap;max-width:calc(100vw - 24px)}
+.bottom-chip{white-space:nowrap}
+@media(max-width:900px){
+ .brand-name{font-size:clamp(10px,3vw,14px);letter-spacing:1px;white-space:normal;max-width:110px}
+ .brand-sub{font-size:8px;line-height:1.45}
+ .topbar{align-items:flex-start;gap:6px}
+ .top-actions{gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:65vw}
+ .pill{max-width:150px;line-height:1.4}
+ .scene-title{top:10%;left:12px;max-width:min(220px,55vw);padding:8px 10px}
+ .scene-title h1{font-size:clamp(27px,7vw,33px)}
+ .scene-title p{font-size:11px;max-width:100%;color:#eef5ff}
+ .scene-coords{left:16px;bottom:14%;gap:12px}
+ .bottom-bar{left:12px;right:12px;bottom:12px;gap:5px;max-width:calc(100vw - 24px)}
+ .bottom-chip{padding:7px 8px;font-size:9px}
+ .planet-genome-action-dock{bottom:66px!important;left:10px!important;gap:6px!important}
+ #planet-ai-assistant{bottom:14px!important;left:auto!important;right:12px!important;width:32px!important;height:32px!important}
+ #planet-ai-launch{width:32px!important;height:32px!important;min-width:32px!important;max-width:32px!important}
+ .help-btn{right:12px;bottom:54px}
+}
+@media(max-width:390px){
+ .brand{gap:6px}
+ .brand-mark{width:30px;height:30px}
+ .top-actions{max-width:68vw}
+ .pill{font-size:8px;padding:6px 7px}
+ .planet-genome-action-dock{max-width:calc(100vw - 20px)!important}
+ #gpGenomeOpen,#planetEvidenceLauncher{font-size:10px!important;padding:8px 8px!important}
+ .bottom-chip{font-size:8px;padding:6px}
+}
+
 </style>
 
 <style id="gp-genome-lab-styles">
@@ -553,7 +589,7 @@ $('gpCreateLifeModel').addEventListener('click',()=>{
 
 <div id="app">
 <canvas id="space" aria-label="نمای سه‌بعدی منظومه سیاره‌ای"></canvas><canvas id="lifeCanvas" aria-hidden="true"></canvas><div id="vignette"></div>
-<header class="topbar"><div class="brand"><div class="brand-mark"><svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="9" stroke="#82e3f4" stroke-width="1.4"/><ellipse cx="16" cy="16" rx="14" ry="5.5" transform="rotate(-28 16 16)" stroke="#659bff" stroke-width="1.1"/><circle cx="24.4" cy="10.5" r="2" fill="#82e3f4"/><path d="M12 8c-2.4 1-2 3.2-4 4.1m10.8 1.2c-2.5-.9-3.3 1.6-2 3.4s-.8 3.3-2.6 4.9" stroke="#9be8c9" stroke-width="1.4" stroke-linecap="round"/></svg></div><div><div class="brand-name">PLANET</div><div class="brand-sub">آزمایشگاه جهان‌های زنده</div></div></div><div class="top-actions"><button class="icon-btn" id="languageToggle" type="button" aria-label="Switch language">EN</button><div class="pill"><span class="dot" id="runDot"></span><span id="runLabel">شبیه‌سازی فعال</span></div><button class="icon-btn panel-toggle" id="panelToggle" aria-label="نمایش پنل">☷ پنل</button><button class="icon-btn" id="helpBtn">راهنما ؟</button></div></header>
+<header class="topbar"><div class="brand"><div class="brand-mark"><svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="9" stroke="#82e3f4" stroke-width="1.4"/><ellipse cx="16" cy="16" rx="14" ry="5.5" transform="rotate(-28 16 16)" stroke="#659bff" stroke-width="1.1"/><circle cx="24.4" cy="10.5" r="2" fill="#82e3f4"/><path d="M12 8c-2.4 1-2 3.2-4 4.1m10.8 1.2c-2.5-.9-3.3 1.6-2 3.4s-.8 3.3-2.6 4.9" stroke="#9be8c9" stroke-width="1.4" stroke-linecap="round"/></svg></div><div><div class="brand-name">PLANET GENOME</div><div class="brand-sub">آزمایشگاه جهان‌های زنده</div></div></div><div class="top-actions"><button class="icon-btn" id="languageToggle" type="button" aria-label="Switch language">EN</button><div class="pill"><span class="dot" id="runDot"></span><span id="runLabel">شبیه‌سازی فعال</span></div><button class="icon-btn panel-toggle" id="panelToggle" aria-label="نمایش پنل">☷ پنل</button><button class="icon-btn" id="helpBtn">راهنما ؟</button></div></header>
 <main class="layout"><section class="scene-hud"><div class="scene-title"><div class="eyebrow" id="viewKicker">PLANETARY ENVIRONMENT / 01</div><h1 id="viewTitle">EARTH</h1><p id="viewDesc">جهانی آبی با اقیانوس‌ها، ابرهای پویا و جو محافظ؛ یک مدل زنده از شرایط زمین.</p></div><div class="scene-coords"><div class="coord"><label>ROTATION</label><strong id="rotationReadout">00:42 / 04:00</strong></div><div class="coord"><label>ORBITAL PHASE</label><strong id="phaseReadout">142.8°</strong></div><div class="coord hide-mobile"><label>SIMULATION</label><strong id="simReadout">T + 00:01:42</strong></div></div></section>
 <aside class="panel" id="panel"><div class="panel-head"><h2>داشبورد سیاره</h2><span class="micro-label">PLANET OS · 0.1</span></div>
 <div class="section clock-section"><div class="section-title"><span><span class="ico">◷</span> زمان سپری‌شده از آغاز</span><span class="micro-label">SIM CLOCK</span></div><div class="clock-grid"><div class="clock-card"><span>روزهای سپری‌شده</span><strong id="dayCounter">0.00</strong><small>روز مدل</small></div><div class="clock-card"><span>سال‌های سپری‌شده</span><strong id="yearCounter">0.0000</strong><small>سال زمینی مدل</small></div></div><div class="tiny-note" id="clockHint">زمان با سرعت شبیه‌سازی جلو می‌رود؛ مکث، شمارنده را متوقف می‌کند.</div></div>
