@@ -89,7 +89,8 @@ const EVIDENCE={
   links:[
    ['BICEP/Keck XIII paper','https://arxiv.org/abs/2110.00483'],
    ['NASA LAMBDA — BK18 r likelihood download page','https://lambda.gsfc.nasa.gov/product/bicepkeck/bicep2k_r_likelihood21_get.html'],
-   ['NASA LAMBDA — BK18 bandpower data page','https://lambda.gsfc.nasa.gov/product/bicepkeck/bicep2k_bandpowers21_get.html']
+   ['NASA LAMBDA — BK18 bandpower data page','https://lambda.gsfc.nasa.gov/product/bicepkeck/bicep2k_bandpowers21_get.html'],
+   ['Direct BK18 bandpower table (TXT; columns 2, 3 and 4 can be imported)','https://lambda.gsfc.nasa.gov/data/suborbital/BICEPK_2021/BK18_bandpowers_20210607.txt']
   ],
   method:'upper-limit'
  },
@@ -194,7 +195,8 @@ function plotImported(ctx,W,H){
 }
 function renderLinks(key){
  const host=$('evidenceLinks');if(!host)return;host.innerHTML='';
- const links=key==='imported'?[['NASA LAMBDA — BK18 data products','https://lambda.gsfc.nasa.gov/product/bicepkeck/bicep2k_2021.html']]:((EVIDENCE[key]||EVIDENCE.cmb).links||[]);
+ const links=key==='imported'?[['NASA LAMBDA — BK18 data products','https://lambda.gsfc.nasa.gov/product/bicepkeck/bicep2k_bandpowers21_get.html'],
+ ['Direct BK18 bandpower table (TXT)','https://lambda.gsfc.nasa.gov/data/suborbital/BICEPK_2021/BK18_bandpowers_20210607.txt']]:((EVIDENCE[key]||EVIDENCE.cmb).links||[]);
  links.forEach(row=>{const p=document.createElement('p');p.className='small';const a=document.createElement('a');a.href=row[1];a.target='_blank';a.rel='noopener noreferrer';a.textContent=row[0];a.style.color='#83def0';p.appendChild(a);host.appendChild(p)});
 }
 function renderNarrative(key){
@@ -224,7 +226,7 @@ function setLanguage(next){
 }
 function updateModel(){renderNarrative($('evidenceSource')?.value||'cmb')}
 function parseNumber(value){
- const n=Number(String(value).trim().replace(/[dD]/,'e'));
+ const raw=String(value==null?'':value).trim();if(!raw)return null;const n=Number(raw.replace(/[dD]/,'e'));
  return Number.isFinite(n)?n:null;
 }
 function loadTable(){
@@ -259,6 +261,7 @@ function loadTable(){
 function setStatus(s){const e=$('observationStatus');if(e)e.textContent=s}
 function init(){
  if(!$('evidenceSource'))return;
+ lang=document.documentElement.lang==='en'?'en':'fa';
  $('evidenceSource').addEventListener('change',render);
  ['xColumn','yColumn','sigmaColumn'].forEach(id=>$(id).addEventListener('change',()=>{if(uploaded.length&&$('evidenceSource').value==='imported'){const f=$('observationFile')?.files?.[0];if(f)loadTable()}}));
  $('loadObservation').addEventListener('click',loadTable);
