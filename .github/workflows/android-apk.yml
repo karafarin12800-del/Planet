@@ -6,7 +6,8 @@ on:
     paths:
       - 'index.html'
       - 'planet-localization.js'
-      - 'planet-localization.js'
+      - 'cosmology-lab.html'
+      - 'cosmology-observations.js'
       - 'genome-evidence.html'
       - 'evolution-engine.js'
       - 'procedural-organism-3d.js'
@@ -29,6 +30,9 @@ on:
     paths:
       - 'genome-evidence.html'
       - 'index.html'
+      - 'planet-localization.js'
+      - 'cosmology-lab.html'
+      - 'cosmology-observations.js'
       - 'evolution-engine.js'
       - 'procedural-organism-3d.js'
       - 'planet-image-generation.js'
@@ -83,6 +87,7 @@ jobs:
           mkdir -p app/src/main/assets
           cp index.html planet-localization.js evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js offline-evolution.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
           cp genome-evidence.html app/src/main/assets/
+          cp cosmology-lab.html cosmology-observations.js app/src/main/assets/
 
       - name: Validate offline evolution lifecycle controller syntax
         run: node --check offline-evolution.js
@@ -201,6 +206,24 @@ jobs:
           print(f"Extracted {len(scripts)} inline JavaScript blocks.")
           PY
           for script in /tmp/planet-inline-*.js; do node --check "$script"; done
+
+      - name: Validate cosmology evidence module and inline JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check cosmology-observations.js
+          python3 - <<'PY'
+          import pathlib, re
+          source = pathlib.Path("cosmology-lab.html").read_text(encoding="utf-8")
+          matches = re.findall(r'<script\\b([^>]*)>(.*?)</script\\s*>', source, re.S | re.I)
+          scripts = [body for attrs, body in matches if not re.search(r'\\bsrc\\s*=', attrs, re.I)]
+          if not scripts:
+              raise SystemExit("No inline JavaScript found in cosmology-lab.html")
+          for i, body in enumerate(scripts):
+              pathlib.Path(f"/tmp/planet-cosmology-{i}.js").write_text(body, encoding="utf-8")
+          print(f"Extracted {len(scripts)} cosmology inline JavaScript blocks.")
+          PY
+          for script in /tmp/planet-cosmology-*.js; do node --check "$script"; done
 
       - name: Validate offline intelligence engine
         run: |
