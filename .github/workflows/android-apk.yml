@@ -8,6 +8,7 @@ on:
       - 'planet-localization.js'
       - 'cosmology-lab.html'
       - 'cosmology-observations.js'
+      - 'sw.js'
       - 'genome-evidence.html'
       - 'evolution-engine.js'
       - 'procedural-organism-3d.js'
