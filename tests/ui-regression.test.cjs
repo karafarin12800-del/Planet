@@ -54,8 +54,8 @@ assert.ok(html.includes("منبع بافت روز زمین: Solar System Scope")
 assert.ok(workflow.includes("earth-daymap-4k.jpg"), "Android build includes the downscaled map");
 assert.ok(workflow.includes("Pillow"), "CI uses a reproducible image resize step");
 assert.ok(workflow.includes("resize((4096, 2048)"), "CI creates a 4K power-of-two texture");
-assert.ok(sw.includes("planet-pwa-v17-offline-evolution"), "PWA cache key was bumped");
-assert.ok(imageContract.includes("planet-pwa-v17-offline-evolution"), "existing image contract agrees with new cache version");
+assert.ok(sw.includes("planet-pwa-v18-cosmology-observations"), "PWA cache key was bumped");
+assert.ok(imageContract.includes("planet-pwa-v18-cosmology-observations"), "existing image contract agrees with new cache version");
 
 // Performance regressions: large timeline jumps must yield to the browser between generations.
 const catchUpStart = html.indexOf("function catchUpEvolution(targetAge)");
@@ -128,7 +128,7 @@ assert.ok(html.includes("actAgent(agent,s,env,neighbors,context,speciesBaseFitne
 assert.ok(!html.includes("agent.fitness=clamp(.25*calculateFitness(s,lifeAgeMa)"), "fitness calculation is not repeated for every individual in a species");
 assert.ok(!html.includes("ensureDinosaurLineages()"), "evolution does not call the removed dinosaur-seeding function");
 assert.ok(html.includes("Evolution step failed; orbital rendering continues"), "an ecology exception pauses evolution without killing the planet render loop");
-assert.ok(sw.includes("planet-pwa-v17-offline-evolution"), "PWA cache invalidation includes the freeze fixes");
+assert.ok(sw.includes("planet-pwa-v18-cosmology-observations"), "PWA cache invalidation includes the freeze fixes");
 assert.ok(html.includes("while(evolutionAccumulator>=.75&&lifeAgeMa<4540)"), "the ecology loop stops stepping after the geological timeline reaches its endpoint");
 assert.ok(html.includes("if(lifeStarted&&lifeAgeMa>=4540){lifeStarted=false;evolutionAccumulator=0"), "restored or completed timelines pause automatically at the endpoint");
 console.log("PLANET UI regression tests passed: catalog scroll stability, aligned genome buttons, removed life zoom, complete guide, and GPU-safe Earth texture.");

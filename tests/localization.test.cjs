@@ -73,7 +73,7 @@ assert.ok(privacy.includes('data-planet-lang-fa') && privacy.includes('data-plan
 assert.ok(privacy.includes('src="./planet-localization.js"'), "privacy page loads the shared dictionary");
 assert.ok(workflow.includes("cp index.html planet-localization.js"), "Android package includes the shared dictionary");
 assert.ok(sw.includes('"./planet-localization.js"'), "PWA cache precaches the shared dictionary");
-assert.ok(sw.includes("planet-pwa-v17-offline-evolution"), "PWA cache version is refreshed");
+assert.ok(sw.includes("planet-pwa-v18-cosmology-observations"), "PWA cache version is refreshed");
 assert.ok(activity.includes('document.documentElement.lang || \'fa\''), "native Android toast follows the selected UI language");
 assert.ok(activity.includes('"File picker is unavailable"') && activity.includes('"فایل‌گزین در دسترس نیست"'), "native file-picker error has both languages");
 assert.ok(aiWorker.includes("سرور هنوز Secret کلید OpenAI را تنظیم نکرده است."), "online AI error messages remain sourced from the worker");
