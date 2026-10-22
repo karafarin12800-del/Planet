@@ -869,8 +869,9 @@ function recombineGenomes(parentA,parentB){
  for(let gene=0;gene<GENE_COUNT;gene++){
   const start=gene*GENE_LENGTH;
   const cut=3+Math.floor(Math.random()*Math.max(1,GENE_LENGTH-6));
-  const sourceA=a.slice(start,start+cut),sourceB=b.slice(start+cut,start+GENE_LENGTH);
-  child+=(useA?sourceA:b.slice(start,start+cut))+(useA?b.slice(start+cut,start+GENE_LENGTH):sourceB);
+  const prefix=useA?a.slice(start,start+cut):b.slice(start,start+cut);
+  const suffix=useA?b.slice(start+cut,start+GENE_LENGTH):a.slice(start+cut,start+GENE_LENGTH);
+  child+=prefix+suffix;
   useA=Math.random()<.5;
  }
  return child.length===GENOME_LENGTH?child:(a);
