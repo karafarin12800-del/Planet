@@ -1,7 +1,7 @@
 {
   "id": "./",
   "name": "Planet Genome",
-  "short_name": "Planet Genome",
+  "short_name": "Planet",
   "description": "Planet Genome — آزمایشگاه ژنوم، شبیه‌سازی حیات و تکامل موجودات بر پایه داده‌های ژنتیکی و محیطی",
   "lang": "fa",
   "dir": "rtl",
@@ -11,12 +11,5 @@
   "orientation": "any",
   "background_color": "#050b17",
   "theme_color": "#050b17",
-  "icons": [
-    {
-      "src": "./icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ]
+  "icons": [{"src":"./planet-original.jpg","sizes":"128x128","type":"image/jpeg","purpose":"any maskable"}]
 }
