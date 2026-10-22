@@ -1,17 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="512"
-    android:viewportHeight="512">
-    <path android:fillColor="#050B17" android:pathData="M0,0h512v512h-512z" />
-    <path android:fillColor="#0B2850" android:strokeColor="#82E3F4" android:strokeWidth="5"
-        android:pathData="M256,104 C340,104 408,172 408,256 C408,340 340,408 256,408 C172,408 104,340 104,256 C104,172 172,104 256,104 Z" />
-    <path android:fillColor="#2479B9"
-        android:pathData="M256,117 C331,117 395,181 395,256 C395,331 331,395 256,395 C181,395 117,331 117,256 C117,181 181,117 256,117 Z" />
-    <path android:fillColor="#62D7A1" android:fillAlpha="0.94"
-        android:pathData="M164,183 L199,157 L226,171 L229,199 L207,215 L199,238 L171,231 L154,207 Z M254,210 L285,194 L316,209 L334,236 L315,258 L289,253 L272,274 L251,258 L258,237 Z M195,287 L224,274 L250,290 L244,320 L219,340 L193,319 Z" />
-    <path android:fillColor="#00000000" android:strokeColor="#6BAAFF" android:strokeWidth="12"
-        android:pathData="M55,318 C101,213 195,164 298,178 C380,189 439,224 457,261 C476,302 434,333 370,345 C272,363 151,332 77,290" />
-    <path android:fillColor="#9BE8F5" android:pathData="M424,164 C438,164 449,175 449,189 C449,203 438,214 424,214 C410,214 399,203 399,189 C399,175 410,164 424,164 Z" />
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="512" android:viewportHeight="512">
+    <path android:fillColor="#02091A" android:pathData="M0,0h512v512h-512z"/>
+    <path android:fillColor="#061A3A" android:pathData="M0,0h512v512h-512z"/>
+    <path android:fillColor="#062D69" android:fillAlpha="0.7" android:pathData="M0,0h512v512h-512z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M80,65h3v3h-3z M408,74h4v4h-4z M445,133h3v3h-3z M60,201h4v4h-4z M447,371h3v3h-3z M92,423h4v4h-4z M376,444h3v3h-3z M130,102h2v2h-2z"/>
+    <path android:fillColor="#0875D1" android:strokeColor="#75E9FF" android:strokeWidth="6" android:pathData="M256,74 C356,74 431,155 431,256 C431,357 356,438 256,438 C155,438 81,357 81,256 C81,155 155,74 256,74 Z"/>
+    <path android:fillColor="#0A4F9B" android:pathData="M256,88 C348,88 417,164 417,256 C417,348 348,424 256,424 C164,424 95,348 95,256 C95,164 164,88 256,88 Z"/>
+    <path android:fillColor="#48C982" android:pathData="M132,178 L165,148 L203,157 L222,183 L205,208 L180,214 L167,244 L140,227 L120,203 Z M230,167 L259,148 L282,167 L279,191 L301,207 L290,231 L264,228 L251,205 L226,199 Z M300,236 L337,220 L367,240 L356,264 L331,273 L321,300 L296,287 L281,263 Z M176,279 L207,265 L233,284 L226,316 L201,338 L174,314 Z M247,319 L272,302 L295,319 L291,347 L267,362 L246,345 Z"/>
+    <path android:fillColor="#F4D79A" android:pathData="M126,247 L142,229 L166,235 L173,258 L158,278 L138,272 Z M183,226 L205,208 L224,219 L230,244 L210,255 L195,246 Z M244,247 L268,236 L286,251 L276,271 L255,272 Z"/>
+    <path android:fillColor="#00000000" android:strokeColor="#00D9FF" android:strokeWidth="23" android:pathData="M105,341 C160,275 215,276 268,320 C319,364 367,358 406,315 C441,276 418,235 378,215 C332,192 287,210 252,243 C210,282 178,323 143,307 C119,296 119,270 141,251"/>
+    <path android:fillColor="#00000000" android:strokeColor="#6BEAFF" android:strokeWidth="8" android:pathData="M105,341 C160,275 215,276 268,320 C319,364 367,358 406,315 C441,276 418,235 378,215 C332,192 287,210 252,243 C210,282 178,323 143,307 C119,296 119,270 141,251"/>
+    <path android:fillColor="#8CEB31" android:pathData="M346,108 C338,74 360,43 397,34 C399,68 382,95 346,108 Z M348,108 C316,85 308,57 322,38 C347,53 356,78 348,108 Z"/>
+    <path android:fillColor="#D7FF6C" android:pathData="M348,107 L389,48 L355,99 Z M347,105 L326,51 L342,101 Z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M153,448h207v9h-207z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M133,460h246v25h-246z"/>
+    <path android:fillColor="#00DDF7" android:pathData="M171,489h170v9h-170z"/>
 </vector>
