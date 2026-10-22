@@ -860,8 +860,24 @@ function updateEnvironmentalConditions(silent){
  if(!silent){const box=$('originScenarioSummary');if(box){const row=originScenarioSettings[originScenario];box.textContent=(isEnglishLife()?row.en:row.fa)+' '+(isEnglishLife()?'These are illustrative model settings, not measured global paleoclimate values.':'این مقادیر تنظیمات آزمایشی مدل‌اند، نه اندازه‌گیری اقلیم جهانی باستان.');}}
 }
 function actionQSeed(){return{forage:0,explore:0,rest:0,avoid:0,reproduce:0,cooperate:0};}
-function createAgent(species,parent){
- const dna=normalizeGenome(parent?parent.dna:species.lineageDNA||species.dna)||species.dna;
+/* Educational sexual recombination: only within the same modeled species.
+   This is a simplified inheritance model, not a claim of universal real-world mating compatibility. */
+function recombineGenomes(parentA,parentB){
+ const a=normalizeGenome(parentA),b=normalizeGenome(parentB);
+ if(!a||!b||a.length!==b.length)return a||b||randomGenome();
+ let child='',useA=Math.random()<.5;
+ for(let gene=0;gene<GENE_COUNT;gene++){
+  const start=gene*GENE_LENGTH;
+  const cut=3+Math.floor(Math.random()*Math.max(1,GENE_LENGTH-6));
+  const sourceA=a.slice(start,start+cut),sourceB=b.slice(start+cut,start+GENE_LENGTH);
+  child+=(useA?sourceA:b.slice(start,start+cut))+(useA?b.slice(start+cut,start+GENE_LENGTH):sourceB);
+  useA=Math.random()<.5;
+ }
+ return child.length===GENOME_LENGTH?child:(a);
+}
+function createAgent(species,parent,mate){
+ const inherited=parent?(mate?recombineGenomes(parent.dna,mate.dna):parent.dna):(species.lineageDNA||species.dna);
+ const dna=normalizeGenome(inherited)||species.dna;
  const genotype=parent?mutateGenome(dna,.0011):mutateGenome(dna,.0018);
  const traits=phenotypeFromDNA(genotype);
  return{id:++agentSerial,dna:genotype,traits,x:parent?clamp(parent.x+(Math.random()-.5)*.10,.03,.97):.06+Math.random()*.88,y:parent?clamp(parent.y+(Math.random()-.5)*.10,.03,.97):.06+Math.random()*.88,energy:parent?54+Math.random()*22:48+Math.random()*38,health:parent?72+Math.random()*22:56+Math.random()*40,age:0,growth:parent?.20+Math.random()*.16:.28+Math.random()*.52,maturity:0,lifeSpan:Math.round(36+traits.protection*38+traits.thermalTolerance*24+Math.random()*22),cooldown:0,q:actionQSeed(),memory:[],action:'explore',reward:0,previousEnergy:50,previousHealth:80,previousOffspring:0,offspring:0,decisions:0,successfulDecisions:0,alive:true,stress:0,fitness:.5};
@@ -942,7 +958,11 @@ function actAgent(agent,s,env,neighbors,context,speciesBaseFitness){
  }else if(agent.action==='reproduce'){
   if(agent.energy>67&&agent.health>42&&agent.cooldown<=0&&s.agents.length+context.pending.length<MAX_AGENTS_PER_SPECIES){
    agent.energy-=27;agent.health-=3;agent.cooldown=5;agent.offspring++;births++;
-   const child=createAgent(s,agent);child.energy=52+Math.random()*18;child.health=65+Math.random()*25;context.pending.push(child);s.population=Math.min(1000000000,s.population+Math.max(1,Math.round(s.population/Math.max(1,s.agents.length)*.006)));
+   /* Select a nearby, mature, healthy same-species mate when one is available. */
+   const mateCandidates=s.agents.filter(other=>other!==agent&&other.alive&&other.age>=Math.max(5,other.lifeSpan*.60)&&other.energy>48&&other.health>35&&other.cooldown<=0&&geneticDistance(agent.dna,other.dna)<GENOME_LENGTH*.28);
+   let mate=null;
+   if(mateCandidates.length){mateCandidates.sort((a,b)=>((a.x-agent.x)**2+(a.y-agent.y)**2)-((b.x-agent.x)**2+(b.y-agent.y)**2));mate=mateCandidates[0];mate.energy=Math.max(0,mate.energy-8);mate.cooldown=2;mate.offspring++;}
+   const child=createAgent(s,agent,mate);child.energy=52+Math.random()*18;child.health=65+Math.random()*25;context.pending.push(child);s.population=Math.min(1000000000,s.population+Math.max(1,Math.round(s.population/Math.max(1,s.agents.length)*.006)));
   }else agent.energy-=.8;
  }
  if(decision.danger>.15&&decision.hazard&&decision.hazard.distance<decision.hazard.item.radius+.05){agent.health-=decision.hazard.item.intensity*(1-t.protection)*4.5;agent.stress=1;}
