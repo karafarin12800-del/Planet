@@ -256,6 +256,25 @@ jobs:
               -PUPLOAD_KEY_PASSWORD="$PLAY_UPLOAD_KEY_PASSWORD"
             cp app/build/outputs/bundle/release/app-release.aab dist/PLANET-PlayBundle-SIGNED.aab
             cp app/build/outputs/apk/release/app-release.apk dist/PLANET-Android-Release-SIGNED.apk
+
+            # Generate the matching Cafe Bazaar BIN from this exact signed AAB.
+            # Use Bazaar's official bundle-signer; never upload the keystore.
+            BUNDLE_SIGNER_JAR="$RUNNER_TEMP/bundlesigner-0.1.14.jar"
+            curl --fail --location --retry 3 --retry-all-errors --retry-delay 2 \
+              "https://github.com/cafebazaar/bundle-signer/releases/download/v0.1.14/bundlesigner-0.1.14.jar" \
+              --output "$BUNDLE_SIGNER_JAR"
+            jar tf "$BUNDLE_SIGNER_JAR" >/dev/null
+            java -jar "$BUNDLE_SIGNER_JAR" genbin -v \
+              --bundle dist/PLANET-PlayBundle-SIGNED.aab \
+              --bin dist/ \
+              --v2-signing-enabled true \
+              --v3-signing-enabled false \
+              --ks "$KEYSTORE_PATH" \
+              --ks-key-alias "$PLAY_UPLOAD_KEY_ALIAS" \
+              --ks-pass "pass:$PLAY_UPLOAD_STORE_PASSWORD" \
+              --key-pass "pass:$PLAY_UPLOAD_KEY_PASSWORD"
+            test -s dist/PLANET-PlayBundle-SIGNED.bin
+            echo "Generated matching Cafe Bazaar BIN file."
           else
             gradle --no-daemon --stacktrace assembleDebug assembleRelease bundleRelease
             cp app/build/outputs/bundle/release/app-release.aab dist/PLANET-PlayBundle-UNSIGNED-NEEDS-SIGNING.aab
