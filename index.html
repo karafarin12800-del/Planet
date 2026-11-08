@@ -1788,4 +1788,140 @@ html[lang="en"] .scene-coords{direction:ltr}
 </script>
 
 <script src="./offline-evolution.js"></script>
+<script src="./planet-autonomous-evolution.js"></script>
+<script id="planet-autonomous-biosphere-ui">
+(function () {
+  'use strict';
+  if (window.__planetAutonomousUIReady) return;
+  window.__planetAutonomousUIReady = true;
+  const Model = window.PlanetAutonomousEvolution;
+  if (!Model) return;
+  const STORE = 'planet-autonomous-biosphere-v1';
+  const $ = id => document.getElementById(id);
+  let state, live = false, timer = 0, saveTimer = 0, fastRunning = false, lastWall = Date.now(), liveAccumulator = 0, savedSpeed = 1;
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+    state = saved && saved.state ? Model.restore(saved.state) : Model.createState();
+    live = saved && Object.prototype.hasOwnProperty.call(saved, 'live') ? !!saved.live : true;
+    savedSpeed = Math.max(1, Math.min(20, Number(saved && saved.speed) || 1));
+    const elapsed = saved && saved.live ? Math.max(0, Math.min(7 * 86400, (Date.now() - Number(saved.lastWall || Date.now())) / 1000)) : 0;
+    const catchupYears = Math.min(2000, Math.floor(elapsed / 10 * Math.max(1, Number(saved.speed) || 1)));
+    if (catchupYears > 0) Model.advanceYears(state, catchupYears);
+  } catch (error) {
+    console.warn('Autonomous biosphere restore failed; starting a clean local world.', error);
+    state = Model.createState();
+    live = true;
+  }
+  const style = document.createElement('style');
+  style.textContent = [
+    '#planet-biosphere-launch{position:fixed;z-index:860;right:12px;bottom:14px;border:1px solid #48c9c1;background:linear-gradient(135deg,#123f50,#102d46);color:#e9ffff;border-radius:13px;padding:11px 14px;font:700 13px Tahoma,system-ui;box-shadow:0 8px 24px #0008}',
+    '#planet-biosphere-overlay{display:none;position:fixed;inset:0;z-index:100500;background:#050d18f5;color:#e8f3ff;overflow:auto;padding:14px;direction:rtl;font-family:Tahoma,system-ui}',
+    '#planet-biosphere-overlay.open{display:block}#planet-biosphere-panel{max-width:900px;margin:0 auto;background:#0c1b2e;border:1px solid #294966;border-radius:18px;padding:16px;box-shadow:0 18px 60px #0009}',
+    '.pb-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.pb-head h2{font-size:18px;margin:4px 0 12px}.pb-close,.pb-btn{border:1px solid #3a607d;background:#142b43;color:#e8f3ff;border-radius:10px;padding:9px 12px;font:inherit}.pb-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.pb-btn.primary{background:#13505a;border-color:#36a99e}.pb-btn:disabled{opacity:.5}',
+    '.pb-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}.pb-stat{background:#10263c;border:1px solid #29445f;border-radius:11px;padding:10px}.pb-stat b{display:block;font-size:19px;color:#8ee6d9}.pb-stat small{color:#a9bfd4;font-size:11px}',
+    '.pb-progress{height:7px;background:#1b3148;border-radius:9px;overflow:hidden}.pb-progress i{display:block;height:100%;width:0;background:#50c9b9;transition:width .15s}',
+    '.pb-note{font-size:11px;line-height:1.8;color:#9eb7ce;margin:10px 0}.pb-speed{display:flex;align-items:center;gap:10px;margin:10px 0}.pb-speed input{flex:1;min-width:0}',
+    '.pb-species{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px;margin-top:12px}.pb-species-card{background:#10243a;border:1px solid #29445f;border-radius:12px;padding:8px;min-width:0}.pb-species-card canvas{width:100%;height:90px;display:block;background:radial-gradient(ellipse,#183d52,#0b192a);border-radius:8px}.pb-species-card strong{display:block;font-size:12px;margin:7px 0 4px}.pb-species-card small{font-size:10px;color:#a9bfd4;line-height:1.6}',
+    '.pb-events{max-height:180px;overflow:auto;background:#091726;border-radius:10px;padding:8px;font-size:11px;line-height:1.9;color:#b8cde0}.pb-events div{border-bottom:1px solid #1b3148;padding:3px 0}@media(max-width:480px){#planet-biosphere-overlay{padding:7px}#planet-biosphere-panel{padding:11px}.pb-stat b{font-size:16px}.pb-head h2{font-size:15px}}'
+  ].join('');
+  document.head.appendChild(style);
+  const launch = document.createElement('button');
+  launch.id = 'planet-biosphere-launch'; launch.type = 'button'; launch.textContent = '🧬 زیست‌کرهٔ خودمختار';
+  launch.setAttribute('aria-haspopup', 'dialog');
+  const overlay = document.createElement('section');
+  overlay.id = 'planet-biosphere-overlay'; overlay.setAttribute('role', 'dialog'); overlay.setAttribute('aria-modal', 'true');
+  overlay.innerHTML = '<div id="planet-biosphere-panel"><div class="pb-head"><h2>🧬 تکامل خودمختار حیات دیجیتال</h2><button class="pb-close" id="pbClose">✕ بستن</button></div><div class="pb-stats"><div class="pb-stat"><b id="pbYear">۰</b><small>سال شبیه‌سازی‌شده</small></div><div class="pb-stat"><b id="pbGeneration">۰</b><small>نسل‌های مدل</small></div><div class="pb-stat"><b id="pbSpecies">۰</b><small>گونه‌های ثبت‌شده</small></div></div><div class="pb-progress"><i id="pbProgress"></i></div><div class="pb-actions"><button class="pb-btn primary" id="pbFast">⏩ شبیه‌سازی سریع ۲۰۰۰ سال</button><button class="pb-btn" id="pbLive">▶ شروع جهان زنده</button><button class="pb-btn" id="pbReset">↺ جهان تازه</button></div><div class="pb-speed"><label for="pbSpeed">سرعت جهان زنده</label><input id="pbSpeed" type="range" min="1" max="20" value="1"><b id="pbSpeedLabel">×۱</b></div><div class="pb-note" id="pbStatus">جهان آماده است. برای شروع، شبیه‌سازی سریع یا جهان زنده را انتخاب کن.</div><h3>گونه‌های پدیدآمده</h3><div class="pb-species" id="pbSpeciesGrid"></div><h3>تاریخچهٔ رویدادها</h3><div class="pb-events" id="pbEvents"></div><p class="pb-note">این زیست‌کره یک مدل حیات دیجیتال آموزشی است؛ ژنوم ۱۶۸ بازی و نگاشت ژنوتیپ به ظاهر، مصنوعی و فرضی‌اند و پیش‌بینی تکامل واقعی زمین یا زیست‌شناسی موجودات نیستند. تصاویر به‌صورت هندسی و محلی از صفات مدل رسم می‌شوند؛ تولید تصویر با مدل مولد واقعی، قابلیت جداگانه و نیازمند سرویس تصویرسازی است. وضعیت جهان روی همین دستگاه ذخیره می‌شود و همگام‌سازی بین دستگاه‌ها ندارد.</p></div>';
+  document.body.appendChild(launch); document.body.appendChild(overlay);
+  $('pbSpeed').value = String(savedSpeed); $('pbSpeedLabel').textContent = '×' + savedSpeed;
+  function save() {
+    try { localStorage.setItem(STORE, JSON.stringify({ state: Model.serialize(state), live, speed: Number($('pbSpeed').value) || 1, lastWall: Date.now() })); }
+    catch (e) { $('pbStatus').textContent = 'ذخیره‌سازی محلی با محدودیت حافظه روبه‌رو شد: ' + e.message; }
+  }
+  function render() {
+    $('pbYear').textContent = state.year.toLocaleString('fa-IR');
+    $('pbGeneration').textContent = state.generation.toLocaleString('fa-IR');
+    $('pbSpecies').textContent = state.species.length.toLocaleString('fa-IR');
+    $('pbProgress').style.width = (state.year % 2000) / 20 + '%';
+    $('pbLive').textContent = live ? 'Ⅱ توقف جهان زنده' : '▶ شروع جهان زنده';
+    $('pbSpeedLabel').textContent = '×' + $('pbSpeed').value;
+    const grid = $('pbSpeciesGrid'); grid.innerHTML = '';
+    state.species.filter(s => !s.extinct).slice(0, 18).forEach(s => {
+      const card = document.createElement('div'); card.className = 'pb-species-card';
+      const canvas = document.createElement('canvas'); canvas.width = 300; canvas.height = 180;
+      const ctx = canvas.getContext('2d');
+      if (ctx && window.PlanetEvolutionModel) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        window.PlanetEvolutionModel.drawOrganism(ctx, s, { traits: s.traits, angle: 0 }, 150, 92, 29, 1, 1);
+      }
+      const title = document.createElement('strong'); title.textContent = s.name + (s.parentId ? ' · شاخهٔ ' + s.parentId : '');
+      const meta = document.createElement('small'); meta.textContent = 'جمعیت مدل: ' + s.population.toLocaleString('fa-IR') + ' · نسل: ' + s.generation.toLocaleString('fa-IR') + ' · زیستگاه: ' + s.habitat + (s.extinct ? ' · منقرض' : '');
+      card.append(canvas, title, meta); grid.appendChild(card);
+    });
+    const events = $('pbEvents'); events.innerHTML = '';
+    state.events.slice(0, 24).forEach(e => {
+      const row = document.createElement('div');
+      const labels = { origin: 'پیدایش', speciation: 'گونه‌زایی', extinction: 'انقراض', migration: 'مهاجرت زیستگاهی' };
+      row.textContent = 'سال ' + e.year.toLocaleString('fa-IR') + ' · ' + (labels[e.kind] || e.kind) + ' · ' + (e.name || '') + ' — ' + e.detail;
+      events.appendChild(row);
+    });
+  }
+  function setStatus(text) { $('pbStatus').textContent = text; }
+  function fastAdvance() {
+    if (fastRunning) return;
+    const resumeLiveAfterFast = live;
+    if (live) stopLive();
+    fastRunning = true; $('pbFast').disabled = true; $('pbLive').disabled = true;
+    const total = 2000, start = state.year, end = start + total;
+    setStatus('در حال شبیه‌سازی ۲۰۰۰ سال؛ جهان پس از هر بخش ذخیره می‌شود…');
+    function batch() {
+      const count = Math.min(25, end - state.year);
+      if (count > 0) Model.advanceYears(state, count);
+      render(); save();
+      if (state.year < end) requestAnimationFrame(batch);
+      else {
+        fastRunning = false; $('pbFast').disabled = false; $('pbLive').disabled = false;
+        setStatus('۲۰۰۰ سال شبیه‌سازی شد. جهان آمادهٔ ادامهٔ زنده است.');
+        if (resumeLiveAfterFast) startLive(); else save();
+      }
+    }
+    requestAnimationFrame(batch);
+  }
+  function stopLive() {
+    live = false;
+    if (timer) clearInterval(timer); timer = 0;
+    if (saveTimer) clearInterval(saveTimer); saveTimer = 0;
+    save(); render();
+  }
+  function startLive() {
+    if (live) { stopLive(); setStatus('جهان زنده متوقف شد؛ وضعیت ذخیره شده است.'); return; }
+    live = true; lastWall = Date.now(); liveAccumulator = 0;
+    timer = setInterval(function () {
+      const now = Date.now(); liveAccumulator += Math.max(0, (now - lastWall) / 1000); lastWall = now;
+      const speed = Number($('pbSpeed').value) || 1;
+      const years = Math.min(100, Math.floor(liveAccumulator * speed / 10));
+      if (years > 0) { liveAccumulator -= years * 10 / speed; Model.advanceYears(state, years); render(); }
+    }, 1000);
+    saveTimer = setInterval(save, 5000);
+    render(); save(); setStatus('جهان زنده فعال است؛ در هر ۱۰ ثانیه در سرعت ×۱ یک سال مدل می‌گذرد.');
+  }
+  launch.addEventListener('click', function () { overlay.classList.add('open'); render(); });
+  $('pbClose').addEventListener('click', function () { overlay.classList.remove('open'); save(); });
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.classList.remove('open'); save(); } });
+  $('pbFast').addEventListener('click', fastAdvance);
+  $('pbLive').addEventListener('click', startLive);
+  $('pbSpeed').addEventListener('input', function () { $('pbSpeedLabel').textContent = '×' + this.value; save(); });
+  $('pbReset').addEventListener('click', function () {
+    if (!window.confirm('تمام تاریخچهٔ این جهان محلی پاک و یک زیست‌کرهٔ تازه ساخته شود؟')) return;
+    stopLive(); state = Model.createState(); render(); save(); setStatus('جهان تازه با چهار تبار بنیان‌گذار ساخته شد.');
+  });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') { save(); }
+    else { lastWall = Date.now(); }
+  });
+  window.addEventListener('pagehide', save);
+  window.addEventListener('pageshow', function () { render(); });
+  if (live) { live = false; startLive(); }
+  render();
+})();
+</script>
 </body></html>

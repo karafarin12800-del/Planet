@@ -1,0 +1,17 @@
+"use strict";
+const assert = require("node:assert/strict");
+const engine = require("../evolution-engine.js");
+const life = require("../planet-autonomous-evolution.js");
+assert.equal(life.selfTest().ok, true);
+const state = life.createState(99);
+assert.equal(state.species.length, 4);
+life.advanceYears(state, 2000);
+assert.equal(state.year, 2000);
+assert.ok(state.species.length >= 4);
+assert.ok(state.species.length <= 36, "species catalog remains bounded during long runs");
+assert.ok(state.species.every(s => engine.normalizeSyntheticGenome(s.dna)));
+const restored = life.restore(life.serialize(state));
+assert.equal(restored.year, 2000);
+assert.equal(restored.species.length, state.species.length);
+assert.ok(restored.species.every(s => s.traits && s.form));
+console.log("Planet autonomous evolution tests passed:", life.selfTest());
