@@ -420,10 +420,6 @@
           if(planet){
             const surface=planetSurfaceProfile(planet),radius=1.72,model=transform(0,0,0,radius);
             drawSphere(multiply(vp,model),model,colorForType(planet.type),0,matrices.eye,surface);
-            if(surface.atmosphere){
-              const atmosphereModel=transform(0,0,0,radius*1.055);
-              drawSphere(multiply(vp,atmosphereModel),atmosphereModel,[0.24,0.58,0.86],0.16,matrices.eye);
-            }
             if(surface.gasGiant){
               const ring=[];for(let i=0;i<=120;i++){const a=i/120*Math.PI*2;ring.push(Math.cos(a)*2.35,Math.sin(a)*0.28,Math.sin(a)*2.35);}
               drawLine(vp,ring,[0.82,0.66,0.48,0.68]);
