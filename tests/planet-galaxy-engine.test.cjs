@@ -1,0 +1,34 @@
+"use strict";
+const assert=require("node:assert/strict");
+const galaxyEngine=require("../planet-galaxy-engine.js");
+
+const a=galaxyEngine.createGalaxy(12345);
+const b=galaxyEngine.createGalaxy(12345);
+assert.equal(galaxyEngine.serialize(a),galaxyEngine.serialize(b),"same seed creates the same galaxy");
+assert.equal(a.systems.length,3);
+assert.equal(a.activePlanetId,a.systems[0].planets[0].id);
+assert.equal(galaxyEngine.getSummary(a).discovered,1,"only the home planet starts discovered");
+assert.equal(galaxyEngine.getActivePlanet(a).home,true);
+assert.ok(a.systems.every(s=>s.planets.length<=galaxyEngine.maxPlanetsPerSystem));
+assert.ok(a.systems.flatMap(s=>s.planets).every(p=>Number.isInteger(p.seed)&&p.biomes.length>0));
+
+const next=a.systems[0].planets[1];
+assert.equal(galaxyEngine.selectPlanet(a,next.id),false,"undiscovered planets cannot become active");
+assert.equal(galaxyEngine.discoverPlanet(a,next.id),true);
+assert.equal(galaxyEngine.discoverPlanet(a,next.id),false,"discovery is idempotent");
+assert.equal(galaxyEngine.selectPlanet(a,next.id),true);
+assert.equal(a.activePlanetId,next.id);
+assert.equal(galaxyEngine.getActivePlanet(a).visited,true);
+assert.equal(galaxyEngine.selectPlanet(a,"missing-planet"),false);
+
+galaxyEngine.setYear(a,2000);
+const restored=galaxyEngine.restore(galaxyEngine.serialize(a));
+assert.equal(restored.year,2000);
+assert.equal(restored.activePlanetId,next.id);
+assert.deepEqual(galaxyEngine.getSummary(restored),galaxyEngine.getSummary(a));
+
+const snapshot=galaxyEngine.getPlanet(restored,next.id);
+snapshot.name="tampered";
+assert.notEqual(galaxyEngine.getPlanet(restored,next.id).name,"tampered","planet snapshots cannot mutate saved world state");
+assert.throws(()=>galaxyEngine.restore(JSON.stringify({version:999,systems:[]})),/Invalid|unsupported/);
+console.log("PLANET galaxy foundation tests passed:",galaxyEngine.getSummary(restored));
