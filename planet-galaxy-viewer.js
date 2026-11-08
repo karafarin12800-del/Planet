@@ -25,6 +25,21 @@
   const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
   const hash32=function(value){let h=2166136261;const s=String(value);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;};
   function colorForType(type){return (COLORS[type]||[0.48,0.62,0.78]).slice();}
+  const SURFACE_PALETTES={
+    terrestrial:{land:[0.16,0.48,0.25],accent:[0.68,0.55,0.34],water:[0.08,0.34,0.68],pattern:1},
+    ocean:{land:[0.08,0.30,0.48],accent:[0.35,0.72,0.76],water:[0.04,0.28,0.72],pattern:2},
+    ice:{land:[0.68,0.82,0.91],accent:[0.94,0.98,1],water:[0.18,0.42,0.62],pattern:3},
+    desert:{land:[0.68,0.39,0.17],accent:[0.91,0.68,0.39],water:[0.10,0.28,0.44],pattern:4},
+    volcanic:{land:[0.22,0.12,0.12],accent:[0.96,0.24,0.06],water:[0.12,0.18,0.24],pattern:5},
+    "gas-giant":{land:[0.62,0.39,0.24],accent:[0.92,0.72,0.49],water:[0.42,0.27,0.19],pattern:6}
+  };
+  function planetSurfaceProfile(planet){
+    const palette=SURFACE_PALETTES[planet&&planet.type]||SURFACE_PALETTES.terrestrial;
+    return {land:palette.land.slice(),accent:palette.accent.slice(),water:palette.water.slice(),
+      waterCoverage:clamp(Number(planet&&planet.waterCoverage)||0,0,1),pattern:palette.pattern,
+      atmosphere:!!(planet&&planet.atmosphere&&planet.atmosphere!=="trace-atmosphere"),
+      gasGiant:!!(planet&&planet.type==="gas-giant")};
+  }
   function hexColor(hex){
     const m=/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(hex||""));
     return m?[parseInt(m[1],16)/255,parseInt(m[2],16)/255,parseInt(m[3],16)/255]:[0.55,0.75,1];
@@ -139,8 +154,19 @@
         }).join("");
         const active=findPlanet(galaxy.activePlanetId);
         detail.innerHTML='<h4>جهان فعال فعلی</h4><div class="pg-detail-grid"><div><span>سیاره</span><b>'+(active?escapeHtml(active.planet.name):"نامشخص")+'</b></div><div><span>شناسهٔ پایدار</span><b>'+escapeHtml(galaxy.activePlanetId)+'</b></div></div>';
+      }else if(mode==="planet"){
+        const found=findPlanet(selectedPlanetId),p=found&&found.planet,system=found&&found.system;
+        $("pgSideTitle").textContent="نمای اختصاصی سیاره";
+        $("pgListLabel").textContent="مشخصات جهان انتخاب‌شده";$("pgCountLabel").textContent="PLANET VIEW";
+        $("pgBack").disabled=false;$("pgBack").style.opacity="1";$("pgBack").textContent="← بازگشت به منظومه";
+        $("pgSceneKicker").textContent="PLANET SURFACE / "+(p?String(p.id).toUpperCase():"UNKNOWN");
+        $("pgSceneTitle").textContent=p?escapeHtml(p.name.toUpperCase()):"PLANET";
+        $("pgSceneDesc").textContent=p?escapeHtml(p.typeLabel)+" · نمای سطحی رویه‌ای و قابل چرخش":"سیاره‌ای انتخاب نشده";
+        list.innerHTML=p?'<article class="pg-item active"><div class="pg-item-top"><strong>'+escapeHtml(p.name)+'</strong><span class="pg-tag">'+(galaxy.activePlanetId===p.id?"جهان فعال":"کشف‌شده")+'</span></div><small>منظومه: '+escapeHtml(system.name)+' · شناسه: '+escapeHtml(p.id)+'</small><div class="pg-item-actions"><button class="pg-btn primary" data-pg-action="select-planet" data-pg-id="'+escapeHtml(p.id)+'" type="button">انتخاب به‌عنوان جهان فعال</button></div></article>':'<div class="pg-empty">سیاره پیدا نشد.</div>';
+        detail.innerHTML=p?'<h4>داده‌های محیطی مدل</h4><div class="pg-detail-grid"><div><span>رده</span><b>'+escapeHtml(p.typeLabel)+'</b></div><div><span>شعاع</span><b>'+Number(p.radiusKm).toLocaleString("fa-IR")+' km</b></div><div><span>گرانش</span><b>'+escapeHtml(p.gravity)+' g</b></div><div><span>دمای میانگین</span><b>'+escapeHtml(p.meanTemperatureC)+' °C</b></div><div><span>پوشش آب</span><b>'+Math.round(p.waterCoverage*100)+'%</b></div><div><span>زیست‌بوم‌های مدل</span><b>'+escapeHtml((p.biomes||[]).join("، "))+'</b></div></div>':'<div class="pg-empty">سیاره انتخاب نشده است.</div>';
       }else{
         const system=activeSystem(),index=galaxy.systems.indexOf(system);
+        $("pgBack").textContent="← بازگشت به کهکشان";
         $("pgSideTitle").textContent="سیارات منظومه";
         $("pgListLabel").textContent="سیاره را کشف یا انتخاب کن";
         $("pgCountLabel").textContent=system.planets.length+" WORLDS";
@@ -152,7 +178,7 @@
         list.innerHTML=system.planets.map(function(planet,pIndex){
           const isActive=galaxy.activePlanetId===planet.id;
           const known=planet.discovered;
-          return '<article class="pg-item '+(selectedPlanetId===planet.id?"active":"")+'"><div class="pg-item-top"><strong>'+escapeHtml(planetTitle(planet,pIndex))+'</strong><span class="pg-tag">'+(isActive?"جهان فعال":(known?"کشف‌شده":"ناشناخته"))+'</span></div><small>'+(known?(escapeHtml(planet.typeLabel)+" · شعاع "+planet.radiusKm.toLocaleString("fa-IR")+" کیلومتر"):"اطلاعات نوع، دما و ویژگی‌ها تا زمان کشف پنهان می‌ماند")+'</small><div class="pg-item-actions">'+(known?'<button class="pg-btn primary" data-pg-action="select-planet" data-pg-id="'+escapeHtml(planet.id)+'" type="button">'+(isActive?"جهان فعال":"انتخاب این جهان")+'</button>':'<button class="pg-btn primary" data-pg-action="discover-planet" data-pg-id="'+escapeHtml(planet.id)+'" type="button">کاوش و کشف سیاره</button>')+'<button class="pg-btn" data-pg-action="focus-planet" data-pg-id="'+escapeHtml(planet.id)+'" type="button">تمرکز دوربین</button></div></article>';
+          return '<article class="pg-item '+(selectedPlanetId===planet.id?"active":"")+'"><div class="pg-item-top"><strong>'+escapeHtml(planetTitle(planet,pIndex))+'</strong><span class="pg-tag">'+(isActive?"جهان فعال":(known?"کشف‌شده":"ناشناخته"))+'</span></div><small>'+(known?(escapeHtml(planet.typeLabel)+" · شعاع "+planet.radiusKm.toLocaleString("fa-IR")+" کیلومتر"):"اطلاعات نوع، دما و ویژگی‌ها تا زمان کشف پنهان می‌ماند")+'</small><div class="pg-item-actions">'+(known?'<button class="pg-btn primary" data-pg-action="select-planet" data-pg-id="'+escapeHtml(planet.id)+'" type="button">'+(isActive?"جهان فعال":"انتخاب این جهان")+'</button><button class="pg-btn" data-pg-action="view-planet" data-pg-id="'+escapeHtml(planet.id)+'" type="button">نمای سه‌بعدی سیاره</button>':'<button class="pg-btn primary" data-pg-action="discover-planet" data-pg-id="'+escapeHtml(planet.id)+'" type="button">کاوش و کشف سیاره</button>')+'<button class="pg-btn" data-pg-action="focus-planet" data-pg-id="'+escapeHtml(planet.id)+'" type="button">تمرکز دوربین</button></div></article>';
         }).join("");
         const chosen=findPlanet(selectedPlanetId);
         if(chosen&&chosen.planet.discovered){
@@ -179,6 +205,13 @@
       else renderUI();
       if(renderer)renderer.invalidate();
     }
+    function viewPlanet(id){
+      const found=findPlanet(id);if(!found||!found.planet.discovered)return;
+      selectedSystemId=found.system.id;selectedPlanetId=id;mode="planet";
+      camera.target=[0,0,0];camera.distance=4.6;camera.yaw=-0.72;camera.pitch=0.38;
+      renderUI();if(renderer)renderer.invalidate();
+      showNotice("سطح سیاره با الگوهای رویه‌ای و داده‌های کاتالوگ نمایش داده می‌شود؛ این هنوز زمین‌نمای علمی یا زیست‌کرهٔ شبیه‌سازی‌شده نیست.");
+    }
     function discover(id){
       const found=findPlanet(id);if(!found)return;
       if(!found.planet.discovered){
@@ -200,11 +233,12 @@
       const button=event.target.closest("[data-pg-action]");if(!button)return;
       const action=button.getAttribute("data-pg-action"),id=button.getAttribute("data-pg-id");
       if(action==="open-system")openSystem(id);
+      else if(action==="view-planet")viewPlanet(id);
       else if(action==="discover-planet")discover(id);
       else if(action==="select-planet")select(id);
       else if(action==="focus-planet")focusPlanet(id);
     });
-    $("pgBack").addEventListener("click",backToGalaxy);
+    $("pgBack").addEventListener("click",function(){if(mode==="planet"){mode="system";camera.distance=13;camera.yaw=-0.7;camera.pitch=0.52;renderUI();if(renderer)renderer.invalidate();}else backToGalaxy();});
     $("pgClose").addEventListener("click",close);
     $("pgZoomIn").addEventListener("click",function(){camera.distance=clamp(camera.distance*.82,mode==="galaxy"?10:5,55);if(renderer)renderer.invalidate();});
     $("pgZoomOut").addEventListener("click",function(){camera.distance=clamp(camera.distance*1.22,mode==="galaxy"?10:5,55);if(renderer)renderer.invalidate();});
@@ -236,7 +270,7 @@
       };
       const sphereProgram=link(
         "attribute vec3 aPosition;attribute vec3 aNormal;uniform mat4 uMvp;uniform mat4 uModel;varying vec3 vNormal;varying vec3 vWorld;void main(){vec4 w=uModel*vec4(aPosition,1.0);vWorld=w.xyz;vNormal=mat3(uModel)*aNormal;gl_Position=uMvp*vec4(aPosition,1.0);}",
-        "precision mediump float;uniform vec3 uColor;uniform vec3 uLight;uniform vec3 uCamera;uniform float uEmissive;varying vec3 vNormal;varying vec3 vWorld;void main(){vec3 n=normalize(vNormal);vec3 l=normalize(uLight-vWorld);vec3 v=normalize(uCamera-vWorld);float d=max(dot(n,l),0.0);float rim=pow(1.0-max(dot(n,v),0.0),2.2);float shine=pow(max(dot(reflect(-l,n),v),0.0),18.0);vec3 base=uColor*(0.2+d*0.82)+uColor*rim*0.28+vec3(1.0)*shine*0.12;gl_FragColor=vec4(mix(base,uColor*1.5,uEmissive),1.0);}"
+        "precision mediump float;uniform vec3 uColor;uniform vec3 uLight;uniform vec3 uCamera;uniform float uEmissive;uniform vec3 uSurfaceA;uniform vec3 uSurfaceB;uniform vec3 uWaterColor;uniform float uWater;uniform float uPattern;uniform float uSurfaceOn;varying vec3 vNormal;varying vec3 vWorld;void main(){vec3 n=normalize(vNormal);vec3 l=normalize(uLight-vWorld);vec3 v=normalize(uCamera-vWorld);float d=max(dot(n,l),0.0);float rim=pow(1.0-max(dot(n,v),0.0),2.2);float noise=sin(n.x*31.0+sin(n.z*19.0))*cos(n.y*27.0+n.z*11.0);float bands=sin((n.y+noise*0.035)*uPattern*18.0);float landMask=smoothstep(-0.18,0.18,noise+bands*0.12);float waterMask=step(0.5-uWater*0.72,n.y*0.12+noise*0.34);vec3 surface=mix(uSurfaceA,uSurfaceB,landMask);surface=mix(surface,uWaterColor,waterMask*(1.0-step(5.5,uPattern)));vec3 base=mix(uColor,surface,uSurfaceOn)*(0.2+d*0.82)+uColor*rim*0.28+vec3(1.0)*pow(max(dot(reflect(-l,n),v),0.0),18.0)*0.12;gl_FragColor=vec4(mix(base,uColor*1.5,uEmissive),1.0);}"
       );
       const lineProgram=link(
         "attribute vec3 aPosition;uniform mat4 uMvp;void main(){gl_Position=uMvp*vec4(aPosition,1.0);}",
@@ -298,7 +332,7 @@
         const view=lookAt(eye,c.target,[0,1,0]);
         return {vp:multiply(projection,view),eye:eye};
       }
-      function drawSphere(mvp,model,color,emissive,eye){
+      function drawSphere(mvp,model,color,emissive,eye,surface){
         gl.useProgram(sphereProgram);
         gl.bindBuffer(gl.ARRAY_BUFFER,sphere.vertices);
         const p=gl.getAttribLocation(sphereProgram,"aPosition"),n=gl.getAttribLocation(sphereProgram,"aNormal");
@@ -311,6 +345,13 @@
         gl.uniform3f(gl.getUniformLocation(sphereProgram,"uLight"),0,8,0);
         gl.uniform3fv(gl.getUniformLocation(sphereProgram,"uCamera"),eye);
         gl.uniform1f(gl.getUniformLocation(sphereProgram,"uEmissive"),emissive||0);
+        const profile=surface||null;
+        gl.uniform1f(gl.getUniformLocation(sphereProgram,"uSurfaceOn"),profile?1:0);
+        gl.uniform3fv(gl.getUniformLocation(sphereProgram,"uSurfaceA"),profile?profile.land:[0,0,0]);
+        gl.uniform3fv(gl.getUniformLocation(sphereProgram,"uSurfaceB"),profile?profile.accent:[0,0,0]);
+        gl.uniform3fv(gl.getUniformLocation(sphereProgram,"uWaterColor"),profile?profile.water:[0,0,0]);
+        gl.uniform1f(gl.getUniformLocation(sphereProgram,"uWater"),profile?profile.waterCoverage:0);
+        gl.uniform1f(gl.getUniformLocation(sphereProgram,"uPattern"),profile?profile.pattern:1);
         gl.drawElements(gl.TRIANGLES,sphere.count,gl.UNSIGNED_SHORT,0);
       }
       function drawOrbit(vp,x,y,z,r,color){
@@ -374,6 +415,20 @@
             const center=project(vp,[pos.x,pos.y,pos.z]);
             if(center){canvas.dataset["pgSystem"+index]=Math.round(center.x)+","+Math.round(center.y);}
           });
+        }else if(state.mode==="planet"){
+          const found=findPlanet(selectedPlanetId),planet=found&&found.planet;
+          if(planet){
+            const surface=planetSurfaceProfile(planet),radius=1.72,model=transform(0,0,0,radius);
+            drawSphere(multiply(vp,model),model,colorForType(planet.type),0,matrices.eye,surface);
+            if(surface.atmosphere){
+              const atmosphereModel=transform(0,0,0,radius*1.055);
+              drawSphere(multiply(vp,atmosphereModel),atmosphereModel,[0.24,0.58,0.86],0.16,matrices.eye);
+            }
+            if(surface.gasGiant){
+              const ring=[];for(let i=0;i<=120;i++){const a=i/120*Math.PI*2;ring.push(Math.cos(a)*2.35,Math.sin(a)*0.28,Math.sin(a)*2.35);}
+              drawLine(vp,ring,[0.82,0.66,0.48,0.68]);
+            }
+          }
         }else{
           const system=state.system;
           if(system){
@@ -398,7 +453,7 @@
         const matrices=cameraMatrices(),vp=matrices.vp;let best=null,bestDistance=52;
         if(stateProvider().mode==="galaxy"){
           layoutGalaxy(galaxy).forEach(function(pos){const p=project(vp,[pos.x,pos.y,pos.z]);if(!p||p.z>1)return;const d=Math.hypot(p.x-px,p.y-py);if(d<bestDistance){bestDistance=d;best=pos.id;}});
-        }else{
+        }else if(stateProvider().mode==="system"){
           const positions=layoutPlanets(activeSystem(),win.performance.now());
           positions.forEach(function(pos){const p=project(vp,[pos.x,pos.y,pos.z]);if(!p||p.z>1)return;const d=Math.hypot(p.x-px,p.y-py);if(d<bestDistance){bestDistance=d;best=pos.id;}});
         }
@@ -448,5 +503,5 @@
     }
     renderUI();
   }
-  return {install:install,layoutGalaxy:layoutGalaxy,layoutPlanets:layoutPlanets,colorForType:colorForType,hexColor:hexColor};
+  return {install:install,layoutGalaxy:layoutGalaxy,layoutPlanets:layoutPlanets,colorForType:colorForType,hexColor:hexColor,planetSurfaceProfile:planetSurfaceProfile};
 });
