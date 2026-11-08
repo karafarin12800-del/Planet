@@ -1798,11 +1798,12 @@ html[lang="en"] .scene-coords{direction:ltr}
   if (!Model) return;
   const STORE = 'planet-autonomous-biosphere-v1';
   const $ = id => document.getElementById(id);
-  let state, live = false, timer = 0, saveTimer = 0, fastRunning = false, lastWall = Date.now(), liveAccumulator = 0;
+  let state, live = false, timer = 0, saveTimer = 0, fastRunning = false, lastWall = Date.now(), liveAccumulator = 0, savedSpeed = 1;
   try {
     const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
     state = saved && saved.state ? Model.restore(saved.state) : Model.createState();
     live = !!(saved && saved.live);
+    savedSpeed = Math.max(1, Math.min(20, Number(saved && saved.speed) || 1));
     const elapsed = saved && saved.live ? Math.max(0, Math.min(7 * 86400, (Date.now() - Number(saved.lastWall || Date.now())) / 1000)) : 0;
     const catchupYears = Math.min(2000, Math.floor(elapsed / 10 * Math.max(1, Number(saved.speed) || 1)));
     if (catchupYears > 0) Model.advanceYears(state, catchupYears);
@@ -1831,6 +1832,7 @@ html[lang="en"] .scene-coords{direction:ltr}
   overlay.id = 'planet-biosphere-overlay'; overlay.setAttribute('role', 'dialog'); overlay.setAttribute('aria-modal', 'true');
   overlay.innerHTML = '<div id="planet-biosphere-panel"><div class="pb-head"><h2>🧬 تکامل خودمختار حیات دیجیتال</h2><button class="pb-close" id="pbClose">✕ بستن</button></div><div class="pb-stats"><div class="pb-stat"><b id="pbYear">۰</b><small>سال شبیه‌سازی‌شده</small></div><div class="pb-stat"><b id="pbGeneration">۰</b><small>نسل‌های مدل</small></div><div class="pb-stat"><b id="pbSpecies">۰</b><small>گونه‌های ثبت‌شده</small></div></div><div class="pb-progress"><i id="pbProgress"></i></div><div class="pb-actions"><button class="pb-btn primary" id="pbFast">⏩ شبیه‌سازی سریع ۲۰۰۰ سال</button><button class="pb-btn" id="pbLive">▶ شروع جهان زنده</button><button class="pb-btn" id="pbReset">↺ جهان تازه</button></div><div class="pb-speed"><label for="pbSpeed">سرعت جهان زنده</label><input id="pbSpeed" type="range" min="1" max="20" value="1"><b id="pbSpeedLabel">×۱</b></div><div class="pb-note" id="pbStatus">جهان آماده است. برای شروع، شبیه‌سازی سریع یا جهان زنده را انتخاب کن.</div><h3>گونه‌های پدیدآمده</h3><div class="pb-species" id="pbSpeciesGrid"></div><h3>تاریخچهٔ رویدادها</h3><div class="pb-events" id="pbEvents"></div><p class="pb-note">این زیست‌کره یک مدل حیات دیجیتال آموزشی است؛ ژنوم ۱۶۸ بازی و نگاشت ژنوتیپ به ظاهر، مصنوعی و فرضی‌اند و پیش‌بینی تکامل واقعی زمین یا زیست‌شناسی موجودات نیستند. تصاویر به‌صورت هندسی و محلی از صفات مدل رسم می‌شوند؛ تولید تصویر با مدل مولد واقعی، قابلیت جداگانه و نیازمند سرویس تصویرسازی است. وضعیت جهان روی همین دستگاه ذخیره می‌شود و همگام‌سازی بین دستگاه‌ها ندارد.</p></div>';
   document.body.appendChild(launch); document.body.appendChild(overlay);
+  $('pbSpeed').value = String(savedSpeed); $('pbSpeedLabel').textContent = '×' + savedSpeed;
   function save() {
     try { localStorage.setItem(STORE, JSON.stringify({ state: Model.serialize(state), live, speed: Number($('pbSpeed').value) || 1, lastWall: Date.now() })); }
     catch (e) { $('pbStatus').textContent = 'ذخیره‌سازی محلی با محدودیت حافظه روبه‌رو شد: ' + e.message; }
@@ -1866,6 +1868,7 @@ html[lang="en"] .scene-coords{direction:ltr}
   function setStatus(text) { $('pbStatus').textContent = text; }
   function fastAdvance() {
     if (fastRunning) return;
+    if (live) stopLive();
     fastRunning = true; $('pbFast').disabled = true; $('pbLive').disabled = true;
     const total = 2000, start = state.year, end = start + total;
     setStatus('در حال شبیه‌سازی ۲۰۰۰ سال؛ جهان پس از هر بخش ذخیره می‌شود…');
@@ -1915,7 +1918,7 @@ html[lang="en"] .scene-coords{direction:ltr}
   });
   window.addEventListener('pagehide', save);
   window.addEventListener('pageshow', function () { render(); });
-  if (live) startLive();
+  if (live) { live = false; startLive(); }
   render();
 })();
 </script>
