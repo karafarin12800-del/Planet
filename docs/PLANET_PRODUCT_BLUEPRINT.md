@@ -39,10 +39,11 @@
 - Support discover/select, summaries and versioned save/restore.
 - Acceptance: deterministic seeds, bounded catalog, no selecting undiscovered worlds, independent stable planet IDs, valid restore and tests passing.
 
-### Phase 2 — 3D scene navigation
-- Add galaxy map, star-system view, globe view and biome close-up.
-- Touch gestures: orbit, pinch zoom, tap selection and back navigation.
-- Keep the existing Earth renderer as the home-planet scene; profile on Android before adding shader or texture complexity.
+### Phase 2 — 3D scene navigation (initial galaxy-map milestone)
+- **Implemented in this increment:** a separate WebGL galaxy explorer with a rotatable/zoomable galaxy map, selectable star systems, star-system orbital views, per-planet discovery and active-catalog-world selection.
+- Discovery and selection use the existing versioned galaxy engine and are saved locally on the device. The existing Earth scene and renderer remain intact.
+- Planet spheres are currently simplified visual markers driven by catalog type metadata; they are not terrain, atmosphere, or independently simulated worlds.
+- **Next within this phase:** connect the selected home world to its existing Earth renderer, add actual per-world globe and biome scenes, then profile touch and GPU performance on Android before increasing shader/texture complexity.
 
 ### Phase 3 — Ecosystems and species collection
 - Connect each planet to an isolated life-simulation state.
@@ -81,4 +82,4 @@
 
 ## Current implementation boundary
 
-The galaxy foundation stores catalog metadata only. It does not yet render a galaxy map, create a full planetary terrain, simulate civilizations, synchronize cloud saves, or process payments. Those are explicit later phases, not implied by this module.
+The galaxy engine stores catalog metadata, and the new viewer renders a navigable 3D map plus simplified orbital markers. Discovery and active-world selection persist locally. It does not yet create independent planetary terrain, connect each selected planet to a separate life simulation, simulate civilizations, synchronize cloud saves, or process payments. Those remain explicit later phases.
