@@ -53,6 +53,7 @@
     win.__planetGalaxyViewerReady=true;
     const doc=win.document;
     const $=function(id){return doc.getElementById(id);};
+    const escapeHtml=function(value){return String(value==null?"":value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/\x27/g,"&#39;");};
     let galaxy;
     try{
       const saved=win.localStorage.getItem(SAVE_KEY);
@@ -134,10 +135,10 @@
         $("pgSceneDesc").textContent="نقشهٔ فضایی سه‌بعدی منظومه‌های آغازین";
         list.innerHTML=galaxy.systems.map(function(system,index){
           const discovered=system.discovered;
-          return '<article class="pg-item '+(system.id===selectedSystemId?"active":"")+'"><div class="pg-item-top"><strong>'+systemTitle(system,index)+'</strong><span class="pg-tag">'+(discovered?"شناخته‌شده":"ناکاوش‌شده")+'</span></div><small>'+(discovered?"ستارهٔ ردهٔ "+system.star.type+" · "+system.planets.length+" سیاره":"اطلاعات سیاره‌ها پس از ورود و کشف نمایش داده می‌شود")+'</small><div class="pg-item-actions"><button class="pg-btn primary" data-pg-action="open-system" data-pg-id="'+system.id+'" type="button">ورود به منظومه</button></div></article>';
+          return '<article class="pg-item '+(system.id===selectedSystemId?"active":"")+'"><div class="pg-item-top"><strong>'+escapeHtml(systemTitle(system,index))+'</strong><span class="pg-tag">'+(discovered?"شناخته‌شده":"ناکاوش‌شده")+'</span></div><small>'+(discovered?"ستارهٔ ردهٔ "+system.star.type+" · "+system.planets.length+" سیاره":"اطلاعات سیاره‌ها پس از ورود و کشف نمایش داده می‌شود")+'</small><div class="pg-item-actions"><button class="pg-btn primary" data-pg-action="open-system" data-pg-id="'+escapeHtml(system.id)+'" type="button">ورود به منظومه</button></div></article>';
         }).join("");
         const active=findPlanet(galaxy.activePlanetId);
-        detail.innerHTML='<h4>جهان فعال فعلی</h4><div class="pg-detail-grid"><div><span>سیاره</span><b>'+(active?active.planet.name:"نامشخص")+'</b></div><div><span>شناسهٔ پایدار</span><b>'+galaxy.activePlanetId+'</b></div></div>';
+        detail.innerHTML='<h4>جهان فعال فعلی</h4><div class="pg-detail-grid"><div><span>سیاره</span><b>'+(active?escapeHtml(active.planet.name):"نامشخص")+'</b></div><div><span>شناسهٔ پایدار</span><b>'+escapeHtml(galaxy.activePlanetId)+'</b></div></div>';
       }else{
         const system=activeSystem(),index=galaxy.systems.indexOf(system);
         $("pgSideTitle").textContent="سیارات منظومه";
@@ -151,12 +152,12 @@
         list.innerHTML=system.planets.map(function(planet,pIndex){
           const isActive=galaxy.activePlanetId===planet.id;
           const known=planet.discovered;
-          return '<article class="pg-item '+(selectedPlanetId===planet.id?"active":"")+'"><div class="pg-item-top"><strong>'+planetTitle(planet,pIndex)+'</strong><span class="pg-tag">'+(isActive?"جهان فعال":(known?"کشف‌شده":"ناشناخته"))+'</span></div><small>'+(known?(planet.typeLabel+" · شعاع "+planet.radiusKm.toLocaleString("fa-IR")+" کیلومتر"):"اطلاعات نوع، دما و ویژگی‌ها تا زمان کشف پنهان می‌ماند")+'</small><div class="pg-item-actions">'+(known?'<button class="pg-btn primary" data-pg-action="select-planet" data-pg-id="'+planet.id+'" type="button">'+(isActive?"جهان فعال":"انتخاب این جهان")+'</button>':'<button class="pg-btn primary" data-pg-action="discover-planet" data-pg-id="'+planet.id+'" type="button">کاوش و کشف سیاره</button>')+'<button class="pg-btn" data-pg-action="focus-planet" data-pg-id="'+planet.id+'" type="button">تمرکز دوربین</button></div></article>';
+          return '<article class="pg-item '+(selectedPlanetId===planet.id?"active":"")+'"><div class="pg-item-top"><strong>'+escapeHtml(planetTitle(planet,pIndex))+'</strong><span class="pg-tag">'+(isActive?"جهان فعال":(known?"کشف‌شده":"ناشناخته"))+'</span></div><small>'+(known?(escapeHtml(planet.typeLabel)+" · شعاع "+planet.radiusKm.toLocaleString("fa-IR")+" کیلومتر"):"اطلاعات نوع، دما و ویژگی‌ها تا زمان کشف پنهان می‌ماند")+'</small><div class="pg-item-actions">'+(known?'<button class="pg-btn primary" data-pg-action="select-planet" data-pg-id="'+escapeHtml(planet.id)+'" type="button">'+(isActive?"جهان فعال":"انتخاب این جهان")+'</button>':'<button class="pg-btn primary" data-pg-action="discover-planet" data-pg-id="'+planet.id+'" type="button">کاوش و کشف سیاره</button>')+'<button class="pg-btn" data-pg-action="focus-planet" data-pg-id="'+planet.id+'" type="button">تمرکز دوربین</button></div></article>';
         }).join("");
         const chosen=findPlanet(selectedPlanetId);
         if(chosen&&chosen.planet.discovered){
           const p=chosen.planet;
-          detail.innerHTML='<h4>اطلاعات سیارهٔ انتخاب‌شده</h4><div class="pg-detail-grid"><div><span>رده</span><b>'+p.typeLabel+'</b></div><div><span>شعاع</span><b>'+p.radiusKm.toLocaleString("fa-IR")+' km</b></div><div><span>گرانش</span><b>'+p.gravity+' g</b></div><div><span>دمای میانگین مدل</span><b>'+p.meanTemperatureC+' °C</b></div><div><span>پوشش آب</span><b>'+Math.round(p.waterCoverage*100)+'%</b></div><div><span>جو</span><b>'+p.atmosphere+'</b></div></div>';
+          detail.innerHTML='<h4>اطلاعات سیارهٔ انتخاب‌شده</h4><div class="pg-detail-grid"><div><span>رده</span><b>'+escapeHtml(p.typeLabel)+'</b></div><div><span>شعاع</span><b>'+p.radiusKm.toLocaleString("fa-IR")+' km</b></div><div><span>گرانش</span><b>'+p.gravity+' g</b></div><div><span>دمای میانگین مدل</span><b>'+p.meanTemperatureC+' °C</b></div><div><span>پوشش آب</span><b>'+Math.round(p.waterCoverage*100)+'%</b></div><div><span>جو</span><b>'+escapeHtml(p.atmosphere)+'</b></div></div>';
         }else{
           detail.innerHTML='<h4>سیارهٔ انتخاب‌شده</h4><p style="margin:0;color:#8ea7c2;font-size:9px;line-height:1.8">برای مشاهدهٔ فراداده، ابتدا گزینهٔ «کاوش و کشف سیاره» را بزن. کشف فقط وضعیت و اطلاعات کاتالوگ را ثبت می‌کند.</p>';
         }
@@ -217,7 +218,7 @@
         try{renderer=createRenderer(win,canvas);renderer.setState(function(){return {mode:mode,galaxy:galaxy,system:activeSystem(),camera:camera};},function(id){if(mode==="galaxy")openSystem(id);else focusPlanet(id);});}
         catch(error){ctxNote.textContent="نمای سه‌بعدی در این مرورگر فعال نشد؛ فهرست کاوش همچنان در دسترس است.";ctxNote.style.borderColor="#d19d5b88";}
       }
-      if(renderer)renderer.invalidate();
+      if(renderer){renderer.invalidate();renderer.start();}
     }
     function close(){open=false;overlay.classList.remove("open");if(raf){win.cancelAnimationFrame(raf);raf=0;}if(renderer)renderer.stop();}
     function createRenderer(win,canvas){
@@ -243,7 +244,7 @@
       );
       const starProgram=link(
         "attribute vec3 aPosition;attribute float aSize;uniform mat4 uVp;void main(){gl_Position=uVp*vec4(aPosition,1.0);gl_PointSize=aSize;}",
-        "precision mediump float;void main(){vec2 p=gl_PointCoord-vec2(0.5);float d=length(p);float a=smoothstep(0.5,0.05,d);gl_FragColor=vec4(0.72,0.86,1.0,a);}"
+        "precision mediump float;void main(){vec2 p=gl_PointCoord-vec2(0.5);float d=length(p);float a=(1.0-smoothstep(0.05,0.5,d));gl_FragColor=vec4(0.72,0.86,1.0,a);}"
       );
       const sphere=buildSphere(gl),lineBuffer=gl.createBuffer(),starBuffer=gl.createBuffer();
       const starData=[];let seed=0x504c414e;
