@@ -120,7 +120,8 @@
     state.species.sort((a, b) => b.population - a.population);
     if (state.species.length > MAX_SPECIES) {
       const keep = state.species.filter(s => !s.extinct).slice(0, MAX_SPECIES);
-      const extinct = state.species.filter(s => s.extinct).slice(-Math.max(0, MAX_SPECIES - keep.length));
+      const extinctSlots = Math.max(0, MAX_SPECIES - keep.length);
+      const extinct = extinctSlots ? state.species.filter(s => s.extinct).slice(-extinctSlots) : [];
       state.species = keep.concat(extinct);
     }
   }
