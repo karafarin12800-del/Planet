@@ -39,11 +39,12 @@
 - Support discover/select, summaries and versioned save/restore.
 - Acceptance: deterministic seeds, bounded catalog, no selecting undiscovered worlds, independent stable planet IDs, valid restore and tests passing.
 
-### Phase 2 — 3D scene navigation (initial galaxy-map milestone)
-- **Implemented in this increment:** a separate WebGL galaxy explorer with a rotatable/zoomable galaxy map, selectable star systems, star-system orbital views, per-planet discovery and active-catalog-world selection.
+### Phase 2 — 3D scene navigation (galaxy and procedural planet-view milestones)
+- **Implemented:** a separate WebGL galaxy explorer with a rotatable/zoomable galaxy map, selectable star systems, orbital views, per-planet discovery and active-catalog-world selection.
+- **Implemented:** discovered planets can open a dedicated close-up 3D globe view. A procedural surface shader uses catalog planet type and water-coverage metadata to vary surface palettes and patterns; gas giants receive a simple illustrative ring. The globe can be orbited and zoomed with the same touch/mouse controls.
 - Discovery and selection use the existing versioned galaxy engine and are saved locally on the device. The existing Earth scene and renderer remain intact.
-- Planet spheres are currently simplified visual markers driven by catalog type metadata; they are not terrain, atmosphere, or independently simulated worlds.
-- **Next within this phase:** connect the selected home world to its existing Earth renderer, add actual per-world globe and biome scenes, then profile touch and GPU performance on Android before increasing shader/texture complexity.
+- **Boundary:** procedural surface patterns are illustrative visualizations, not measured terrain, scientific climate maps, or an independently evolving biosphere. The selected planet is not yet connected to a separate life simulation.
+- **Next within this phase:** connect the selected home world to its existing Earth renderer without duplicating or resetting its saved state; then add world-specific biome scenes and profile touch/GPU performance on Android.
 
 ### Phase 3 — Ecosystems and species collection
 - Connect each planet to an isolated life-simulation state.
