@@ -8,6 +8,7 @@ assert.equal(state.species.length, 4);
 life.advanceYears(state, 2000);
 assert.equal(state.year, 2000);
 assert.ok(state.species.length >= 4);
+assert.ok(state.species.length <= 36, "species catalog remains bounded during long runs");
 assert.ok(state.species.every(s => engine.normalizeSyntheticGenome(s.dna)));
 const restored = life.restore(life.serialize(state));
 assert.equal(restored.year, 2000);
