@@ -1802,7 +1802,7 @@ html[lang="en"] .scene-coords{direction:ltr}
   try {
     const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
     state = saved && saved.state ? Model.restore(saved.state) : Model.createState();
-    live = saved ? !!saved.live : true;
+    live = saved && Object.prototype.hasOwnProperty.call(saved, 'live') ? !!saved.live : true;
     savedSpeed = Math.max(1, Math.min(20, Number(saved && saved.speed) || 1));
     const elapsed = saved && saved.live ? Math.max(0, Math.min(7 * 86400, (Date.now() - Number(saved.lastWall || Date.now())) / 1000)) : 0;
     const catchupYears = Math.min(2000, Math.floor(elapsed / 10 * Math.max(1, Number(saved.speed) || 1)));
@@ -1810,7 +1810,7 @@ html[lang="en"] .scene-coords{direction:ltr}
   } catch (error) {
     console.warn('Autonomous biosphere restore failed; starting a clean local world.', error);
     state = Model.createState();
-    live = false;
+    live = true;
   }
   const style = document.createElement('style');
   style.textContent = [
