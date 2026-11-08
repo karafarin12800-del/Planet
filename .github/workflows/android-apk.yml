@@ -18,6 +18,7 @@ on:
       - 'offline-ai.js'
       - 'offline-evolution.js'
       - 'planet-autonomous-evolution.js'
+      - 'planet-galaxy-engine.js'
       - 'manifest.webmanifest'
       - 'sw.js'
       - 'icon.svg'
@@ -87,7 +88,7 @@ jobs:
       - name: Bundle the current web simulation into the Android app
         run: |
           mkdir -p app/src/main/assets
-          cp index.html planet-localization.js evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js offline-evolution.js planet-autonomous-evolution.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
+          cp index.html planet-localization.js evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js offline-evolution.js planet-autonomous-evolution.js planet-galaxy-engine.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
           cp genome-evidence.html app/src/main/assets/
           cp cosmology-lab.html cosmology-observations.js app/src/main/assets/
 
@@ -98,6 +99,8 @@ jobs:
         run: |
           node --check planet-autonomous-evolution.js
           node tests/planet-autonomous-evolution.test.cjs
+          node --check planet-galaxy-engine.js
+          node tests/planet-galaxy-engine.test.cjs
 
       - name: Bundle high-resolution Earth day map for mobile
         shell: bash
