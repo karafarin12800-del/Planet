@@ -1,0 +1,84 @@
+# PLANET — Product Blueprint and Technical Roadmap
+
+## Approved product decisions
+
+- **3D presentation:** interactive 3D galaxy, star-system, planet and biome views; touch-first orbit, zoom and selection.
+- **Civilizations:** mixed autonomy. Creatures and civilizations make their own routine decisions; players may guide broad policies and intervene optionally.
+- **Monetization:** hybrid model with permanent cosmetic/content purchases, earnable and purchasable premium currency, optional VIP subscription, and rewarded ads. Core simulation and essential progress remain free.
+- **World structure:** a galaxy containing star systems and independently saved planets. The first playable release focuses on one complete home planet while the data model supports expansion.
+
+## Product pillars
+
+1. A persistent living world with fast-forward and historical simulation.
+2. Distinct digital species whose inherited traits visibly influence morphology and behavior.
+3. Ecosystems with resources, predation, competition, cooperation and environmental pressure.
+4. Autonomous civilizations that can progress from groups to spacefaring societies.
+5. Exploration and collection across multiple worlds.
+6. Ethical monetization that sells optional content and convenience without paywalling core survival or progress.
+
+## Technical architecture
+
+- **Presentation:** existing WebGL planet renderer and procedural organism renderer; add scene transitions and a galaxy/system/planet navigation layer incrementally.
+- **Galaxy metadata:** `planet-galaxy-engine.js` owns deterministic star-system and planet identities, discovery, active-world selection, and versioned serialization. It deliberately does not claim that a planet has life before a world simulation is initialized.
+- **Life simulation:** keep `planet-autonomous-evolution.js` and `evolution-engine.js` separate from rendering and galaxy metadata.
+- **Civilization simulation:** future independent module; consumes world resources and species capabilities, emits auditable events.
+- **Persistence:** versioned per-planet world saves; later add cloud backup and account-bound entitlements. Local browser storage is not a secure source of purchase truth.
+- **Performance:** detailed simulation for the active/nearby world, aggregated simulation for distant worlds, bounded catch-up, frame-sliced work and hard memory budgets.
+- **Commerce:** introduce a mock catalog first; integrate store billing only after product validation, server-side purchase verification, entitlement restoration and refund handling are designed.
+
+## Phased roadmap and acceptance gates
+
+### Phase 0 — Protect and audit the current foundation
+- Preserve current Earth/WebGL, genome, image-generation and autonomous-biosphere features.
+- Run existing Node tests and Android workflow; identify performance and persistence constraints.
+- Work on a feature branch; merge only after CI passes.
+
+### Phase 1 — Galaxy foundation (this change)
+- Create deterministic galaxy metadata with three initial star systems and bounded planet counts.
+- Start with one discovered, active home planet; keep other planets undiscovered until exploration.
+- Support discover/select, summaries and versioned save/restore.
+- Acceptance: deterministic seeds, bounded catalog, no selecting undiscovered worlds, independent stable planet IDs, valid restore and tests passing.
+
+### Phase 2 — 3D scene navigation
+- Add galaxy map, star-system view, globe view and biome close-up.
+- Touch gestures: orbit, pinch zoom, tap selection and back navigation.
+- Keep the existing Earth renderer as the home-planet scene; profile on Android before adding shader or texture complexity.
+
+### Phase 3 — Ecosystems and species collection
+- Connect each planet to an isolated life-simulation state.
+- Add biome-specific resources and environmental parameters.
+- Ensure genetic changes affect visible procedural morphology and distinguish species beyond color.
+- Add species archive, lineage history and discovery milestones.
+
+### Phase 4 — Autonomous civilizations
+- Add group formation, settlement, roles, tools, agriculture, trade, research and diplomacy.
+- Let civilization decisions run autonomously while player interventions remain optional.
+- Model transitions through measurable prerequisites, not fixed year thresholds.
+
+### Phase 5 — Multi-planet galaxy
+- Activate independent planet worlds, exploration missions and interplanetary travel.
+- Add civilization-led spaceflight only when technological and resource prerequisites are met.
+- Use aggregated simulation for distant worlds and detailed simulation for the active world.
+
+### Phase 6 — Economy and commerce
+- Test a non-purchasable shop catalog and earnable currency first.
+- Validate retention and engagement before enabling real purchases.
+- Add optional cosmetics, biome packs, creature packs, VIP and rewarded ads.
+- Use platform billing, server-side receipt verification, idempotent entitlement grants and purchase restoration.
+
+### Phase 7 — Commercial release
+- Test on representative low-, mid- and high-tier Android devices.
+- Verify performance, save migration, offline behavior, privacy disclosures, store compliance and payment recovery.
+- Release gradually and monitor crashes, retention, conversion and refund rates.
+
+## Monetization guardrails
+
+- Never sell the ability to keep the core simulation running.
+- Do not make extinction prevention, save access or basic species discovery pay-only.
+- Purchasable creatures and habitats should be cosmetic/expressive or unlock alternate experiences, not mandatory power.
+- Clearly label generated/procedural content and the educational, synthetic nature of the digital genome model.
+- Do not enable real billing until purchases can be verified and restored securely.
+
+## Current implementation boundary
+
+The galaxy foundation stores catalog metadata only. It does not yet render a galaxy map, create a full planetary terrain, simulate civilizations, synchronize cloud saves, or process payments. Those are explicit later phases, not implied by this module.
