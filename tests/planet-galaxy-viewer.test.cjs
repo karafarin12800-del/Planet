@@ -34,6 +34,17 @@ for (const system of first.systems) {
 assert.deepEqual(Viewer.colorForType("ocean"), [0.12, 0.48, 0.88], "planet type palette is stable");
 assert.deepEqual(Viewer.hexColor("#ffffff"), [1, 1, 1], "star hex colors are converted to normalized RGB");
 
+for (const system of first.systems) {
+  for (const planet of system.planets) {
+    const profile = Viewer.planetSurfaceProfile(planet);
+    assert.equal(profile.waterCoverage, planet.waterCoverage, "surface profile keeps the catalog water coverage");
+    assert.ok(profile.land.every(value => value >= 0 && value <= 1), "surface palette channels are normalized");
+    assert.ok(profile.accent.every(value => value >= 0 && value <= 1), "surface accent channels are normalized");
+    assert.ok(profile.water.every(value => value >= 0 && value <= 1), "surface water channels are normalized");
+    assert.equal(profile.gasGiant, planet.type === "gas-giant", "gas giants receive the correct surface rendering profile");
+  }
+}
+
 const saved = Engine.serialize(first);
 const restored = Engine.restore(saved);
 assert.deepEqual(Viewer.layoutGalaxy(restored), layoutA, "saved galaxy keeps its navigation layout");
