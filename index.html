@@ -1802,7 +1802,7 @@ html[lang="en"] .scene-coords{direction:ltr}
   try {
     const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
     state = saved && saved.state ? Model.restore(saved.state) : Model.createState();
-    live = !!(saved && saved.live);
+    live = saved ? !!saved.live : true;
     savedSpeed = Math.max(1, Math.min(20, Number(saved && saved.speed) || 1));
     const elapsed = saved && saved.live ? Math.max(0, Math.min(7 * 86400, (Date.now() - Number(saved.lastWall || Date.now())) / 1000)) : 0;
     const catchupYears = Math.min(2000, Math.floor(elapsed / 10 * Math.max(1, Number(saved.speed) || 1)));
@@ -1868,6 +1868,7 @@ html[lang="en"] .scene-coords{direction:ltr}
   function setStatus(text) { $('pbStatus').textContent = text; }
   function fastAdvance() {
     if (fastRunning) return;
+    const resumeLiveAfterFast = live;
     if (live) stopLive();
     fastRunning = true; $('pbFast').disabled = true; $('pbLive').disabled = true;
     const total = 2000, start = state.year, end = start + total;
@@ -1879,7 +1880,8 @@ html[lang="en"] .scene-coords{direction:ltr}
       if (state.year < end) requestAnimationFrame(batch);
       else {
         fastRunning = false; $('pbFast').disabled = false; $('pbLive').disabled = false;
-        setStatus('۲۰۰۰ سال شبیه‌سازی شد. جهان آمادهٔ ادامهٔ زنده است.'); save();
+        setStatus('۲۰۰۰ سال شبیه‌سازی شد. جهان آمادهٔ ادامهٔ زنده است.');
+        if (resumeLiveAfterFast) startLive(); else save();
       }
     }
     requestAnimationFrame(batch);
