@@ -36,7 +36,7 @@ CREATE INDEX IF NOT EXISTS planet_ownership_user_idx ON planet_ownership(user_id
 CREATE TABLE IF NOT EXISTS listings (
   id TEXT PRIMARY KEY, specimen_id TEXT NOT NULL UNIQUE REFERENCES specimens(id),
   seller_id TEXT NOT NULL REFERENCES users(id), buyer_id TEXT REFERENCES users(id),
-  price INTEGER NOT NULL CHECK(price > 0), status TEXT NOT NULL CHECK(status IN ('active','sold','cancelled')),
+  price INTEGER NOT NULL CHECK(price >= 50), status TEXT NOT NULL CHECK(status IN ('active','sold','cancelled')),
   created_at TEXT NOT NULL, sold_at TEXT
 );
 CREATE INDEX IF NOT EXISTS listings_active_idx ON listings(status,created_at);

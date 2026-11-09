@@ -8,7 +8,7 @@ Cafe Bazaar receipt verification and a player-to-player specimen marketplace.
 
 1. Create a Cloudflare D1 database named \`planet-commerce\`.
 2. Run \`npx wrangler d1 execute planet-commerce --file=schema.sql\`.
-3. Apply migrations in order: `npx wrangler d1 execute planet-commerce --file=migrations/0002_profile_display_name.sql`, then `0003_specimen_market_eligibility.sql`, then `0004_galaxy_planet_identity.sql`, then `0005_vip_subscriptions.sql`, then `0006_welcome_grant_adjustment.sql`.
+3. Apply migrations in order: `npx wrangler d1 execute planet-commerce --file=migrations/0002_profile_display_name.sql`, then `0003_specimen_market_eligibility.sql`, then `0004_galaxy_planet_identity.sql`, then `0005_vip_subscriptions.sql`, then `0006_welcome_grant_adjustment.sql`, then `0007_marketplace_commission_and_price_floor.sql`.
 3. Put the resulting D1 database ID in \`wrangler.toml\`.
 4. Deploy from this directory with Wrangler.
 5. Configure Worker secrets: \`AUTH_SECRET\` (random 32+ bytes), \`RESEND_API_KEY\`,
@@ -113,3 +113,6 @@ The online catalog reproduces the deterministic 3D galaxy seed. The shared Earth
 
 
 Off-world specimen registration is accepted only when the authenticated account owns the corresponding stable galaxy-world ID. Earth remains a shared starter biosphere. The server determines Earth/off-world origin from the registered planet ID rather than trusting the client-supplied origin flag.
+
+
+Set the Worker variable CREATOR_USER_ID to the game creator’s Planet account ID (available from the authenticated profile response). Marketplace purchases fail closed until this account exists and has a wallet. Each first-time specimen registration in a player’s personal collection grants 10 tokens once. Listings have a 50-token minimum and no application-level maximum (safe integer only). After a confirmed sale, 5% rounded to the nearest whole token goes to the creator and the remaining 95% to the seller; buyer debit, both credits, ownership transfer and ledger records run in one D1 batch.

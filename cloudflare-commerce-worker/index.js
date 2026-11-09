@@ -8,6 +8,8 @@ const TOKEN_PRODUCTS = Object.freeze({planet_tokens_200:200,planet_tokens_500:50
 const VIP_PRODUCT = "planet_vip_60d";
 const VIP_DAILY_GRANT = 10;
 const WELCOME_GRANT = 100;
+const GALLERY_ENTRY_GRANT = 10;
+const CREATOR_COMMISSION_RATE = 0.05;
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 const PLANET_TYPES=[
 {id:"terrestrial",label:"سنگی",biomes:["دشت","کوهستان","بیابان","جنگل"],radius:[4200,8200],water:[0.05,0.65],temp:[-25,42]},
@@ -267,7 +269,7 @@ async function route(req, env, url) {
   }
   if(method==="POST"&&path==="/market/list"){
     const b=await jsonBody(req),specimenId=String(b?.specimenId||""),price=Number(b?.price);
-    if(!specimenId||!Number.isSafeInteger(price)||price<1||price>1000000) return response({error:"INVALID_LISTING"},400);
+    if(!specimenId||!Number.isSafeInteger(price)||price<50) return response({error:"INVALID_LISTING"},400);
     const owned=await env.DB.prepare("SELECT id,market_eligible FROM specimens WHERE id=? AND owner_id=? AND status='owned'").bind(specimenId,user.id).first();
     if(!owned) return response({error:"SPECIMEN_NOT_OWNED"},404);
     if(Number(owned.market_eligible)!==1) return response({error:"SPECIMEN_NOT_MARKET_ELIGIBLE"},403);
@@ -292,21 +294,27 @@ async function route(req, env, url) {
   }
   if(method==="POST"&&path==="/market/buy"){
     const b=await jsonBody(req),listingId=String(b?.listingId||"");
-    const listing=await env.DB.prepare("SELECT l.id,l.specimen_id,l.seller_id,l.price FROM listings l JOIN specimens s ON s.id=l.specimen_id WHERE l.id=? AND l.status='active' AND s.market_eligible=1").bind(listingId).first();
+    const listing=await env.DB.prepare("SELECT l.id,l.specimen_id,l.seller_id,l.price FROM listings l JOIN specimens s ON s.id=l.specimen_id WHERE l.id=? AND l.status='active' AND l.price>=50 AND s.market_eligible=1").bind(listingId).first();
     if(!listing||listing.seller_id===user.id) return response({error:"LISTING_UNAVAILABLE"},404);
+    if(!env.CREATOR_USER_ID) return response({error:"CREATOR_ACCOUNT_NOT_CONFIGURED"},503);
+    const creator=await env.DB.prepare("SELECT id FROM users WHERE id=?").bind(String(env.CREATOR_USER_ID)).first();
+    const creatorWallet=creator?await env.DB.prepare("SELECT user_id FROM wallets WHERE user_id=?").bind(creator.id).first():null;
+    if(!creator||!creatorWallet) return response({error:"CREATOR_ACCOUNT_NOT_CONFIGURED"},503);
     const balance=await env.DB.prepare("SELECT balance FROM wallets WHERE user_id=?").bind(user.id).first();
     if((balance?.balance||0)<listing.price) return response({error:"INSUFFICIENT_TOKENS"},402);
-    const tx=crypto.randomUUID();
+    const fee=Math.round(listing.price*CREATOR_COMMISSION_RATE),sellerNet=listing.price-fee,tx=crypto.randomUUID();
     const results=await env.DB.batch([
-      env.DB.prepare("UPDATE listings SET status='sold',buyer_id=?,sold_at=datetime('now') WHERE id=? AND status='active' AND EXISTS(SELECT 1 FROM wallets WHERE user_id=? AND balance>=?) AND EXISTS(SELECT 1 FROM wallets WHERE user_id=?) AND EXISTS(SELECT 1 FROM specimens WHERE id=? AND owner_id=? AND status='listed')").bind(user.id,listingId,user.id,listing.price,listing.seller_id,listing.specimen_id,listing.seller_id),
+      env.DB.prepare("UPDATE listings SET status='sold',buyer_id=?,sold_at=datetime('now') WHERE id=? AND status='active' AND price>=50 AND EXISTS(SELECT 1 FROM wallets WHERE user_id=? AND balance>=?) AND EXISTS(SELECT 1 FROM wallets WHERE user_id=?) AND EXISTS(SELECT 1 FROM wallets WHERE user_id=?) AND EXISTS(SELECT 1 FROM specimens WHERE id=? AND owner_id=? AND status='listed')").bind(user.id,listingId,user.id,listing.price,listing.seller_id,creator.id,listing.specimen_id,listing.seller_id),
       env.DB.prepare("UPDATE wallets SET balance=balance-? WHERE user_id=? AND balance>=? AND changes()=1").bind(listing.price,user.id,listing.price),
-      env.DB.prepare("UPDATE wallets SET balance=balance+? WHERE user_id=? AND changes()=1").bind(listing.price,listing.seller_id),
+      env.DB.prepare("UPDATE wallets SET balance=balance+? WHERE user_id=? AND changes()=1").bind(sellerNet,listing.seller_id),
+      env.DB.prepare("UPDATE wallets SET balance=balance+? WHERE user_id=? AND changes()=1").bind(fee,creator.id),
       env.DB.prepare("UPDATE specimens SET owner_id=?,status='owned' WHERE id=? AND owner_id=? AND status='listed' AND changes()=1").bind(user.id,listing.specimen_id,listing.seller_id),
-      env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'market_buy',? WHERE changes()=1").bind(user.id,-listing.price,tx),
-      env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'market_sale',? WHERE changes()=1").bind(listing.seller_id,listing.price,tx)
+      env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'market_buy',? WHERE changes()=1").bind(user.id,-listing.price,tx+":buyer"),
+      env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'market_sale',? WHERE changes()=1").bind(listing.seller_id,sellerNet,tx+":seller"),
+      env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'market_creator_fee',? WHERE changes()=1").bind(creator.id,fee,tx+":creator")
     ]);
     if(results.some(r=>!r.meta.changes)) return response({error:"PURCHASE_CONFLICT"},409);
-    return response({ok:true,specimenId:listing.specimen_id,paid:listing.price,fee:0});
+    return response({ok:true,specimenId:listing.specimen_id,paid:listing.price,sellerReceived:sellerNet,creatorFee:fee,feePercent:5});
   }
   if(method==="POST"&&path==="/specimens/register"){
     const b=await jsonBody(req),clientKey=String(b?.clientKey||"").slice(0,180),planetId=String(b?.planetId||""),name=String(b?.name||"موجود دیجیتال").slice(0,100),form=String(b?.form||"").slice(0,80),dna=String(b?.dna||"").toUpperCase();
@@ -322,11 +330,16 @@ async function route(req, env, url) {
     const existing=await env.DB.prepare("SELECT id FROM specimens WHERE owner_id=? AND client_key=?").bind(user.id,clientKey).first();
     if(existing) return response({ok:true,specimenId:existing.id,alreadyRegistered:true});
     const id=crypto.randomUUID();
-    await env.DB.prepare("INSERT OR IGNORE INTO specimens(id,owner_id,client_key,planet_id,name,form,dna,generation,fitness,body_length_cm,is_special,origin_world_type,rarity_score,market_eligible,status,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,'owned',datetime('now'))")
-      .bind(id,user.id,clientKey,planetId,name,form,dna,generation,clamp(Number(b.fitness)||0,0,1),bodyLengthCm,special?1:0,originWorldType,rarityScore,marketEligible?1:0).run();
+    const registration=await env.DB.batch([
+      env.DB.prepare("INSERT OR IGNORE INTO specimens(id,owner_id,client_key,planet_id,name,form,dna,generation,fitness,body_length_cm,is_special,origin_world_type,rarity_score,market_eligible,status,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,'owned',datetime('now'))")
+        .bind(id,user.id,clientKey,planetId,name,form,dna,generation,clamp(Number(b.fitness)||0,0,1),bodyLengthCm,special?1:0,originWorldType,rarityScore,marketEligible?1:0),
+      env.DB.prepare("INSERT INTO wallets(user_id,balance) SELECT ?,? WHERE changes()=1 ON CONFLICT(user_id) DO UPDATE SET balance=balance+excluded.balance").bind(user.id,GALLERY_ENTRY_GRANT),
+      env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'gallery_entry_reward',? WHERE changes()=1").bind(user.id,GALLERY_ENTRY_GRANT,"gallery-entry:"+id)
+    ]);
     const saved=await env.DB.prepare("SELECT id FROM specimens WHERE owner_id=? AND client_key=?").bind(user.id,clientKey).first();
     if(!saved) return response({error:"SPECIMEN_REGISTER_FAILED"},409);
-    return response({ok:true,specimenId:saved.id,alreadyRegistered:saved.id!==id},201);
+    const rewardTokens=registration[0].meta.changes?GALLERY_ENTRY_GRANT:0;
+    return response({ok:true,specimenId:saved.id,alreadyRegistered:!registration[0].meta.changes,rewardTokens},201);
   }
   if(method==="GET"&&path==="/collection"){
     const rows=await env.DB.prepare("SELECT s.id,s.client_key,s.planet_id,s.name,s.form,s.dna,s.generation,s.fitness,s.body_length_cm,s.is_special,s.origin_world_type,s.rarity_score,s.market_eligible,s.status,s.created_at,l.id AS listing_id FROM specimens s LEFT JOIN listings l ON l.specimen_id=s.id AND l.status='active' WHERE s.owner_id=? ORDER BY created_at DESC LIMIT 250").bind(user.id).all();

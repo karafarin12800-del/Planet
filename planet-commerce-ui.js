@@ -25,7 +25,7 @@ async function refresh(){
  try{
   const [wallet,collection,market,catalog,owned,profile]=await Promise.all([client.wallet(),client.collection(),client.listings(),client.planets(),client.ownedPlanets(),client.profile()]);
   $("commerceDisplayName").value=profile.displayName||"";
-  $("commerceProfileHint").textContent=profile.displayName?"نام عمومی حساب تو ثبت شده است؛ می‌توانی آن را تغییر بدهی.":"برای پروفایل و شناسایی حساب در بازار موجودات، یک نام نمایشی انتخاب و ذخیره کن.";
+  $("commerceProfileHint").textContent=(profile.displayName?"نام عمومی حساب تو ثبت شده است؛ می‌توانی آن را تغییر بدهی.":"برای پروفایل و شناسایی حساب در بازار موجودات، یک نام نمایشی انتخاب و ذخیره کن.")+" شناسه حساب سازنده: "+profile.id;
   $("commerceVipBadge").style.display=profile.vipActive?"inline-block":"none";
   $("commerceProfileCard").style.borderColor=profile.vipActive?"#e6bd68":"#365b77";
   $("commerceProfileCard").style.boxShadow=profile.vipActive?"0 0 0 1px #e6bd6844,0 0 22px #d5a84422":"none";
@@ -50,7 +50,7 @@ async function refresh(){
   const marketBox=$("commerceMarketListings");marketBox.textContent="";
   (market.listings||[]).forEach(x=>row(marketBox,x.name,x.form+" · "+Number(x.body_length_cm||0)+" cm · فروشنده: "+(x.seller_name||"بازیکن")+(Number(x.seller_vip)===1?" ✦ VIP":"")+" · نسل "+x.generation+" · "+x.price+" توکن","خرید",async()=>{
    if(!confirm("این نمونه با قیمت "+x.price+" توکن خریداری شود؟"))return;
-   try{const result=await client.buyListing(x.id);status("خرید انجام شد؛ "+result.paid+" توکن پرداخت شد، کارمزد صفر.");await refresh();}catch(error){status(error.message);}
+   try{const result=await client.buyListing(x.id);status("خرید انجام شد؛ "+result.sellerReceived+" توکن به فروشنده و "+result.creatorFee+" توکن (۵٪) به سازنده رسید.");await refresh();}catch(error){status(error.message);}
   }));
   if(!(market.listings||[]).length)marketBox.textContent="فعلاً آگهی فعالی از بازیکنان دیگر وجود ندارد.";
   authView();status("حساب متصل است؛ موجودی و بازار از سرور به‌روزرسانی شدند.");
@@ -60,10 +60,11 @@ async function syncSpecimens(){
  try{
   const context=window.PlanetCommerceContext;if(!context)throw new Error("اتصال کلکسیون محلی آماده نیست.");
   const state=context.getCollection();let count=0;
+  let rewardTokens=0;
   for(const specimen of state.specimens){if(specimen.source==="online")continue;
-   await client.registerSpecimen({clientKey:specimen.id,planetId:specimen.worldId||context.getWorldId(),name:specimen.name,form:specimen.form,dna:specimen.dna,generation:specimen.generation,fitness:specimen.fitness,bodyLengthCm:specimen.bodyLengthCm,special:specimen.special,rarityScore:specimen.rarityScore,originWorldType:specimen.originWorldType});count++;
+   const result=await client.registerSpecimen({clientKey:specimen.id,planetId:specimen.worldId||context.getWorldId(),name:specimen.name,form:specimen.form,dna:specimen.dna,generation:specimen.generation,fitness:specimen.fitness,bodyLengthCm:specimen.bodyLengthCm,special:specimen.special,rarityScore:specimen.rarityScore,originWorldType:specimen.originWorldType});count++;rewardTokens+=Number(result.rewardTokens||0);
   }
-  await refresh();status(count+" نمونه با شناسهٔ ثابت همگام شد؛ تکرار عملیات نمونهٔ تکراری نمی‌سازد.");
+  await refresh();status(count+" نمونه همگام شد؛ "+rewardTokens+" توکن پاداش ورود اولیه به کلکسیون دریافت شد. برای هر موجود فقط یک‌بار.");
  }catch(error){status(error.message);}
 }
 async function connect(){
@@ -93,8 +94,8 @@ $("commerceSyncSpecimens").addEventListener("click",syncSpecimens);
 $("commerceListSpecimen").addEventListener("click",async()=>{
  try{const id=$("commerceOwnSpecimen").value,price=Number($("commerceSpecimenPrice").value);
   if(!id)throw new Error("ابتدا نمونه‌ها را همگام‌سازی کن.");
-  if(!Number.isSafeInteger(price)||price<1||price>1000000)throw new Error("قیمت باید بین ۱ تا ۱٬۰۰۰٬۰۰۰ توکن باشد.");
-  await client.listSpecimen(id,price);status("آگهی ثبت شد؛ فروشنده دقیقاً مبلغ آگهی را می‌گیرد و کارمزد صفر است.");await refresh();
+  if(!Number.isSafeInteger(price)||price<50)throw new Error("قیمت باید عدد صحیح و حداقل ۵۰ توکن باشد؛ سقف قیمت ندارد.");
+  await client.listSpecimen(id,price);status("آگهی ثبت شد؛ پس از فروش، ۹۵٪ به فروشنده و ۵٪ به سازنده می‌رسد.");await refresh();
  }catch(error){status(error.message);}
 });
 let activeBazaarToken="",activeVipToken="";
