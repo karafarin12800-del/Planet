@@ -8,7 +8,7 @@ Cafe Bazaar receipt verification and a player-to-player specimen marketplace.
 
 1. Create a Cloudflare D1 database named \`planet-commerce\`.
 2. Run \`npx wrangler d1 execute planet-commerce --file=schema.sql\`.
-3. Apply migrations in order: \`npx wrangler d1 execute planet-commerce --file=migrations/0002_profile_display_name.sql\` and \`npx wrangler d1 execute planet-commerce --file=migrations/0003_specimen_market_eligibility.sql\`.
+3. Apply migrations in order: `npx wrangler d1 execute planet-commerce --file=migrations/0002_profile_display_name.sql`, then `0003_specimen_market_eligibility.sql`, then `0004_galaxy_planet_identity.sql`.
 3. Put the resulting D1 database ID in \`wrangler.toml\`.
 4. Deploy from this directory with Wrangler.
 5. Configure Worker secrets: \`AUTH_SECRET\` (random 32+ bytes), \`RESEND_API_KEY\`,
