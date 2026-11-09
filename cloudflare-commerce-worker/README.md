@@ -110,3 +110,6 @@ Never put a Bazaar client secret, refresh token, `AUTH_SECRET` or Resend key in 
 Poolakey requires Cafe Bazaar installed on the Android test device. Do not enable production
 purchases until the deployed Worker validates test receipts and an end-to-end test succeeds.
 Player-selected display names remain part of the account profile for player identity in the specimen marketplace. Planet owner names are not displayed beside planets in the galaxy viewer; planet ownership is tracked independently of the account display name.
+
+
+The online catalog reproduces the deterministic 3D galaxy seed. The shared Earth home world is not sold; the first 100 non-Earth planets receive stable `market-world-NNN` IDs, and each purchased planet has one global owner. Prices come from that same planet's life potential and special-species potential.
