@@ -91,6 +91,14 @@ async function route(req, env, url) {
   const path=url.pathname, method=req.method;
   if(method==="GET"&&path==="/health") return response({ok:true,service:"PLANET commerce API",database:true,bazaarConfigured:!!env.BAZAAR_ACCESS_TOKEN,emailConfigured:!!env.RESEND_API_KEY});
   if(method==="GET"&&path==="/catalog/planets") return response({version:1,count:100,planets:planets()});
+  if(method==="GET"&&path==="/planets/owners"){
+    const ids=String(url.searchParams.get("ids")||"").split(",").filter(x=>/^[a-zA-Z0-9_-]{1,80}$/.test(x)).slice(0,100);
+    if(!ids.length) return response({owners:{}});
+    const marks=ids.map(()=>"?").join(",");
+    const rows=await env.DB.prepare("SELECT o.planet_id,u.display_name FROM planet_ownership o JOIN users u ON u.id=o.user_id WHERE o.planet_id IN ("+marks+") AND u.display_name IS NOT NULL").bind(...ids).all();
+    const owners={};for(const row of rows.results||[])owners[row.planet_id]=row.display_name;
+    return response({owners});
+  }
   if(method==="POST"&&path==="/auth/register"){
     const b=await jsonBody(req), email=String(b?.email||"").trim().toLowerCase(), password=String(b?.password||"");
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||password.length<10||password.length>200) return response({error:"INVALID_EMAIL_OR_PASSWORD"},400);
@@ -144,6 +152,17 @@ async function route(req, env, url) {
   }
   const user=await authenticate(req,env);
   if(!user) return response({error:"UNAUTHORIZED"},401);
+  if(method==="GET"&&path==="/profile"){
+    return response({id:user.id,email:user.email,displayName:user.display_name||""});
+  }
+  if(method==="POST"&&path==="/profile"){
+    const b=await jsonBody(req),displayName=String(b?.displayName||"").normalize("NFC").trim();
+    if(displayName.length<3||displayName.length>24||!/^[\\p{L}\\p{N}_ -]+$/u.test(displayName)||displayName.startsWith(" ")||displayName.endsWith(" "))
+      return response({error:"INVALID_DISPLAY_NAME"},400);
+    try{await env.DB.prepare("UPDATE users SET display_name=? WHERE id=?").bind(displayName,user.id).run();}
+    catch(e){if(String(e).includes("UNIQUE"))return response({error:"DISPLAY_NAME_TAKEN"},409);throw e;}
+    return response({ok:true,displayName});
+  }
   if(method==="GET"&&path==="/planets/owned"){
     const rows=await env.DB.prepare("SELECT planet_id,price,created_at FROM planet_ownership WHERE user_id=? ORDER BY created_at DESC").bind(user.id).all();
     const catalog=new Map(planets().map(p=>[p.id,p]));
