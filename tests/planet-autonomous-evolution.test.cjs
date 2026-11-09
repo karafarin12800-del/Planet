@@ -2,7 +2,8 @@
 const assert = require("node:assert/strict");
 const engine = require("../evolution-engine.js");
 const life = require("../planet-autonomous-evolution.js");
-assert.equal(life.selfTest().ok, true);
+const selfTest=life.selfTest();
+assert.equal(selfTest.ok,true,JSON.stringify(selfTest));
 const state = life.createState(99);
 assert.equal(state.species.length, 100);
 assert.equal(life.visibleSpecies(state).length,100);

@@ -350,12 +350,13 @@
   }
   function selfTest(){
     const a=createState(12345),initial=a.species.length,alien=createState(9876,{id:"test-world",type:"desert",meanTemperatureC:35,waterCoverage:0.05,gravity:1.1,atmosphere:"thin-carbon-dioxide"},a.species.map(s=>s.dna));
+    const alienFoundersNonMarketable=alien.species.every(s=>!s.special&&!isMarketEligible(s));
     advanceYears(a,40);advanceYears(alien,40);
     const b=restore(serialize(a)),c=restore(serialize(alien));
     return {ok:initial===EARTH_SPECIES_COUNT&&b.year===40&&b.species.length===EARTH_SPECIES_COUNT&&c.species.length===OFFWORLD_SPECIES_COUNT&&
       b.species.concat(c.species).every(s=>engine.normalizeSyntheticGenome(s.dna)&&s.traits&&s.form&&s.bodyLengthCm>2)&&
       a.species.every(s=>!s.marketEligible||(s.special&&s.bodyLengthCm>=EARTH_MIN_MARKET_SIZE_CM))&&
-      alien.species.every(s=>!s.special&&!isMarketEligible(s))&&c.species.some(s=>s.special&&isMarketEligible(s))&&!!b.planetEnvironment,
+      alienFoundersNonMarketable&&c.species.some(s=>s.special&&isMarketEligible(s))&&!!b.planetEnvironment,
       years:b.year,species:b.species.length,offworldSpecies:c.species.length,engine:"PlanetAutonomousEvolution-v6"};
   }
   return {version:VERSION,createState,createEarthGenomePool,advanceYears,advanceOneYear,serialize,restore,selfTest,visibleSpecies,isMarketEligible,
