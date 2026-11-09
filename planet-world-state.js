@@ -40,7 +40,7 @@
     try{
       const value=JSON.parse(raw);
       if(!value||typeof value!=="object"||typeof value.state!=="string")return null;
-      return {state:value.state,live:!!value.live,speed:Math.max(1,Math.min(20,Number(value.speed)||1)),lastWall:Math.max(0,Number(value.lastWall)||0)};
+      return {state:value.state,live:!!value.live,speed:Math.max(1,Math.min(20,Number(value.speed)||5)),lastWall:Math.max(0,Number(value.lastWall)||0)};
     }catch(error){return null;}
   }
   function load(storage,worldId,options){
@@ -72,7 +72,7 @@
   }
   function save(storage,worldId,snapshot){
     if(!storage||!validId(worldId)||!snapshot||typeof snapshot.state!=="string")return false;
-    const value={state:snapshot.state,live:!!snapshot.live,speed:Math.max(1,Math.min(20,Number(snapshot.speed)||1)),lastWall:Math.max(0,Number(snapshot.lastWall)||Date.now())};
+    const value={state:snapshot.state,live:!!snapshot.live,speed:Math.max(1,Math.min(20,Number(snapshot.speed)||5)),lastWall:Math.max(0,Number(snapshot.lastWall)||Date.now())};
     try{storage.setItem(storageKey(worldId),JSON.stringify(value));return true;}catch(error){return false;}
   }
   function getGenomePool(storage,worldId){
