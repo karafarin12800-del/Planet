@@ -21,6 +21,7 @@ assert.ok(activity.includes("purchase.getPurchaseToken()"),"Poolakey purchase to
 assert.ok(activity.includes('new PurchaseRequest(productId, productId, null)')&&activity.includes("planet_tokens_500")&&activity.includes("planet_tokens_1000"),"Cafe Bazaar supports the three configured consumable product IDs");
 assert.ok(activity.includes('new PaymentConfiguration(new SecurityCheck.Enable(rsaKey), true)'),"Poolakey subscription support is enabled");
 assert.ok(activity.includes("payment.subscribeProduct")&&activity.includes('VIP_PRODUCT_ID = "planet_vip_60d"'),"VIP uses the native Cafe Bazaar subscription flow");
+assert.ok(activity.includes("payment.getSubscribedProducts")&&activity.includes("restoreVipSubscription"),"active subscriptions are restored and revalidated on app start");
 assert.ok(activity.includes("PENDING_VIP_TOKEN_KEY")&&activity.includes("clearPendingVipSubscription"),"VIP receipt is retained until server verification");
 assert.ok(gradle.includes("Poolakey:poolakey:2.2.0"),"Poolakey dependency is pinned");
 assert.ok(gradle.includes("credentials:1.6.0")&&gradle.includes("googleid:1.1.1"),"Credential Manager dependencies are explicit");
