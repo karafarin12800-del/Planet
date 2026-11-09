@@ -45,7 +45,7 @@ function planets(){
   for(let i=0;i<count&&rows.length<100;i++){
    const p=makePlanet(systemId,i,rng,si===0&&i===0);if(p.home)continue;
    const n=rows.length+1;
-   rows.push({id:"planet-"+String(n).padStart(3,"0"),galaxyPlanetId:"market-world-"+String(n).padStart(3,"0"),
+   rows.push({id:"planet-"+String(n).padStart(3,"0"),galaxyPlanetId:"market-world-"+String(n).padStart(3,"0"),galaxyId:p.id,
     name:p.name+" "+String(n).padStart(3,"0"),type:p.typeLabel,typeId:p.type,price:p.priceTokens,lifePotential:p.lifePotential,specialSpeciesPotential:p.specialSpeciesPotential,
     creatureCapacity:2,radiusKm:p.radiusKm,gravity:p.gravity,meanTemperatureC:p.meanTemperatureC,waterCoverage:p.waterCoverage,
     atmosphere:p.atmosphere,biomes:p.biomes,features:p.biomes});
@@ -263,9 +263,15 @@ async function route(req, env, url) {
   }
   if(method==="POST"&&path==="/specimens/register"){
     const b=await jsonBody(req),clientKey=String(b?.clientKey||"").slice(0,180),planetId=String(b?.planetId||""),name=String(b?.name||"موجود دیجیتال").slice(0,100),form=String(b?.form||"").slice(0,80),dna=String(b?.dna||"").toUpperCase();
-    const bodyLengthCm=clamp(Number(b?.bodyLengthCm)||0,0,6000),special=b?.special===true,originWorldType=b?.originWorldType==="earth"?"earth":"alien",rarityScore=clamp(Number(b?.rarityScore)||0,0,100);
+    const bodyLengthCm=clamp(Number(b?.bodyLengthCm)||0,0,6000),special=b?.special===true,originWorldType=(planetId==="earth"||planetId==="system-01-p1")?"earth":"alien",rarityScore=clamp(Number(b?.rarityScore)||0,0,100);
     const marketEligible=special&&(originWorldType==="earth"?bodyLengthCm>=45:bodyLengthCm>5);
     if(!clientKey||!planetId||!/^[ACGT]{1,100000}$/.test(dna)||!Number.isFinite(Number(b?.bodyLengthCm))) return response({error:"INVALID_SPECIMEN"},400);
+    if(originWorldType==="alien"){
+      const world=planets().find(p=>p.galaxyId===planetId);
+      if(!world)return response({error:"INVALID_SPECIMEN"},400);
+      const ownedWorld=await env.DB.prepare("SELECT 1 AS owned FROM planet_ownership WHERE user_id=? AND galaxy_planet_id=?").bind(user.id,world.galaxyPlanetId).first();
+      if(!ownedWorld)return response({error:"PLANET_NOT_OWNED"},403);
+    }
     const existing=await env.DB.prepare("SELECT id FROM specimens WHERE owner_id=? AND client_key=?").bind(user.id,clientKey).first();
     if(existing) return response({ok:true,specimenId:existing.id,alreadyRegistered:true});
     const id=crypto.randomUUID();
