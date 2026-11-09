@@ -467,9 +467,10 @@
     function select(id){
       const found=findPlanet(id);if(!found||!found.planet.discovered)return;
       if(Engine.selectPlanet(galaxy,id)){
-        selectedSystemId=found.system.id;selectedPlanetId=id;persist();
+        selectedSystemId=found.system.id;selectedPlanetId=id;mode="planet";
+        camera.target=[0,0,0];camera.distance=4.6;camera.yaw=-0.72;camera.pitch=0.38;persist();
         win.dispatchEvent(new win.CustomEvent("planet:active-world-changed",{detail:{planetId:id,planet:Engine.getPlanet(galaxy,id)}}));
-        showNotice("جهان فعال انتخاب شد؛ زیست‌کرهٔ دیجیتال مستقل این سیاره بارگذاری یا ساخته می‌شود و ذخیرهٔ جهان‌های دیگر دست‌نخورده می‌ماند.");
+        showNotice("سیاره انتخاب شد؛ منوی اختصاصی آن باز شد. از همین‌جا می‌توانی سیاره را بخری و موجوداتش را مدیریت کنی.");
         renderUI();if(renderer)renderer.invalidate();
       }
     }
@@ -494,7 +495,9 @@
         }
         selectedSystemId=found.system.id;selectedPlanetId=found.planet.id;
         if(!found.planet.discovered)Engine.discoverPlanet(galaxy,found.planet.id);
-        Engine.selectPlanet(galaxy,found.planet.id);mode="system";persist();renderUI();
+        Engine.selectPlanet(galaxy,found.planet.id);mode="planet";
+        camera.target=[0,0,0];camera.distance=4.6;camera.yaw=-0.72;camera.pitch=0.38;
+        persist();renderUI();
         if(renderer)renderer.invalidate();
       }catch(error){showNotice(String(error&&error.message||error));}
     }

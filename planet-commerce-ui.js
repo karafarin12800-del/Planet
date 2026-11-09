@@ -88,6 +88,7 @@ $("commerceSaveDisplayName").addEventListener("click",async()=>{
  catch(error){$("commerceProfileHint").textContent=error.message;status(error.message);}
 });
 $("commerceRefresh").addEventListener("click",refresh);
+$("commerceWalletBack")?.addEventListener("click",()=>$("closeCollectionShop")?.click());
 $("commerceSyncSpecimens").addEventListener("click",syncSpecimens);
 $("commerceListSpecimen").addEventListener("click",async()=>{
  try{const id=$("commerceOwnSpecimen").value,price=Number($("commerceSpecimenPrice").value);

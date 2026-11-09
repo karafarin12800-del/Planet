@@ -137,6 +137,7 @@ assert.ok(html.includes("ثبت آگهی آنلاین"), "online specimen listin
 assert.ok(html.includes("commercePlanetCatalog"), "server-priced planet catalog is rendered");
 assert.ok(sw.includes("./planet-commerce-client.js") && sw.includes("./planet-commerce-ui.js"), "online commerce modules are cached");
 assert.ok(workflow.includes("planet-commerce-client.js") && workflow.includes("planet-commerce-ui.js"), "Android bundles online commerce modules");
+assert.ok(html.includes('id="commerceWalletBack"') && html.includes('id="commerceBuyTokens200"'), "wallet exposes back navigation and token purchase controls");
 assert.ok(html.includes("data-collect-species"), "living species can be added as collection specimens");
 assert.ok(html.includes("buyMarketCreature") && html.includes("closeCollectionShop"), "collection and shop controls are present");
 assert.ok(html.includes("while(evolutionAccumulator>=.75&&lifeAgeMa<4540)"), "the ecology loop stops stepping after the geological timeline reaches its endpoint");
