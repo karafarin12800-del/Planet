@@ -48,7 +48,7 @@ async function refresh(){
    try{await client.cancelListing(x.listing_id);status("آگهی لغو شد و نمونه به کلکسیون برگشت.");await refresh();}catch(error){status(error.message);}
   }));
   const marketBox=$("commerceMarketListings");marketBox.textContent="";
-  (market.listings||[]).forEach(x=>row(marketBox,x.name,x.form+" · "+Number(x.body_length_cm||0)+" cm · فروشنده: "+(x.seller_name||"بازیکن")+" · نسل "+x.generation+" · "+x.price+" توکن","خرید",async()=>{
+  (market.listings||[]).forEach(x=>row(marketBox,x.name,x.form+" · "+Number(x.body_length_cm||0)+" cm · فروشنده: "+(x.seller_name||"بازیکن")+(Number(x.seller_vip)===1?" ✦ VIP":"")+" · نسل "+x.generation+" · "+x.price+" توکن","خرید",async()=>{
    if(!confirm("این نمونه با قیمت "+x.price+" توکن خریداری شود؟"))return;
    try{const result=await client.buyListing(x.id);status("خرید انجام شد؛ "+result.paid+" توکن پرداخت شد، کارمزد صفر.");await refresh();}catch(error){status(error.message);}
   }));
