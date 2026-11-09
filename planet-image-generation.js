@@ -40,6 +40,12 @@
   const generateButton=$('planet-image-generate'), variationButton=$('planet-image-variation'), downloadButton=$('planet-image-download');
   function loadSettings(){try{endpointInput.value=localStorage.getItem(ENDPOINT_KEY)||'';accessInput.value=localStorage.getItem(ACCESS_KEY)||'';}catch(_){}}
   function setStatus(message,error){statusNode.textContent=String(message||'');statusNode.classList.toggle('error',!!error);}
+  const IMAGE_DB='planet-genome-image-cache-v1',IMAGE_STORE='images';
+  function openImageDB(){return new Promise(resolve=>{if(!window.indexedDB){resolve(null);return;}const req=indexedDB.open(IMAGE_DB,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(IMAGE_STORE))req.result.createObjectStore(IMAGE_STORE,{keyPath:'genomeHash'});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>resolve(null);});}
+  async function readImageCache(hash){const db=await openImageDB();if(!db)return null;return new Promise(resolve=>{const req=db.transaction(IMAGE_STORE,'readonly').objectStore(IMAGE_STORE).get(hash);req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>resolve(null);});}
+  async function writeImageCache(hash,dataUrl,source){const db=await openImageDB();if(!db)return false;return new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readwrite');tx.objectStore(IMAGE_STORE).put({genomeHash:hash,dataUrl,source,createdAt:Date.now()});tx.oncomplete=()=>resolve(true);tx.onerror=()=>resolve(false);});}
+  async function genomeHash(species){const dna=String(species&&species.dna||'').toUpperCase().replace(/[^ACGT]/g,'');if(window.crypto&&crypto.subtle){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(dna));return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,'0')).join('');}let h=2166136261;for(let i=0;i<dna.length;i++){h^=dna.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16);}
+  function showCachedImage(record){if(!record||!record.dataUrl)return;generated=record.dataUrl;output.src=generated;output.style.display='block';placeholder.style.display='none';downloadButton.disabled=false;setStatus(record.source==='ai'?tr('تصویر ثابت همین ژنوم از حافظهٔ دائمی بارگذاری شد.','The permanent image for this genome was loaded.'):tr('تصویر رویه‌ای ثابت این ژنوم بارگذاری شد؛ برای ارتقا به تصویر هوش مصنوعی، سرویس را تنظیم کن.','The fixed procedural image for this genome was loaded; configure the AI service to upgrade it.'));}
   function saveSettings(){
     const endpoint=endpointInput.value.trim().replace(/\/+$/,'');
     if(endpoint){let u;try{u=new URL(endpoint);}catch(_){setStatus(tr('نشانی سرویس معتبر نیست.','Invalid service URL.'),true);return;}
@@ -106,6 +112,7 @@
     $('planet-image-title').textContent=tr('تولید تصویر مولد از ژنوم و محیط','Generate an AI image from genome + environment');
     $('planet-image-intro').textContent=tr('تصویر توسط مدل مولد و بر اساس صفات محاسبه‌شده از ژنوم دیجیتال، زیستگاه و مرحلهٔ زمانی ساخته می‌شود؛ تصویر از پیش در برنامه ذخیره نشده است. نگاشت DNA این شبیه‌سازی فرضی است، نه پیش‌بینی زیستی معتبر.','The image model generates new pixels using digital-genome traits, habitat and timeline stage; no prepared image is bundled. The DNA mapping is illustrative, not validated biological prediction.');
     showBadges(s);promptInput.value=buildPrompt(s,'A');clearOutput();loadSettings();
+    genomeHash(s).then(async hash=>{const cached=await readImageCache(hash);if(selected!==s)return;if(cached)showCachedImage(cached);}).catch(()=>{});
     if(!endpointInput.value||!accessInput.value){setStatus(tr('آماده است: با «تولید تصویر جدید» همین حالا تصویر را محلی و بدون تنظیمات بساز. برای تصویرسازی مولد آنلاین، تنظیم سرویس اختیاری است.','Ready: tap Generate image to create a local image now, with no setup. Online AI image generation is optional.'));}
     else setStatus(tr('سرویس آنلاین تنظیم شده؛ در صورت خطا مولد محلی جایگزین می‌شود.','Online service configured; local generation is the fallback.'));
   }
@@ -115,7 +122,7 @@
     const p=getPhenotype(s)||{},a=p.appearance||{};
     const dna=String(s.dna||'').toUpperCase().replace(/[^ACGT]/g,'');
     let seed=2166136261;
-    const seedText=dna+'|'+String(s.id||0)+'|'+String(s.generation||0)+'|'+String(variation||'A');
+    const seedText=dna+'|'+String(variation||'fixed-genome');
     for(let i=0;i<seedText.length;i++){seed^=seedText.charCodeAt(i);seed=Math.imul(seed,16777619);}
     function rand(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}
     function n(v,d,min,max){v=Number(v);return Math.max(min,Math.min(max,Number.isFinite(v)?v:d));}
@@ -182,9 +189,9 @@
     shapes.push('<rect x="26" y="24" width="972" height="70" rx="14" fill="#06111c" fill-opacity=".72" stroke="#b8e8ff" stroke-opacity=".28"/><text x="48" y="54" fill="#e8f7ff" font-size="21" font-family="sans-serif" font-weight="700">'+label+'</text><text x="48" y="78" fill="#a9cce0" font-size="13" font-family="sans-serif">GENOME-DRIVEN PROCEDURAL RENDER · '+dna.length+' bp · generation '+(Number(s.generation)||0)+'</text>');
     return '<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768" viewBox="0 0 1024 768">'+shapes.join('')+'</svg>';
   }
-  function generateOffline(){
+  function generateOffline(hash){
     if(!selected)return false;
-    const variation=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);
+    const variation='fixed-genome-'+String(hash||'');
     const svg=generateOfflineSVG(selected,variation);
     generated='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
     output.src=generated;output.style.display='block';placeholder.style.display='none';downloadButton.disabled=false;
@@ -194,8 +201,11 @@
 
   async function generate(){
     if(busy||!selected)return;
+    const species=selected,hash=await genomeHash(species),cached=await readImageCache(hash);
     const endpoint=endpointInput.value.trim().replace(/\/+$/,''),access=accessInput.value.trim();
-    if(!endpoint||!access){generateOffline();return;}
+    if(cached&&cached.source==='ai'){showCachedImage(cached);return;}
+    if(cached&&cached.source==='procedural'&&(!endpoint||!access)){showCachedImage(cached);return;}
+    if(!endpoint||!access){generateOffline(hash);await writeImageCache(hash,generated,'procedural');return;}
     const wait=Math.ceil((nextAllowedAt-Date.now())/1000);if(wait>0){setStatus(tr('برای جلوگیری از درخواست تکراری '+wait+' ثانیه صبر کن.','Please wait '+wait+' seconds before another request.'),true);return;}
     let url;try{url=new URL(endpoint);}catch(_){setStatus(tr('نشانی سرویس معتبر نیست.','Invalid service URL.'),true);return;}
     if(url.protocol!=='https:'&&url.hostname!=='localhost'&&url.hostname!=='127.0.0.1'){setStatus(tr('نشانی سرویس باید HTTPS باشد.','The service endpoint must use HTTPS.'),true);return;}
@@ -204,21 +214,21 @@
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),160000);
     try{
       const response=await fetch(url.toString(),{method:'POST',headers:{'Content-Type':'application/json','X-Planet-Access-Code':access},
-        body:JSON.stringify({prompt:promptInput.value.trim().slice(0,12000),speciesId:selected.id,speciesName:String(selected.name||'').slice(0,120),
+        body:JSON.stringify({prompt:promptInput.value.trim().slice(0,12000),genome:String(selected.dna||'').toUpperCase(),speciesId:selected.id,speciesName:String(selected.name||'').slice(0,120),
           genomeLength:String(selected.dna||'').length,habitat:String(selected.habitat||'unknown').slice(0,32),generation:Number(selected.generation)||0,
-          variation:Date.now()+'-'+Math.random().toString(36).slice(2,8)}),signal:controller.signal});
+          variation:'fixed-genome-'+hash}),signal:controller.signal});
       const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||data.message||('HTTP '+response.status));
       const b64=data.imageBase64||(data.data&&data.data[0]&&data.data[0].b64_json)||'';if(!b64)throw new Error(tr('پاسخ سرویس تصویر نداشت.','The service response contained no image.'));
       const mime=data.mimeType==='image/webp'?'image/webp':data.mimeType==='image/jpeg'?'image/jpeg':'image/png';
-      generated='data:'+mime+';base64,'+b64;output.src=generated;output.style.display='block';placeholder.style.display='none';downloadButton.disabled=false;
+      generated='data:'+mime+';base64,'+b64;output.src=generated;output.style.display='block';placeholder.style.display='none';downloadButton.disabled=false;await writeImageCache(hash,generated,'ai');
       setStatus(tr('تصویر با مدل '+(data.model||'API')+' تولید شد. این یک پیشنهاد بصری بر پایهٔ صفات دیجیتال و محیط است، نه پیش‌بینی زیستی اعتبارسنجی‌شده.','Image generated by '+(data.model||'the API')+'. It is a visual proposal based on digital traits and environment, not a validated biological prediction.'));
     }catch(error){
       const reason=(error&&error.name==='AbortError'?tr('درخواست بیش از حد طول کشید.','Request timed out.'):String(error&&error.message||error));
-      generateOffline();
-      setStatus(tr('سرویس آنلاین در دسترس نبود ('+reason+'). تصویر محلی ساخته شد.','Online image service unavailable ('+reason+'). A local image was generated.')+'\n'+tr('این تصویر مولد رویه‌ای است، نه خروجی مدل انتشار آموزش‌دیده.','This is procedural output, not a trained diffusion model output.'));
+      generateOffline(hash);await writeImageCache(hash,generated,'procedural');
+      setStatus(tr('سرویس آنلاین در دسترس نبود ('+reason+'). تصویر محلی ثابت ساخته شد.','Online image service unavailable ('+reason+'). A fixed local image was generated.')+'\n'+tr('این تصویر مولد رویه‌ای است، نه خروجی مدل انتشار آموزش‌دیده.','This is procedural output, not a trained diffusion model output.'));
     }finally{clearTimeout(timer);busy=false;generateButton.disabled=variationButton.disabled=false;generateButton.textContent=tr('تولید تصویر جدید','Generate image');}
   }
-  function createVariation(){if(!selected)return;promptInput.value=buildPrompt(selected,Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7));setStatus(tr('صفات و محیط ثابت می‌مانند؛ نسخهٔ تصویری تازه درخواست می‌شود.','Genomic traits and habitat stay the same; a new visual variation will be requested.'));generate();}
+  function createVariation(){setStatus(tr('برای حفظ هویت موجود، هر ژنوم فقط یک تصویر ثابت دارد؛ تصویر تازه فقط پس از تغییر ژنوم در نسل تکامل ساخته می‌شود.','Each genome has one fixed image. A new image is created only when evolution changes the genome.'));}
   function downloadImage(){if(!generated||!selected)return;const a=document.createElement('a');a.href=generated;a.download='planet-organism-'+String(selected.id)+(generated.indexOf('data:image/svg+xml')===0?'-procedural.svg':'-ai.png');document.body.appendChild(a);a.click();a.remove();}
   function addButtons(container){
     if(!container)return;
@@ -234,7 +244,7 @@
   function init(){
     loadSettings();$('planet-image-close').addEventListener('click',closeModal);overlay.addEventListener('click',e=>{if(e.target===overlay)closeModal();});
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&overlay.classList.contains('open'))closeModal();});
-    $('planet-image-save-settings').addEventListener('click',saveSettings);generateButton.addEventListener('click',generate);variationButton.addEventListener('click',createVariation);downloadButton.addEventListener('click',downloadImage);
+    $('planet-image-save-settings').addEventListener('click',saveSettings);generateButton.addEventListener('click',generate);variationButton.hidden=true;downloadButton.addEventListener('click',downloadImage);
     const catalog=$('speciesList');if(catalog){addButtons(catalog);new MutationObserver(()=>addButtons(catalog)).observe(catalog,{childList:true,subtree:true});}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
