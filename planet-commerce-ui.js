@@ -67,11 +67,6 @@ async function syncSpecimens(){
   await refresh();status(count+" نمونه همگام شد؛ "+rewardTokens+" توکن پاداش ورود اولیه به کلکسیون دریافت شد. برای هر موجود فقط یک‌بار.");
  }catch(error){status(error.message);}
 }
-async function connect(){
- try{client.setApiBase($("commerceApiBase").value);status("نشانی ذخیره شد؛ سرویس در حال بررسی است…");const result=await client.health();status(result.ok?"سرویس آنلاین پاسخ می‌دهد.":"سرویس آنلاین آماده نیست.");if(client.hasSession())await refresh();}
- catch(error){status(error.message);}
-}
-$("commerceConnect").addEventListener("click",connect);
 $("commerceRegister").addEventListener("click",async()=>{
  try{await client.register($("commerceEmail").value.trim(),$("commercePassword").value);$("commerceVerifyPanel").hidden=false;status("حساب ساخته شد؛ کد تأیید را از ایمیل بردار و وارد کن.");}
  catch(error){status(error.message);}
@@ -102,8 +97,9 @@ let activeBazaarToken="",activeVipToken="";
 const tokenAmounts={planet_tokens_200:200,planet_tokens_500:500,planet_tokens_1000:1000};
 function updateNativeButtons(){
  const bridge=window.AndroidCommerceBridge,configured=!!(bridge&&bridge.isBazaarConfigured&&bridge.isBazaarConfigured());
- const google=$("commerceGoogleLogin");
- if(google)google.hidden=!(bridge&&bridge.startGoogleSignIn);
+ const google=$("commerceGoogleLogin"),serviceReady=!!client.getApiBase();
+ if(google)google.hidden=!(serviceReady&&bridge&&bridge.startGoogleSignIn);
+ ["commerceLogin","commerceRegister","commerceVerify"].forEach(id=>{const el=$(id);if(el)el.disabled=!serviceReady;});
  ["200","500","1000"].forEach(n=>{const b=$("commerceBuyTokens"+n);if(b)b.hidden=!configured;});
  $("commerceBuyVip").hidden=!(configured&&bridge.startBazaarVipSubscription);
 }
@@ -143,9 +139,11 @@ function retryPendingBazaarToken(){
 }
 window.PlanetCommerceUI={
  open:function(){
-  $("commerceApiBase").value=client.getApiBase();authView();updateNativeButtons();
-  if(!client.getApiBase())status("ابتدا Worker را مستقر کن و نشانی HTTPS آن را وارد کن.");
-  else if(client.hasSession()){refresh();retryPendingBazaarToken();}
+  authView();updateNativeButtons();
+  if(!client.getApiBase()){status("سرویس حساب آنلاین هنوز در حال آماده‌سازی است. لطفاً بعداً دوباره تلاش کن.");return;}
+  status("در حال اتصال امن به سرویس Planet…");
+  client.health().then(result=>status(result.ok?"سرویس آنلاین آماده است.":"سرویس آنلاین فعلاً پاسخ‌گو نیست.")).catch(error=>status(error.message));
+  if(client.hasSession()){refresh();retryPendingBazaarToken();}
  },
  handleGoogleIdToken:async function(token,nonce){
   try{await client.googleLogin(token,nonce);authView();status("ورود با Google موفق بود.");await refresh();retryPendingBazaarToken();}
