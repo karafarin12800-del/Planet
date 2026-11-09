@@ -20,7 +20,7 @@ assert.ok(activity.includes("consumeVerifiedPurchase"),"receipt consumption is g
 assert.ok(activity.includes("purchase.getPurchaseToken()"),"Poolakey purchase token is passed to server verification");
 assert.ok(activity.includes('new PurchaseRequest(TOKEN_PRODUCT_ID, "planet_tokens_200", null)'),"Cafe Bazaar purchase uses the configured consumable product id");
 assert.ok(gradle.includes("Poolakey:poolakey:2.2.0"),"Poolakey dependency is pinned");
-assert.ok(gradle.includes("credentials:1.6.0")&&gradle.includes("googleid:1.2.1"),"Credential Manager dependencies are explicit");
+assert.ok(gradle.includes("credentials:1.6.0")&&gradle.includes("googleid:1.1.1"),"Credential Manager dependencies are explicit");
 assert.ok(settings.includes("https://jitpack.io"),"JitPack is configured for Poolakey");
 assert.ok(workflow.includes("PLANET_GOOGLE_WEB_CLIENT_ID")&&workflow.includes("PLANET_BAZAAR_RSA_PUBLIC_KEY"),"native public config is passed from Actions variables");
 assert.ok(html.includes('id="commerceGoogleLogin"')&&html.includes('id="commerceBuyTokens"'),"native auth and billing controls exist");
