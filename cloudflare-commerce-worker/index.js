@@ -263,8 +263,8 @@ async function route(req, env, url) {
   }
   if(method==="POST"&&path==="/specimens/register"){
     const b=await jsonBody(req),clientKey=String(b?.clientKey||"").slice(0,180),planetId=String(b?.planetId||""),name=String(b?.name||"موجود دیجیتال").slice(0,100),form=String(b?.form||"").slice(0,80),dna=String(b?.dna||"").toUpperCase();
-    const bodyLengthCm=clamp(Number(b?.bodyLengthCm)||0,0,6000),special=b?.special===true,originWorldType=(planetId==="earth"||planetId==="system-01-p1")?"earth":"alien",rarityScore=clamp(Number(b?.rarityScore)||0,0,100);
-    const marketEligible=special&&(originWorldType==="earth"?bodyLengthCm>=45:bodyLengthCm>5);
+    const bodyLengthCm=clamp(Number(b?.bodyLengthCm)||0,0,6000),generation=clamp(Number(b?.generation)||0,0,1e9),special=b?.special===true,originWorldType=(planetId==="earth"||planetId==="system-01-p1")?"earth":"alien",rarityScore=clamp(Number(b?.rarityScore)||0,0,100);
+    const marketEligible=special&&(originWorldType==="earth"?(generation>=18&&bodyLengthCm>=45):(generation>=6&&bodyLengthCm>5));
     if(!clientKey||!planetId||!/^[ACGT]{1,100000}$/.test(dna)||!Number.isFinite(Number(b?.bodyLengthCm))) return response({error:"INVALID_SPECIMEN"},400);
     if(originWorldType==="alien"){
       const world=planets().find(p=>p.galaxyId===planetId);
@@ -276,7 +276,7 @@ async function route(req, env, url) {
     if(existing) return response({ok:true,specimenId:existing.id,alreadyRegistered:true});
     const id=crypto.randomUUID();
     await env.DB.prepare("INSERT OR IGNORE INTO specimens(id,owner_id,client_key,planet_id,name,form,dna,generation,fitness,body_length_cm,is_special,origin_world_type,rarity_score,market_eligible,status,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,'owned',datetime('now'))")
-      .bind(id,user.id,clientKey,planetId,name,form,dna,clamp(Number(b.generation)||0,0,1e9),clamp(Number(b.fitness)||0,0,1),bodyLengthCm,special?1:0,originWorldType,rarityScore,marketEligible?1:0).run();
+      .bind(id,user.id,clientKey,planetId,name,form,dna,generation,clamp(Number(b.fitness)||0,0,1),bodyLengthCm,special?1:0,originWorldType,rarityScore,marketEligible?1:0).run();
     const saved=await env.DB.prepare("SELECT id FROM specimens WHERE owner_id=? AND client_key=?").bind(user.id,clientKey).first();
     if(!saved) return response({error:"SPECIMEN_REGISTER_FAILED"},409);
     return response({ok:true,specimenId:saved.id,alreadyRegistered:saved.id!==id},201);

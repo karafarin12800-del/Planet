@@ -24,6 +24,7 @@ const fs=require("node:fs");
  assert.ok(catalog.every((x,i)=>x.galaxyPlanetId===worlds[i].commercePlanetId&&x.name===worlds[i].name&&x.price===worlds[i].priceTokens),"server catalog must match the exact 3D galaxy planet, name and price");
  assert.ok(source.includes("PLANET_ALREADY_OWNED"),"one planet can only have one global owner");
  assert.ok(source.includes("PLANET_NOT_OWNED"),"off-world creatures can only be registered by the planet owner");
+ assert.ok(source.includes("generation>=18&&bodyLengthCm>=45")&&source.includes("generation>=6&&bodyLengthCm>5"),"server requires evolved generation and correct size before market eligibility");
  assert.ok(source.includes("originWorldType=(planetId==="),"Earth vs off-world market thresholds are derived from the server-side planet identity");
  assert.equal(mod.TOKEN_PRODUCT,"planet_tokens_200");
  assert.equal(mod.TOKEN_GRANT,200);

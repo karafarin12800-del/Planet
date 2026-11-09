@@ -13,7 +13,7 @@ const tinyAlien={id:9,nameFa:"ویژهٔ کوچک",dna:"ATGCGTAA",form:"چهار
 assert.throws(()=>commerce.acquire(state,tinyAlien,"system-02-p1"),/اندازه/);
 const tinyEarth={...tinyAlien,id:10,bodyLengthCm:44,originWorldType:"earth"};
 assert.throws(()=>commerce.acquire(state,tinyEarth,world),/اندازه/);
-const species={id:7,nameFa:"شکارچی آبی",dna:"ATGCGTAA",form:"چهاراندام",generation:12,fitness:.8,habitat:"shore",parentId:3,bodyLengthCm:65,special:true,rarityScore:90,originWorldType:"earth"};
+const species={id:7,nameFa:"شکارچی آبی",dna:"ATGCGTAA",form:"چهاراندام",generation:20,fitness:.8,habitat:"shore",parentId:3,bodyLengthCm:65,special:true,rarityScore:90,originWorldType:"earth"};
 assert.equal(state.credits,250);
 const first=commerce.acquire(state,species,world);
 assert.ok(first.id&&first.id!==String(species.id));
