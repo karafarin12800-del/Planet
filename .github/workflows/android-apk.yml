@@ -52,6 +52,7 @@ on:
       - 'settings.gradle'
       - 'gradle.properties'
       - 'planet-galaxy-engine.js'
+      - 'planet-world-state.js'
       - 'planet-galaxy-viewer.js'
       - 'tests/**'
       - '.github/workflows/android-apk.yml'

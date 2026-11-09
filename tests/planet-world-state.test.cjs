@@ -14,6 +14,10 @@ const home=galaxy.systems[0].planets[0].id;
 const other=galaxy.systems[0].planets[1].id;
 assert.equal(World.getHomeWorldId(storage,Galaxy),home);
 assert.equal(World.getActiveWorldId(storage,Galaxy),home);
+Galaxy.discoverPlanet(galaxy,other);
+Galaxy.selectPlanet(galaxy,other);
+storage.setItem(World.galaxyKey,Galaxy.serialize(galaxy));
+assert.equal(World.getActiveWorldId(storage,Galaxy),other,"the active world follows the persisted galaxy selection");
 assert.notEqual(World.seedFor(home),World.seedFor(other),"each planet receives a deterministic but distinct biosphere seed");
 
 const legacy={state:JSON.stringify({version:1,year:42,species:[]}),live:false,speed:3,lastWall:1234};

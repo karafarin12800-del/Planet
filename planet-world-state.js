@@ -46,12 +46,14 @@
   function load(storage,worldId,options){
     if(!storage||!validId(worldId))return null;
     const opts=options||{},key=storageKey(worldId);
-    const current=parseSnapshot(storage.getItem(key));
+    let current=null;
+    try{current=parseSnapshot(storage.getItem(key));}catch(error){return null;}
     if(current)return current;
     const homeId=opts.homeWorldId||getHomeWorldId(storage,opts.galaxyEngine);
     const legacyKey=opts.legacyKey||LEGACY_KEY;
     if(homeId===worldId){
-      const legacy=parseSnapshot(storage.getItem(legacyKey));
+      let legacy=null;
+      try{legacy=parseSnapshot(storage.getItem(legacyKey));}catch(error){return null;}
       if(legacy){
         try{storage.setItem(key,JSON.stringify(legacy));}catch(error){}
         return legacy;

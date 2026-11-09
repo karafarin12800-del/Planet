@@ -83,7 +83,7 @@
 
 ## Current implementation boundary
 
-The galaxy engine stores catalog metadata, and the new viewer renders a navigable 3D map plus simplified orbital markers. Discovery and active-world selection persist locally. It does not yet create independent planetary terrain, connect each selected planet to a separate life simulation, simulate civilizations, synchronize cloud saves, or process payments. Those remain explicit later phases.
+The galaxy engine stores catalog metadata, and the new viewer renders a navigable 3D map plus simplified orbital markers. Discovery and active-world selection persist locally. It now stores a separate autonomous digital biosphere for each selected planet, but does not yet create independent planetary terrain or climate-coupled ecology, simulate civilizations, synchronize cloud saves, or process payments. Those remain explicit later phases.
 
 
 ### Phase 2 integration milestone — per-planet digital biospheres

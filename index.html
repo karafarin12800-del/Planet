@@ -1804,7 +1804,7 @@ html[lang="en"] .scene-coords{direction:ltr}
   if (!WorldState) return;
   const homeWorldId = WorldState.getHomeWorldId(localStorage, window.PlanetGalaxyEngine);
   let activeWorldId = WorldState.getActiveWorldId(localStorage, window.PlanetGalaxyEngine);
-  let state, live = false, timer = 0, saveTimer = 0, fastRunning = false, lastWall = Date.now(), liveAccumulator = 0, savedSpeed = 1;
+  let state, live = false, timer = 0, saveTimer = 0, fastRunning = false, pendingWorldId = null, lastWall = Date.now(), liveAccumulator = 0, savedSpeed = 1;
   function restoreWorld(worldId) {
     const saved = WorldState.load(localStorage, worldId, { homeWorldId: homeWorldId, legacyKey: STORE });
     try {
@@ -1894,6 +1894,7 @@ html[lang="en"] .scene-coords{direction:ltr}
         fastRunning = false; $('pbFast').disabled = false; $('pbLive').disabled = false;
         setStatus('۲۰۰۰ سال شبیه‌سازی شد. جهان آمادهٔ ادامهٔ زنده است.');
         if (resumeLiveAfterFast) startLive(); else save();
+        if (pendingWorldId) { const queuedWorldId = pendingWorldId; pendingWorldId = null; switchWorld(queuedWorldId); }
       }
     }
     requestAnimationFrame(batch);
@@ -1926,10 +1927,8 @@ html[lang="en"] .scene-coords{direction:ltr}
     if (!window.confirm('تمام تاریخچهٔ زیست‌کرهٔ همین سیاره پاک و یک جهان تازه ساخته شود؟')) return;
     stopLive(); state = Model.createState(WorldState.seedFor(activeWorldId)); render(); save(); setStatus('زیست‌کرهٔ تازه فقط برای همین سیاره ساخته شد.');
   });
-  window.addEventListener('planet:active-world-changed', function (event) {
-    const nextWorldId = event && event.detail && event.detail.planetId;
+  function switchWorld(nextWorldId) {
     if (!nextWorldId || nextWorldId === activeWorldId) return;
-    if (fastRunning) { setStatus('پس از پایان شبیه‌سازی سریع می‌توان جهان فعال را عوض کرد.'); return; }
     if (live) stopLive(); else save();
     activeWorldId = nextWorldId;
     const shouldResume = restoreWorld(activeWorldId);
@@ -1939,6 +1938,12 @@ html[lang="en"] .scene-coords{direction:ltr}
     render();
     setStatus('زیست‌کرهٔ مستقل سیارهٔ ' + activeWorldId + ' بارگذاری شد؛ ذخیرهٔ سیاره‌های دیگر جداگانه حفظ می‌شود.');
     if (shouldResume) startLive();
+  }
+  window.addEventListener('planet:active-world-changed', function (event) {
+    const nextWorldId = event && event.detail && event.detail.planetId;
+    if (!nextWorldId || nextWorldId === activeWorldId) return;
+    if (fastRunning) { pendingWorldId = nextWorldId; setStatus('پس از پایان شبیه‌سازی سریع، زیست‌کرهٔ سیارهٔ انتخاب‌شده بارگذاری می‌شود.'); return; }
+    switchWorld(nextWorldId);
   });
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden') { save(); }
