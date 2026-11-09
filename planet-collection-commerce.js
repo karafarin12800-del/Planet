@@ -48,7 +48,7 @@
   function isMarketEligible(specimen){
     if(!specimen||specimen.special!==true)return false;
     const size=finite(specimen.bodyLengthCm,0,0,6000),generation=finite(specimen.generation,0,0,1e9);
-    return specimen.originWorldType==="earth"?(generation>=18&&size>=EARTH_MIN_MARKET_SIZE_CM):(generation>=6&&size>ALIEN_MIN_MARKET_SIZE_CM);
+    return specimen.originWorldType==="earth"?(generation>=18&&size>=EARTH_MIN_MARKET_SIZE_CM):(generation>=1&&size>ALIEN_MIN_MARKET_SIZE_CM);
   }
   function specimenFrom(state,species,worldId,source){
     if(!species||!Number.isFinite(Number(species.id)))throw new Error("گونهٔ معتبر انتخاب نشده است.");

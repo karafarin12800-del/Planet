@@ -248,7 +248,7 @@ public final class MainActivity extends ComponentActivity {
 
     private void startBazaarPurchase(String productId) {
         if (!("planet_tokens_200".equals(productId) || "planet_tokens_500".equals(productId)
-                || "planet_tokens_1000".equals(productId))) {
+                || "planet_tokens_1000".equals(productId) || "planet_tokens_2000".equals(productId))) {
             callJs("handleBazaarNativeError", "بستهٔ توکن انتخاب‌شده معتبر نیست.");
             return;
         }

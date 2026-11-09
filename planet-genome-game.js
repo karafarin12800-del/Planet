@@ -42,19 +42,51 @@
       replacedSpecies=candidates[0];
       state.species.splice(state.species.indexOf(replacedSpecies),1);
     }
-    let dna="";for(let gene=0;gene<8;gene++){const source=randomFor(state)<.5?a:b;dna+=source.slice(gene*21,gene*21+21);}
-    dna=Genome.mutateSyntheticGenome(dna,.035,()=>randomFor(state));
-    const traits=Genome.phenotypeFromDNA(dna,{ageMa:4300}),form=Genome.inferForm(traits,4300,parentA.habitat||parentB.habitat||"land");
-    const p1=Number(parentA.bodyLengthCm)||Number(parentA.traits&&parentA.traits.estimatedBodyLengthCm)||20;
-    const p2=Number(parentB.bodyLengthCm)||Number(parentB.traits&&parentB.traits.estimatedBodyLengthCm)||20;
-    const factors=[.22,.4,.65,.85,1,1.25,1.7,2.4,3.5],factor=factors[Math.floor(randomFor(state)*factors.length)];
-    const bodyLengthCm=Math.max(MIN_SIZE_CM,Math.min(MAX_SIZE_CM,(Number(traits.estimatedBodyLengthCm)||Math.sqrt(p1*p2))*factor));
+    const traitA=parentA.traits||{},traitB=parentB.traits||{};
+    const fitnessA=Number(parentA.fitness)||.5,fitnessB=Number(parentB.fitness)||.5;
+    let dna="";
+    for(let gene=0;gene<8;gene++){
+      const signalA=Number(traitA.signals&&traitA.signals[gene])||fitnessA;
+      const signalB=Number(traitB.signals&&traitB.signals[gene])||fitnessB;
+      const stronger=signalA>=signalB?a:b,other=stronger===a?b:a;
+      dna+=(randomFor(state)<.76?stronger:other).slice(gene*21,gene*21+21);
+    }
+    dna=Genome.mutateSyntheticGenome(dna,.045,()=>randomFor(state));
+    const traits=Genome.phenotypeFromDNA(dna,{ageMa:4300});
+    const capabilityKeys=["motility","sensing","protection","replication","thermalTolerance","learning","cooperation","cognition","metabolicEfficiency","feedingEfficiency","growthRate"];
+    capabilityKeys.forEach(key=>{
+      const best=Math.max(Number(traitA[key])||0,Number(traitB[key])||0);
+      if(best>0)traits[key]=Math.min(1.25,Math.max(Number(traits[key])||0,best+.025+randomFor(state)*.075));
+    });
+    const appA=traitA.appearance||{},appB=traitB.appearance||{},appearance=traits.appearance||{};
+    const inherited=(key,fallback,min,max)=>{
+      const strongest=Math.max(Number(appA[key])||fallback,Number(appB[key])||fallback);
+      return Math.max(min,Math.min(max,Math.max(Number(appearance[key])||fallback,strongest*.62+fallback*.38+randomFor(state)*.16)));
+    };
+    appearance.limbCount=4;
+    appearance.limbLength=inherited("limbLength",.92,.55,1.8);
+    appearance.limbThickness=inherited("limbThickness",.55,.22,1.35);
+    appearance.handSize=inherited("handSize",.62,.35,1.35);
+    appearance.footSize=inherited("footSize",.72,.4,1.5);
+    appearance.earSize=inherited("earSize",.72,.25,1.65);
+    appearance.trunkLength=inherited("trunkLength",.48,.12,1.5);
+    appearance.tailLength=inherited("tailLength",.88,.25,1.95);
+    appearance.neckLength=inherited("neckLength",.66,.18,1.75);
+    appearance.headSize=inherited("headSize",.82,.35,1.5);
+    appearance.bodyLength=inherited("bodyLength",1.08,.65,1.72);
+    appearance.bodyWidth=inherited("bodyWidth",.86,.45,1.5);
+    traits.appearance=appearance;
+    const p1=Number(parentA.bodyLengthCm)||Number(traitA.estimatedBodyLengthCm)||20;
+    const p2=Number(parentB.bodyLengthCm)||Number(traitB.estimatedBodyLengthCm)||20;
+    const factors=[.55,.72,.88,1,1.18,1.42,1.75,2.1],factor=factors[Math.floor(randomFor(state)*factors.length)];
+    const bodyLengthCm=Math.max(6,Math.min(MAX_SIZE_CM,(Number(traits.estimatedBodyLengthCm)||Math.sqrt(p1*p2))*factor));
     const generation=Math.max(Number(parentA.generation)||0,Number(parentB.generation)||0)+1;
-    const divergence=Math.max(distance(dna,a),distance(dna,b)),special=generation>=6&&divergence>=8,id=++state.serial;
+    const divergence=Math.max(distance(dna,a),distance(dna,b)),special=divergence>=4,id=++state.serial;
+    const improvedFitness=Math.min(1,Math.max(fitnessA,fitnessB)+.02+randomFor(state)*.075);
     const child={id,parentId:parentA.id||null,secondParentId:parentB.id||null,name:"گونهٔ ترکیبی "+String(id).padStart(3,"0"),dna,lineageDNA:dna,
-      habitat:parentA.habitat||parentB.habitat||"land",population:40+Math.floor(randomFor(state)*160),generation,age:0,fitness:.4+randomFor(state)*.55,
-      births:0,deaths:0,speciationCooldown:0,traits,form,bodyLengthCm,special,rarityScore:special?Math.min(100,55+divergence+randomFor(state)*30):0,
-      originWorldType:"alien",extinct:false,trophicRole:Life.roleForSpecies({id,traits}),marketEligible:false};
+      habitat:parentA.habitat||parentB.habitat||"land",population:40+Math.floor(randomFor(state)*160),generation,age:0,fitness:improvedFitness,
+      births:0,deaths:0,speciationCooldown:0,traits,form:"hybrid-mammal",bodyLengthCm,special,rarityScore:Math.min(100,62+divergence+randomFor(state)*28),
+      originWorldType:"alien",extinct:false,trophicRole:Life.roleForSpecies({id:state.serial+1,traits}),marketEligible:false};
     child.marketEligible=Life.isMarketEligible(child);state.species.push(child);
     if(replacedSpecies)child.replacedSpeciesId=replacedSpecies.id;
     return Object.assign({},child,{sizeLabel:sizeLabel(bodyLengthCm),marketEligible:child.marketEligible,replacedSpeciesId:replacedSpecies&&replacedSpecies.id||null});

@@ -4,7 +4,7 @@
  * All balances and specimen ownership are server-authoritative.
  */
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
-const TOKEN_PRODUCTS = Object.freeze({planet_tokens_200:200,planet_tokens_500:500,planet_tokens_1000:1000});
+const TOKEN_PRODUCTS = Object.freeze({planet_tokens_200:200,planet_tokens_500:500,planet_tokens_1000:1000,planet_tokens_2000:2000});
 const VIP_PRODUCT = "planet_vip_60d";
 const VIP_DAILY_GRANT = 10;
 const WELCOME_GRANT = 120;
@@ -56,7 +56,7 @@ function planets(){
   }
  }
  const starterSystems=new Set(),starters=new Set();
- for(const planet of rows){const system=planet.galaxyId.split("-p")[0];if(!starterSystems.has(system)){starterSystems.add(system);starters.add(planet.galaxyPlanetId);planet.price=50;planet.creatureCapacity=1;planet.features=(planet.biomes||[]).slice(0,1);planet.starterTier="trial";}}
+ for(const planet of rows){const system=planet.galaxyId.split("-p")[0];if(!starterSystems.has(system)){starterSystems.add(system);starters.add(planet.galaxyPlanetId);planet.price=75;planet.creatureCapacity=1;planet.features=(planet.biomes||[]).slice(0,1);planet.starterTier="trial";}}
  const score=p=>Number(p.lifePotential||0)*.72+Number(p.specialSpeciesPotential||0)*.28;
  const regular=rows.filter(p=>!starters.has(p.galaxyPlanetId)).sort((a,b)=>score(a)-score(b)||a.galaxyPlanetId.localeCompare(b.galaxyPlanetId));
  regular.forEach((planet,rank)=>{planet.price=100+Math.round(rank*900/Math.max(1,regular.length-1));});
@@ -341,7 +341,7 @@ async function route(req, env, url) {
   if(method==="POST"&&path==="/specimens/register"){
     const b=await jsonBody(req),clientKey=String(b?.clientKey||"").slice(0,180),planetId=String(b?.planetId||""),name=String(b?.name||"موجود دیجیتال").slice(0,100),form=String(b?.form||"").slice(0,80),dna=String(b?.dna||"").toUpperCase();
     const bodyLengthCm=clamp(Number(b?.bodyLengthCm)||0,0,6000),generation=clamp(Number(b?.generation)||0,0,1e9),special=b?.special===true,originWorldType=(planetId==="earth"||planetId==="system-01-p1")?"earth":"alien",rarityScore=clamp(Number(b?.rarityScore)||0,0,100);
-    const marketEligible=special&&(originWorldType==="earth"?(generation>=18&&bodyLengthCm>=45):(generation>=6&&bodyLengthCm>5));
+    const marketEligible=special&&(originWorldType==="earth"?(generation>=18&&bodyLengthCm>=45):(generation>=1&&bodyLengthCm>5));
     if(!clientKey||!planetId||!/^[ACGT]{1,100000}$/.test(dna)||!Number.isFinite(Number(b?.bodyLengthCm))) return response({error:"INVALID_SPECIMEN"},400);
     if(originWorldType==="alien"){
       const world=planets().find(p=>p.id===planetId||p.galaxyId===planetId);
