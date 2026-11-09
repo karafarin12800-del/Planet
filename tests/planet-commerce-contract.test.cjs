@@ -89,6 +89,7 @@ const fs=require("node:fs");
  assert.ok(source.includes("s.market_eligible=1"),"market API returns only market-eligible specimens");
  assert.ok(ui.includes("rewardTokens+=Number(result.rewardTokens||0)"),"sync UI reports one-time gallery entry rewards");
  assert.ok(source.includes("SPECIMEN_NOT_MARKET_ELIGIBLE"),"server refuses common or undersized listings");
+ assert.ok(source.includes('if(!marketEligible) return response({error:"SPECIMEN_NOT_MARKET_ELIGIBLE"},400);'),"server refuses common species at album registration, not only at sale time");
  assert.ok(source.includes("body_length_cm"),"server persists creature size and market eligibility");
  assert.ok(source.includes("BAZAAR_RECEIPT_ALREADY_USED"),"a receipt cannot be replayed into another account");
  assert.ok(source.includes("pardakht.cafebazaar.ir/devapi/v2/auth/token/"),"Bazaar access tokens are refreshed server-side");

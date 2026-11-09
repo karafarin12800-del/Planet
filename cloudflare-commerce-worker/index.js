@@ -342,6 +342,7 @@ async function route(req, env, url) {
     const b=await jsonBody(req),clientKey=String(b?.clientKey||"").slice(0,180),planetId=String(b?.planetId||""),name=String(b?.name||"موجود دیجیتال").slice(0,100),form=String(b?.form||"").slice(0,80),dna=String(b?.dna||"").toUpperCase();
     const bodyLengthCm=clamp(Number(b?.bodyLengthCm)||0,0,6000),generation=clamp(Number(b?.generation)||0,0,1e9),special=b?.special===true,originWorldType=(planetId==="earth"||planetId==="system-01-p1")?"earth":"alien",rarityScore=clamp(Number(b?.rarityScore)||0,0,100);
     const marketEligible=special&&(originWorldType==="earth"?(generation>=18&&bodyLengthCm>=45):(generation>=1&&bodyLengthCm>5));
+    if(!marketEligible) return response({error:"SPECIMEN_NOT_MARKET_ELIGIBLE"},400);
     if(!clientKey||!planetId||!/^[ACGT]{1,100000}$/.test(dna)||!Number.isFinite(Number(b?.bodyLengthCm))) return response({error:"INVALID_SPECIMEN"},400);
     if(originWorldType==="alien"){
       const world=planets().find(p=>p.id===planetId||p.galaxyId===planetId);
