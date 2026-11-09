@@ -75,8 +75,6 @@ const fs=require("node:fs");
  assert.ok(!source.includes("receipt.productId!==TOKEN_PRODUCT"),"product identity is bound to the official validation URL path");
  assert.ok(source.includes("claims.nonce!==nonce"),"Google nonce must match the signed ID token");
  assert.ok(source.includes("BAZAAR_RECEIPT_ALREADY_USED"),"a receipt cannot be replayed into another account");
- console.log("Planet commerce catalog and token contract tests passed.");
-})().catch(error=>{console.error(error);process.exit(1);});
 
 // Public players must never be asked to configure infrastructure.
 assert.ok(!html.includes('id="commerceApiBase"'),"player UI does not expose the Worker URL field");
@@ -85,3 +83,6 @@ assert.ok(!html.includes("your-worker.workers.dev"),"player UI does not show a W
 assert.ok(!html.includes("setTimeout(openCollectionShop,450)"),"account/collection panel is not forced open on game startup");
 assert.ok(ui.includes("سرویس حساب آنلاین هنوز در حال آماده‌سازی است"),"unconfigured service shows a player-friendly message");
 assert.ok(!ui.includes('ابتدا Worker را مستقر کن و نشانی HTTPS آن را وارد کن'),"player-facing UI never asks players to deploy or configure a Worker");
+
+ console.log("Planet commerce catalog and token contract tests passed.");
+})().catch(error=>{console.error(error);process.exit(1);});
