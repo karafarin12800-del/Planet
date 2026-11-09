@@ -44,7 +44,7 @@ const fs=require("node:fs");
  assert.ok(welcome140Migration.includes("140-COALESCE")&&welcome140Migration.includes("welcome-adjustment-v140:"),"existing verified accounts are topped up to 140 tokens exactly once");
  assert.equal(mod.STARTER_GRANT,20);
  assert.ok(viewer.includes("GUEST_WALLET_KEY")&&viewer.includes("setGuestWallet")&&viewer.includes("guestOwnedPlanets"),"guest wallet and local planet ownership persist on device");
- assert.ok(viewer.includes("pgGuestWalletBack")&&viewer.includes("pgGuestWalletBuy")&&viewer.includes("data-guest-pack=\\"2000\\""),"guest wallet provides back and all four token bundles");
+ assert.ok(viewer.includes("pgGuestWalletBack")&&viewer.includes("pgGuestWalletBuy")&&viewer.includes('data-guest-pack="2000"'),"guest wallet provides back and all four token bundles");
  assert.ok(viewer.includes("planet-galaxy-explore")&&viewer.includes("legacyGalaxyButton.remove()"),"only the planet-entry button remains and the old galaxy button is removed");
  assert.ok(viewer.includes("galleryEligible=x.special===true&&x.marketEligible===true")&&viewer.includes("button.disabled=alreadyCollected||!galleryEligible"),"basic creatures cannot be added to the album");
  assert.ok(viewer.includes('selectedSystemId=found.system.id;selectedPlanetId=id;mode="planet"'),"selecting a planet opens its dedicated menu");

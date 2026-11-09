@@ -19,8 +19,8 @@ assert.equal(purchasable[0].commercePlanetId,"market-world-001");
 assert.equal(purchasable[99].commercePlanetId,"market-world-100");
 assert.equal(a.systems[0].planets[0].commercePlanetId,null);
 assert.equal(new Set(purchasable.map(p=>p.name)).size,100);
-assert.equal(Math.min(...purchasable.map(p=>p.priceTokens)),50,"each system has a 75-token starter planet");
-for(const system of a.systems){const planets=system.planets.filter(p=>p.commercePlanetId);if(planets.length){assert.equal(Math.min(...planets.map(p=>p.priceTokens)),50,"every star system has one low-cost planet");const starter=planets.find(p=>p.priceTokens===75);assert.equal(starter.creatureCapacity,1);assert.equal(starter.features.length,1);}}
+assert.equal(Math.min(...purchasable.map(p=>p.priceTokens)),75,"each system has a 75-token starter planet");
+for(const system of a.systems){const planets=system.planets.filter(p=>p.commercePlanetId);if(planets.length){assert.equal(Math.min(...planets.map(p=>p.priceTokens)),75,"every star system has one low-cost planet");const starter=planets.find(p=>p.priceTokens===75);assert.equal(starter.creatureCapacity,1);assert.equal(starter.features.length,1);}}
 assert.equal(Math.max(...purchasable.map(p=>p.priceTokens)),1000,"the most expensive planet costs 1,000 tokens");
 assert.ok(a.systems.flatMap(s=>s.planets).every(p=>p.lifePotential>=0&&p.lifePotential<=100&&p.specialSpeciesPotential>=0&&[1,2].includes(p.creatureCapacity)&&p.priceTokens>=75&&p.priceTokens<=1000));
 

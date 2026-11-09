@@ -81,12 +81,12 @@
     const factors=[.55,.72,.88,1,1.18,1.42,1.75,2.1],factor=factors[Math.floor(randomFor(state)*factors.length)];
     const bodyLengthCm=Math.max(6,Math.min(MAX_SIZE_CM,(Number(traits.estimatedBodyLengthCm)||Math.sqrt(p1*p2))*factor));
     const generation=Math.max(Number(parentA.generation)||0,Number(parentB.generation)||0)+1;
-    const divergence=Math.max(distance(dna,a),distance(dna,b)),special=divergence>=4,id=++state.serial;
+    const divergence=Math.max(distance(dna,a),distance(dna,b)),special=true,id=++state.serial;
     const improvedFitness=Math.min(1,Math.max(fitnessA,fitnessB)+.02+randomFor(state)*.075);
     const child={id,parentId:parentA.id||null,secondParentId:parentB.id||null,name:"گونهٔ ترکیبی "+String(id).padStart(3,"0"),dna,lineageDNA:dna,
       habitat:parentA.habitat||parentB.habitat||"land",population:40+Math.floor(randomFor(state)*160),generation,age:0,fitness:improvedFitness,
       births:0,deaths:0,speciationCooldown:0,traits,form:"hybrid-mammal",bodyLengthCm,special,rarityScore:Math.min(100,62+divergence+randomFor(state)*28),
-      originWorldType:"alien",extinct:false,trophicRole:Life.roleForSpecies({id:state.serial+1,traits}),marketEligible:false};
+      originWorldType:"alien",extinct:false,trophicRole:Life.roleForSpecies({id,traits}),marketEligible:false};
     child.marketEligible=Life.isMarketEligible(child);state.species.push(child);
     if(replacedSpecies)child.replacedSpeciesId=replacedSpecies.id;
     return Object.assign({},child,{sizeLabel:sizeLabel(bodyLengthCm),marketEligible:child.marketEligible,replacedSpeciesId:replacedSpecies&&replacedSpecies.id||null});

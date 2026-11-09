@@ -18,7 +18,7 @@ assert.ok(activity.includes("GetSignInWithGoogleOption.Builder(clientId).setNonc
 assert.ok(activity.includes("PENDING_TOKEN_KEY")&&activity.includes("billingPrefs().edit().putString"),"pending Bazaar receipt survives app restarts");
 assert.ok(activity.includes("consumeVerifiedPurchase"),"receipt consumption is gated behind the explicit server callback");
 assert.ok(activity.includes("purchase.getPurchaseToken()"),"Poolakey purchase token is passed to server verification");
-assert.ok(activity.includes('new PurchaseRequest(productId, productId, null)')&&activity.includes("planet_tokens_500")&&activity.includes("planet_tokens_1000"),"Cafe Bazaar supports the three configured consumable product IDs");
+assert.ok(activity.includes('new PurchaseRequest(productId, productId, null)')&&activity.includes("planet_tokens_500")&&activity.includes("planet_tokens_1000")&&activity.includes("planet_tokens_2000"),"Cafe Bazaar supports the three configured consumable product IDs");
 assert.ok(activity.includes('new PaymentConfiguration(new SecurityCheck.Enable(rsaKey), true)'),"Poolakey subscription support is enabled");
 assert.ok(activity.includes("payment.subscribeProduct")&&activity.includes('VIP_PRODUCT_ID = "planet_vip_60d"'),"VIP uses the native Cafe Bazaar subscription flow");
 assert.ok(activity.includes("payment.getSubscribedProducts")&&activity.includes("restoreVipSubscription"),"active subscriptions are restored and revalidated on app start");
@@ -27,7 +27,7 @@ assert.ok(gradle.includes("Poolakey:poolakey:2.2.0"),"Poolakey dependency is pin
 assert.ok(gradle.includes("credentials:1.6.0")&&gradle.includes("googleid:1.1.1"),"Credential Manager dependencies are explicit");
 assert.ok(settings.includes("https://jitpack.io"),"JitPack is configured for Poolakey");
 assert.ok(workflow.includes("PLANET_GOOGLE_WEB_CLIENT_ID")&&workflow.includes("PLANET_BAZAAR_RSA_PUBLIC_KEY"),"native public config is passed from Actions variables");
-assert.ok(html.includes('id="commerceGoogleLogin"')&&html.includes('id="commerceBuyTokens200"')&&html.includes('id="commerceBuyTokens500"')&&html.includes('id="commerceBuyTokens1000"')&&html.includes('id="commerceBuyVip"'),"native auth, token bundle and VIP controls exist");
+assert.ok(html.includes('id="commerceGoogleLogin"')&&html.includes('id="commerceBuyTokens200"')&&html.includes('id="commerceBuyTokens500"')&&html.includes('id="commerceBuyTokens1000"')&&html.includes('id="commerceBuyTokens2000"')&&html.includes('id="commerceBuyVip"'),"native auth, token bundle and VIP controls exist");
 assert.ok(ui.includes("client.googleLogin(token,nonce)"),"Google ID token is sent with the native nonce");
 assert.ok(ui.includes("client.verifyBazaarReceipt(productId,token)"),"all token bundle receipts reach the Worker before consumption");
 assert.ok(ui.includes('client.verifyVipReceipt("planet_vip_60d",token)'),"VIP subscription receipt reaches the Worker before entitlement activation");

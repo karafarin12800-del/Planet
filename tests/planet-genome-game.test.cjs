@@ -23,7 +23,12 @@ assert.ok(worldA.species.length>2&&worldA.species.length<=24,"off-world ecosyste
 const parents=worldA.species.slice(0,2),child=Game.breed(worldA,parents[0],parents[1]);
 assert.ok(Game.validDNA(child.dna));
 assert.equal(child.generation,Math.max(parents[0].generation,parents[1].generation)+1);
-assert.ok(child.bodyLengthCm>=6&&child.bodyLengthCm<=Game.MAX_SIZE_CM);\nassert.equal(child.form,"hybrid-mammal");\nassert.equal(child.traits.appearance.limbCount,4);\nassert.ok(child.traits.appearance.handSize>0&&child.traits.appearance.footSize>0,"every hybrid has visible hands and feet");\nassert.ok(child.special&&child.marketEligible,"bred hybrids can enter the album while common species cannot");\nfor(const key of ["motility","sensing","protection","replication","thermalTolerance","learning","cooperation","cognition"]){const best=Math.max(Number(parents[0].traits[key])||0,Number(parents[1].traits[key])||0);assert.ok(child.traits[key]>=best,"hybrid inherits the stronger parental capability: "+key);}
+assert.ok(child.bodyLengthCm>=6&&child.bodyLengthCm<=Game.MAX_SIZE_CM);
+assert.equal(child.form,"hybrid-mammal");
+assert.equal(child.traits.appearance.limbCount,4);
+assert.ok(child.traits.appearance.handSize>0&&child.traits.appearance.footSize>0,"every hybrid has visible hands and feet");
+assert.ok(child.special&&child.marketEligible,"bred hybrids can enter the album while common species cannot");
+for(const key of ["motility","sensing","protection","replication","thermalTolerance","learning","cooperation","cognition"]){const best=Math.max(Number(parents[0].traits[key])||0,Number(parents[1].traits[key])||0);assert.ok(child.traits[key]>=best,"hybrid inherits the stronger parental capability: "+key);}
 assert.ok(child.replacedSpeciesId!=null,"breeding at capacity replaces the weakest non-parent lineage");
 assert.equal(worldA.species.length,24,"ecosystem stays within its 24-species capacity");
 assert.notEqual(String(child.parentId),String(child.secondParentId),"the hybrid records two different parents");
