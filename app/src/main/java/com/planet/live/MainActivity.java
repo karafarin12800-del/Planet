@@ -47,9 +47,11 @@ import kotlin.Unit;
 
 public final class MainActivity extends ComponentActivity {
     private static final int FILE_CHOOSER_REQUEST = 7301;
-    private static final String TOKEN_PRODUCT_ID = "planet_tokens_200";
     private static final String BILLING_PREFS = "planet_billing_private";
     private static final String PENDING_TOKEN_KEY = "pending_purchase_token";
+    private static final String PENDING_PRODUCT_KEY = "pending_purchase_product";
+    private static final String PENDING_VIP_TOKEN_KEY = "pending_vip_subscription_token";
+    private static final String VIP_PRODUCT_ID = "planet_vip_60d";
 
     private WebView webView;
     private ValueCallback<Uri[]> fileChooserCallback;
@@ -137,7 +139,7 @@ public final class MainActivity extends ComponentActivity {
 
         try {
             PaymentConfiguration configuration =
-                    new PaymentConfiguration(new SecurityCheck.Enable(rsaKey));
+                    new PaymentConfiguration(new SecurityCheck.Enable(rsaKey), true);
             payment = new Payment(this, configuration);
             paymentConnection = payment.connect(callback -> {
                 callback.connectionSucceed(() -> {
@@ -218,14 +220,19 @@ public final class MainActivity extends ComponentActivity {
                 bytes, Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING);
     }
 
-    private void startBazaarPurchase() {
+    private void startBazaarPurchase(String productId) {
+        if (!("planet_tokens_200".equals(productId) || "planet_tokens_500".equals(productId)
+                || "planet_tokens_1000".equals(productId))) {
+            callJs("handleBazaarNativeError", "بستهٔ توکن انتخاب‌شده معتبر نیست.");
+            return;
+        }
         if (payment == null || paymentConnection == null || !bazaarConnected) {
             callJs("handleBazaarNativeError",
                     "سرویس پرداخت آماده نیست؛ نصب بودن کافه‌بازار و تنظیم کلید عمومی را بررسی کن.");
             return;
         }
 
-        PurchaseRequest request = new PurchaseRequest(TOKEN_PRODUCT_ID, "planet_tokens_200", null);
+        PurchaseRequest request = new PurchaseRequest(productId, productId, null);
         payment.purchaseProduct(getActivityResultRegistry(), request, callback -> {
             callback.purchaseFlowBegan(() -> {
                 callJs("handleBazaarStatus", "در انتظار تأیید خرید در کافه‌بازار…");
@@ -242,8 +249,9 @@ public final class MainActivity extends ComponentActivity {
                     return Unit.INSTANCE;
                 }
                 // Persist before any network call. Do not consume until the Worker verifies it.
-                billingPrefs().edit().putString(PENDING_TOKEN_KEY, token).apply();
-                callJs("handleBazaarPurchaseToken", token);
+                billingPrefs().edit().putString(PENDING_TOKEN_KEY, token)
+                        .putString(PENDING_PRODUCT_KEY, productId).apply();
+                callJs("handleBazaarPurchaseToken", token, productId);
                 return Unit.INSTANCE;
             });
             callback.purchaseCanceled(() -> {
@@ -258,9 +266,47 @@ public final class MainActivity extends ComponentActivity {
         });
     }
 
-    private void consumeVerifiedPurchase(String token) {
+    private void startBazaarVipSubscription() {
+        if (payment == null || paymentConnection == null || !bazaarConnected) {
+            callJs("handleBazaarNativeError", "سرویس پرداخت آماده نیست؛ اتصال کافه‌بازار را بررسی کن.");
+            return;
+        }
+        PurchaseRequest request = new PurchaseRequest(VIP_PRODUCT_ID, VIP_PRODUCT_ID, null);
+        payment.subscribeProduct(getActivityResultRegistry(), request, callback -> {
+            callback.purchaseFlowBegan(() -> {
+                callJs("handleBazaarStatus", "در انتظار تأیید اشتراک VIP در کافه‌بازار…");
+                return Unit.INSTANCE;
+            });
+            callback.failedToBeginFlow(error -> {
+                callJs("handleBazaarNativeError", safeMessage(error));
+                return Unit.INSTANCE;
+            });
+            callback.purchaseSucceed(purchase -> {
+                String token = purchase.getPurchaseToken();
+                if (token == null || token.trim().isEmpty()) {
+                    callJs("handleBazaarNativeError", "رسید اشتراک فاقد شناسهٔ معتبر است.");
+                    return Unit.INSTANCE;
+                }
+                billingPrefs().edit().putString(PENDING_VIP_TOKEN_KEY, token).apply();
+                callJs("handleBazaarVipPurchaseToken", token);
+                return Unit.INSTANCE;
+            });
+            callback.purchaseCanceled(() -> {
+                callJs("handleBazaarStatus", "خرید اشتراک VIP لغو شد.");
+                return Unit.INSTANCE;
+            });
+            callback.purchaseFailed(error -> {
+                callJs("handleBazaarNativeError", safeMessage(error));
+                return Unit.INSTANCE;
+            });
+            return Unit.INSTANCE;
+        });
+    }
+
+    private void consumeVerifiedPurchase(String token, String productId) {
         String pending = pendingPurchaseToken();
-        if (token == null || token.isEmpty() || !token.equals(pending)) {
+        String pendingProduct = billingPrefs().getString(PENDING_PRODUCT_KEY, "planet_tokens_200");
+        if (token == null || token.isEmpty() || !token.equals(pending) || !productId.equals(pendingProduct)) {
             callJs("handleBazaarNativeError", "رسید تأییدشده با رسید ذخیره‌شده مطابقت ندارد.");
             return;
         }
@@ -271,8 +317,8 @@ public final class MainActivity extends ComponentActivity {
 
         payment.consumeProduct(token, callback -> {
             callback.consumeSucceed(() -> {
-                billingPrefs().edit().remove(PENDING_TOKEN_KEY).apply();
-                callJs("onBazaarConsumed", "");
+                billingPrefs().edit().remove(PENDING_TOKEN_KEY).remove(PENDING_PRODUCT_KEY).apply();
+                callJs("onBazaarConsumed", productId);
                 return Unit.INSTANCE;
             });
             callback.consumeFailed(error -> {
@@ -342,8 +388,13 @@ public final class MainActivity extends ComponentActivity {
         }
 
         @JavascriptInterface
-        public void startBazaarPurchase() {
-            runOnUiThread(MainActivity.this::startBazaarPurchase);
+        public void startBazaarPurchase(String productId) {
+            runOnUiThread(() -> MainActivity.this.startBazaarPurchase(productId));
+        }
+
+        @JavascriptInterface
+        public void startBazaarVipSubscription() {
+            runOnUiThread(MainActivity.this::startBazaarVipSubscription);
         }
 
         @JavascriptInterface
@@ -352,8 +403,27 @@ public final class MainActivity extends ComponentActivity {
         }
 
         @JavascriptInterface
-        public void consumeBazaarPurchase(String token) {
-            runOnUiThread(() -> consumeVerifiedPurchase(token));
+        public String getPendingBazaarPurchaseProductId() {
+            return billingPrefs().getString(PENDING_PRODUCT_KEY, "planet_tokens_200");
+        }
+
+        @JavascriptInterface
+        public void consumeBazaarPurchase(String token, String productId) {
+            runOnUiThread(() -> consumeVerifiedPurchase(token, productId));
+        }
+
+        @JavascriptInterface
+        public String getPendingVipSubscriptionToken() {
+            return billingPrefs().getString(PENDING_VIP_TOKEN_KEY, "");
+        }
+
+        @JavascriptInterface
+        public void clearPendingVipSubscription(String token) {
+            runOnUiThread(() -> {
+                if (token != null && token.equals(billingPrefs().getString(PENDING_VIP_TOKEN_KEY, ""))) {
+                    billingPrefs().edit().remove(PENDING_VIP_TOKEN_KEY).apply();
+                }
+            });
         }
     }
 
