@@ -4,9 +4,10 @@
  * All balances and specimen ownership are server-authoritative.
  */
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
-const TOKEN_PRODUCT = "planet_tokens_200";
-const TOKEN_GRANT = 200;
-const WELCOME_GRANT = 20;
+const TOKEN_PRODUCTS = Object.freeze({planet_tokens_200:200,planet_tokens_500:500,planet_tokens_1000:1000});
+const VIP_PRODUCT = "planet_vip_60d";
+const VIP_DAILY_GRANT = 10;
+const WELCOME_GRANT = 100;
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 const PLANET_TYPES=[
 {id:"terrestrial",label:"سنگی",biomes:["دشت","کوهستان","بیابان","جنگل"],radius:[4200,8200],water:[0.05,0.65],temp:[-25,42]},
@@ -135,7 +136,9 @@ async function route(req, env, url) {
   const user=await authenticate(req,env);
   if(!user) return response({error:"UNAUTHORIZED"},401);
   if(method==="GET"&&path==="/profile"){
-    return response({id:user.id,email:user.email,displayName:user.display_name||""});
+    const vip=await env.DB.prepare("SELECT expires_at FROM vip_entitlements WHERE user_id=?").bind(user.id).first();
+    const vipActive=!!vip&&Date.parse(String(vip.expires_at).replace(" ","T")+"Z")>Date.now();
+    return response({id:user.id,email:user.email,displayName:user.display_name||"",vipActive,vipExpiresAt:vip?.expires_at||null});
   }
   if(method==="POST"&&path==="/profile"){
     const b=await jsonBody(req),displayName=String(b?.displayName||"").normalize("NFC").trim();
@@ -153,35 +156,40 @@ async function route(req, env, url) {
   if(method==="POST"&&path==="/planets/buy"){
     const b=await jsonBody(req),planetId=String(b?.planetId||""),planet=planets().find(p=>p.id===planetId);
     if(!planet) return response({error:"PLANET_NOT_FOUND"},404);
+    const vip=await env.DB.prepare("SELECT expires_at FROM vip_entitlements WHERE user_id=? AND expires_at>datetime('now')").bind(user.id).first();
+    const effectivePrice=vip?Math.max(1,Math.round(planet.price*0.9)):planet.price;
     const owned=await env.DB.prepare("SELECT planet_id FROM planet_ownership WHERE planet_id=?").bind(planetId).first();
     if(owned) return response({error:"PLANET_ALREADY_OWNED"},409);
     const tx=crypto.randomUUID();
     const results=await env.DB.batch([
-      env.DB.prepare("INSERT OR IGNORE INTO planet_ownership(user_id,planet_id,galaxy_planet_id,price,created_at) SELECT ?,?,?,?,datetime('now') WHERE EXISTS(SELECT 1 FROM wallets WHERE user_id=? AND balance>=?) AND NOT EXISTS(SELECT 1 FROM planet_ownership WHERE user_id=? AND planet_id=?)").bind(user.id,planetId,planet.galaxyPlanetId,planet.price,user.id,planet.price,user.id,planetId),
-      env.DB.prepare("UPDATE wallets SET balance=balance-? WHERE user_id=? AND balance>=? AND changes()=1").bind(planet.price,user.id,planet.price),
-      env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'planet_purchase',? WHERE changes()=1").bind(user.id,-planet.price,tx)
+      env.DB.prepare("INSERT OR IGNORE INTO planet_ownership(user_id,planet_id,galaxy_planet_id,price,created_at) SELECT ?,?,?,?,datetime('now') WHERE EXISTS(SELECT 1 FROM wallets WHERE user_id=? AND balance>=?) AND NOT EXISTS(SELECT 1 FROM planet_ownership WHERE user_id=? AND planet_id=?)").bind(user.id,planetId,planet.galaxyPlanetId,effectivePrice,user.id,effectivePrice,user.id,planetId),
+      env.DB.prepare("UPDATE wallets SET balance=balance-? WHERE user_id=? AND balance>=? AND changes()=1").bind(effectivePrice,user.id,effectivePrice),
+      env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'planet_purchase',? WHERE changes()=1").bind(user.id,-effectivePrice,tx)
     ]);
     if(!results[0].meta.changes){
       const already=await env.DB.prepare("SELECT planet_id FROM planet_ownership WHERE planet_id=?").bind(planetId).first();
       return response({error:already?"PLANET_ALREADY_OWNED":"INSUFFICIENT_TOKENS"},already?409:402);
     }
     if(results.some(r=>!r.meta.changes)) return response({error:"PURCHASE_CONFLICT"},409);
-    return response({ok:true,planet,paid:planet.price,fee:0},201);
+    return response({ok:true,planet,basePrice:planet.price,paid:effectivePrice,discountPercent:vip?10:0,fee:0},201);
   }
   if(method==="GET"&&path==="/wallet"){
     const w=await env.DB.prepare("SELECT balance FROM wallets WHERE user_id=?").bind(user.id).first();
+    const vip=await env.DB.prepare("SELECT expires_at FROM vip_entitlements WHERE user_id=?").bind(user.id).first();
+    const vipActive=!!vip&&Date.parse(String(vip.expires_at).replace(" ","T")+"Z")>Date.now();
     const ledger=await env.DB.prepare("SELECT delta,kind,reference,created_at FROM wallet_ledger WHERE user_id=? ORDER BY id DESC LIMIT 50").bind(user.id).all();
-    return response({balance:w?.balance||0,ledger:ledger.results||[]});
+    return response({balance:w?.balance||0,vipActive,vipExpiresAt:vip?.expires_at||null,ledger:ledger.results||[]});
   }
   if(method==="POST"&&path==="/billing/bazaar/verify"){
     const b=await jsonBody(req),purchaseToken=String(b?.purchaseToken||""),productId=String(b?.productId||"");
-    if(!purchaseToken||purchaseToken.length>2048||productId!==TOKEN_PRODUCT) return response({error:"INVALID_PRODUCT_OR_TOKEN"},400);
+    const tokenAmount=TOKEN_PRODUCTS[productId];
+    if(!purchaseToken||purchaseToken.length>2048||!tokenAmount) return response({error:"INVALID_PRODUCT_OR_TOKEN"},400);
     if(!env.BAZAAR_CLIENT_ID||!env.BAZAAR_CLIENT_SECRET||!env.BAZAAR_REFRESH_TOKEN||!env.BAZAAR_PACKAGE_NAME) return response({error:"BAZAAR_SERVER_VALIDATION_NOT_CONFIGURED"},503);
     const tokenHash=await sha256(purchaseToken);
     const prior=await env.DB.prepare("SELECT user_id FROM purchases WHERE provider='cafebazaar' AND receipt_hash=?").bind(tokenHash).first();
     if(prior){
       if(prior.user_id!==user.id) return response({error:"BAZAAR_RECEIPT_ALREADY_USED"},409);
-      return response({ok:true,alreadyCredited:true,tokenAmount:TOKEN_GRANT});
+      return response({ok:true,alreadyCredited:true,tokenAmount});
     }
     const tokenBody=new URLSearchParams({
       grant_type:"refresh_token",
@@ -197,25 +205,64 @@ async function route(req, env, url) {
     const tokenData=await tokenResponse.json().catch(()=>({}));
     if(!tokenResponse.ok||!tokenData.access_token) return response({error:"BAZAAR_SERVER_VALIDATION_NOT_CONFIGURED"},503);
     const endpoint="https://pardakht.cafebazaar.ir/devapi/v2/api/validate/"
-      +encodeURIComponent(env.BAZAAR_PACKAGE_NAME)+"/inapp/"+encodeURIComponent(TOKEN_PRODUCT)
+      +encodeURIComponent(env.BAZAAR_PACKAGE_NAME)+"/inapp/"+encodeURIComponent(productId)
       +"/purchases/"+encodeURIComponent(purchaseToken)+"/";
     const check=await fetch(endpoint,{headers:{accept:"application/json",authorization:"Bearer "+tokenData.access_token}});
     const receipt=await check.json().catch(()=>({}));
     if(!check.ok||receipt.error||Number(receipt.purchaseState)!==0) return response({error:"BAZAAR_RECEIPT_INVALID"},402);
     const grant=await env.DB.batch([
-      env.DB.prepare("INSERT OR IGNORE INTO purchases(user_id,provider,product_id,receipt_hash,token_amount,created_at) VALUES(?,?,?,?,?,datetime('now'))").bind(user.id,"cafebazaar",TOKEN_PRODUCT,tokenHash,TOKEN_GRANT),
-      env.DB.prepare("INSERT INTO wallets(user_id,balance) SELECT ?,? WHERE changes()=1 ON CONFLICT(user_id) DO UPDATE SET balance=balance+excluded.balance").bind(user.id,TOKEN_GRANT),
-      env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'bazaar_purchase',? WHERE changes()=1").bind(user.id,TOKEN_GRANT,tokenHash)
+      env.DB.prepare("INSERT OR IGNORE INTO purchases(user_id,provider,product_id,receipt_hash,token_amount,created_at) VALUES(?,?,?,?,?,datetime('now'))").bind(user.id,"cafebazaar",productId,tokenHash,tokenAmount),
+      env.DB.prepare("INSERT INTO wallets(user_id,balance) SELECT ?,? WHERE changes()=1 ON CONFLICT(user_id) DO UPDATE SET balance=balance+excluded.balance").bind(user.id,tokenAmount),
+      env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'bazaar_purchase',? WHERE changes()=1").bind(user.id,tokenAmount,tokenHash)
     ]);
     if(!grant[0].meta.changes){
       const priorOwner=await env.DB.prepare("SELECT user_id FROM purchases WHERE provider='cafebazaar' AND receipt_hash=?").bind(tokenHash).first();
       if(!priorOwner||priorOwner.user_id!==user.id) return response({error:"BAZAAR_RECEIPT_ALREADY_USED"},409);
-      return response({ok:true,alreadyCredited:true,tokenAmount:TOKEN_GRANT});
+      return response({ok:true,alreadyCredited:true,tokenAmount});
     }
-    return response({ok:true,tokenAmount:TOKEN_GRANT});
+    return response({ok:true,tokenAmount});
+  }
+  if(method==="POST"&&path==="/billing/bazaar/vip/verify"){
+    const b=await jsonBody(req),purchaseToken=String(b?.purchaseToken||""),productId=String(b?.productId||"");
+    if(!purchaseToken||purchaseToken.length>2048||productId!==VIP_PRODUCT) return response({error:"INVALID_PRODUCT_OR_TOKEN"},400);
+    if(!env.BAZAAR_CLIENT_ID||!env.BAZAAR_CLIENT_SECRET||!env.BAZAAR_REFRESH_TOKEN||!env.BAZAAR_PACKAGE_NAME) return response({error:"BAZAAR_SERVER_VALIDATION_NOT_CONFIGURED"},503);
+    const tokenHash=await sha256(purchaseToken);
+    const prior=await env.DB.prepare("SELECT user_id FROM vip_subscriptions WHERE provider='cafebazaar' AND receipt_hash=?").bind(tokenHash).first();
+    if(prior&&prior.user_id!==user.id) return response({error:"BAZAAR_RECEIPT_ALREADY_USED"},409);
+    const tokenBody=new URLSearchParams({grant_type:"refresh_token",client_id:env.BAZAAR_CLIENT_ID,client_secret:env.BAZAAR_CLIENT_SECRET,refresh_token:env.BAZAAR_REFRESH_TOKEN});
+    const tokenResponse=await fetch("https://pardakht.cafebazaar.ir/devapi/v2/auth/token/",{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded","accept":"application/json"},body:tokenBody.toString()});
+    const tokenData=await tokenResponse.json().catch(()=>({}));
+    if(!tokenResponse.ok||!tokenData.access_token) return response({error:"BAZAAR_SERVER_VALIDATION_NOT_CONFIGURED"},503);
+    const endpoint="https://pardakht.cafebazaar.ir/devapi/v2/api/applications/"+encodeURIComponent(env.BAZAAR_PACKAGE_NAME)+"/subscriptions/"+encodeURIComponent(VIP_PRODUCT)+"/purchases/"+encodeURIComponent(purchaseToken)+"/";
+    const check=await fetch(endpoint,{headers:{accept:"application/json",authorization:"Bearer "+tokenData.access_token}});
+    const receipt=await check.json().catch(()=>({}));
+    const validUntil=Number(receipt.validUntilTimestampMsec||0);
+    if(!check.ok||receipt.error||!Number.isFinite(validUntil)||validUntil<=Date.now()) return response({error:"BAZAAR_SUBSCRIPTION_INVALID"},402);
+    const expiresAt=new Date(validUntil).toISOString().slice(0,19).replace("T"," ");
+    const startedAt=Number(receipt.initiationTimestampMsec||Date.now());
+    const writes=await env.DB.batch([
+      env.DB.prepare("INSERT OR IGNORE INTO vip_subscriptions(user_id,provider,product_id,receipt_hash,started_at,expires_at,auto_renewing,created_at) VALUES(?,?,?,?,?,?,?,datetime('now'))").bind(user.id,"cafebazaar",VIP_PRODUCT,tokenHash,new Date(startedAt).toISOString().slice(0,19).replace("T"," "),expiresAt,receipt.autoRenewing?1:0),
+      env.DB.prepare("INSERT INTO vip_entitlements(user_id,expires_at) SELECT ?,? WHERE EXISTS(SELECT 1 FROM vip_subscriptions WHERE receipt_hash=? AND user_id=?) ON CONFLICT(user_id) DO UPDATE SET expires_at=MAX(vip_entitlements.expires_at,excluded.expires_at)").bind(user.id,expiresAt,tokenHash,user.id)
+    ]);
+    if(!writes[0].meta.changes&&!prior){
+      const owner=await env.DB.prepare("SELECT user_id FROM vip_subscriptions WHERE provider='cafebazaar' AND receipt_hash=?").bind(tokenHash).first();
+      if(!owner||owner.user_id!==user.id) return response({error:"BAZAAR_RECEIPT_ALREADY_USED"},409);
+    }
+    const vip=await env.DB.prepare("SELECT expires_at FROM vip_entitlements WHERE user_id=?").bind(user.id).first();
+    return response({ok:true,vipActive:true,vipExpiresAt:vip?.expires_at||expiresAt,alreadyVerified:!!prior});
+  }
+  if(method==="POST"&&path==="/vip/daily-claim"){
+    const writes=await env.DB.batch([
+      env.DB.prepare("UPDATE vip_entitlements SET last_daily_claim_date=date('now') WHERE user_id=? AND expires_at>datetime('now') AND (last_daily_claim_date IS NULL OR last_daily_claim_date<date('now'))").bind(user.id),
+      env.DB.prepare("INSERT INTO wallets(user_id,balance) SELECT ?,? WHERE changes()=1 ON CONFLICT(user_id) DO UPDATE SET balance=balance+excluded.balance").bind(user.id,VIP_DAILY_GRANT),
+      env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'vip_daily',? WHERE changes()=1").bind(user.id,VIP_DAILY_GRANT,"vip-daily:"+user.id+":"+new Date().toISOString().slice(0,10))
+    ]);
+    if(!writes[0].meta.changes) return response({error:"VIP_DAILY_NOT_AVAILABLE"},403);
+    const wallet=await env.DB.prepare("SELECT balance FROM wallets WHERE user_id=?").bind(user.id).first();
+    return response({ok:true,tokenAmount:VIP_DAILY_GRANT,balance:wallet?.balance||0});
   }
   if(method==="GET"&&path==="/market/listings"){
-    const rows=await env.DB.prepare("SELECT l.id,l.specimen_id,l.price,l.created_at,s.name,s.form,s.generation,s.fitness,s.planet_id,s.body_length_cm,s.rarity_score,u.display_name AS seller_name FROM listings l JOIN specimens s ON s.id=l.specimen_id JOIN users u ON u.id=l.seller_id WHERE l.status='active' AND s.market_eligible=1 AND l.seller_id<>? ORDER BY l.created_at DESC LIMIT 100").bind(user.id).all();
+    const rows=await env.DB.prepare("SELECT l.id,l.specimen_id,l.price,l.created_at,s.name,s.form,s.generation,s.fitness,s.planet_id,s.body_length_cm,s.rarity_score,u.display_name AS seller_name FROM listings l JOIN specimens s ON s.id=l.specimen_id JOIN users u ON u.id=l.seller_id LEFT JOIN vip_entitlements v ON v.user_id=l.seller_id WHERE l.status='active' AND s.market_eligible=1 AND l.seller_id<>? ORDER BY CASE WHEN v.expires_at>datetime('now') THEN 0 ELSE 1 END,l.created_at DESC LIMIT 100").bind(user.id).all();
     return response({listings:rows.results||[]});
   }
   if(method==="POST"&&path==="/market/list"){
@@ -294,4 +341,4 @@ export default { async fetch(req,env) {
   try { return await route(req,env,new URL(req.url)).then(r=>{const h=new Headers(r.headers);for(const [k,v] of Object.entries(cors))if(v)h.set(k,v);return new Response(r.body,{status:r.status,headers:h});}); }
   catch(e) { return response({error:"INTERNAL_ERROR"},500,cors); }
 }};
-export { planets, TOKEN_PRODUCT, TOKEN_GRANT, WELCOME_GRANT };
+export { planets, TOKEN_PRODUCTS, VIP_PRODUCT, WELCOME_GRANT };
