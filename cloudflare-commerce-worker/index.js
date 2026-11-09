@@ -262,7 +262,7 @@ async function route(req, env, url) {
     return response({ok:true,tokenAmount:VIP_DAILY_GRANT,balance:wallet?.balance||0});
   }
   if(method==="GET"&&path==="/market/listings"){
-    const rows=await env.DB.prepare("SELECT l.id,l.specimen_id,l.price,l.created_at,s.name,s.form,s.generation,s.fitness,s.planet_id,s.body_length_cm,s.rarity_score,u.display_name AS seller_name FROM listings l JOIN specimens s ON s.id=l.specimen_id JOIN users u ON u.id=l.seller_id LEFT JOIN vip_entitlements v ON v.user_id=l.seller_id WHERE l.status='active' AND s.market_eligible=1 AND l.seller_id<>? ORDER BY CASE WHEN v.expires_at>datetime('now') THEN 0 ELSE 1 END,l.created_at DESC LIMIT 100").bind(user.id).all();
+    const rows=await env.DB.prepare("SELECT l.id,l.specimen_id,l.price,l.created_at,s.name,s.form,s.generation,s.fitness,s.planet_id,s.body_length_cm,s.rarity_score,u.display_name AS seller_name,CASE WHEN v.expires_at>datetime('now') THEN 1 ELSE 0 END AS seller_vip FROM listings l JOIN specimens s ON s.id=l.specimen_id JOIN users u ON u.id=l.seller_id LEFT JOIN vip_entitlements v ON v.user_id=l.seller_id WHERE l.status='active' AND s.market_eligible=1 AND l.seller_id<>? ORDER BY CASE WHEN v.expires_at>datetime('now') THEN 0 ELSE 1 END,l.created_at DESC LIMIT 100").bind(user.id).all();
     return response({listings:rows.results||[]});
   }
   if(method==="POST"&&path==="/market/list"){
