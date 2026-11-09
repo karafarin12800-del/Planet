@@ -122,6 +122,7 @@
     doc.body.appendChild(overlay);
     const canvas=$("pgCanvas"),ctxNote=$("pgCanvasNote");
     let mode="galaxy",selectedSystemId=galaxy.activeSystemId,selectedPlanetId=galaxy.activePlanetId,open=false,raf=0,renderer=null,lastNotice="";
+    let ownedCommerceIds=new Set();
     let camera={yaw:-0.65,pitch:0.58,distance:25,target:[0,0,0]};
     let pointerState=null,lastFrame=0;
     const activeSystem=function(){return galaxy.systems.find(s=>s.id===selectedSystemId)||galaxy.systems[0];};
@@ -184,6 +185,7 @@
         if(chosen){
           const p=chosen.planet;
           detail.innerHTML='<h4>مشخصات زیستی و قیمت سیاره</h4><div class="pg-detail-grid"><div><span>رده</span><b>'+escapeHtml(p.typeLabel)+'</b></div><div><span>زیست‌پذیری</span><b>'+Number(p.lifePotential).toLocaleString("fa-IR")+'%</b></div><div><span>پتانسیل گونهٔ خاص</span><b>'+Number(p.specialSpeciesPotential).toLocaleString("fa-IR")+'%</b></div><div><span>ظرفیت</span><b>۲ موجود</b></div><div><span>قیمت برآوردی</span><b>'+Number(p.priceTokens).toLocaleString("fa-IR")+' توکن</b></div><div><span>شعاع</span><b>'+p.radiusKm.toLocaleString("fa-IR")+' km</b></div><div><span>گرانش</span><b>'+p.gravity+' g</b></div><div><span>دما</span><b>'+p.meanTemperatureC+' °C</b></div><div><span>آب</span><b>'+Math.round(p.waterCoverage*100)+'%</b></div><div><span>جو</span><b>'+escapeHtml(p.atmosphere)+'</b></div></div>';
+          if(p.commercePlanetId)detail.innerHTML+=(ownedCommerceIds.has(p.commercePlanetId)?"<p>این سیاره متعلق به حساب توست.</p>":'<button class="pg-btn primary" data-pg-action="buy-planet" data-pg-id="'+escapeHtml(p.commercePlanetId)+'" type="button">خرید این سیاره · '+Number(p.priceTokens).toLocaleString("fa-IR")+' توکن</button>');
         }else{
           detail.innerHTML='<h4>سیارهٔ انتخاب‌شده</h4><p style="margin:0;color:#8ea7c2;font-size:9px;line-height:1.8">برای مشاهدهٔ فراداده، ابتدا گزینهٔ «کاوش و کشف سیاره» را بزن. کشف فقط وضعیت و اطلاعات کاتالوگ را ثبت می‌کند.</p>';
         }
@@ -230,6 +232,12 @@
         renderUI();if(renderer)renderer.invalidate();
       }
     }
+    async function buyCommercePlanet(commercePlanetId){
+      const client=win.PlanetCommerceClient;
+      if(!client||!client.hasSession()){showNotice("برای خرید سیاره ابتدا وارد حساب بازیکن شو.");const account=$("openCollectionShop");if(account)account.click();return;}
+      try{const result=await client.buyPlanet("planet-"+String(commercePlanetId).slice(-3));ownedCommerceIds.add(commercePlanetId);showNotice("سیارهٔ "+result.planet.name+" خریداری شد و به حساب تو متصل شد.");renderUI();persist();}
+      catch(error){showNotice(String(error&&error.message||error));}
+    }
     $("pgList").addEventListener("click",function(event){
       const button=event.target.closest("[data-pg-action]");if(!button)return;
       const action=button.getAttribute("data-pg-action"),id=button.getAttribute("data-pg-id");
@@ -238,6 +246,7 @@
       else if(action==="discover-planet")discover(id);
       else if(action==="select-planet")select(id);
       else if(action==="focus-planet")focusPlanet(id);
+      else if(action==="buy-planet")buyCommercePlanet(id);
     });
     $("pgBack").addEventListener("click",function(){if(mode==="planet"){mode="system";camera.distance=13;camera.yaw=-0.7;camera.pitch=0.52;renderUI();if(renderer)renderer.invalidate();}else backToGalaxy();});
     $("pgClose").addEventListener("click",close);
@@ -248,6 +257,8 @@
     launch.addEventListener("click",function(){openExplorer();});
     function openExplorer(){
       open=true;overlay.classList.add("open");renderUI();
+      const commerce=win.PlanetCommerceClient;
+      if(commerce&&commerce.hasSession())commerce.ownedPlanets().then(result=>{ownedCommerceIds=new Set((result.planets||[]).map(p=>p.galaxyPlanetId).filter(Boolean));if(open)renderUI();}).catch(()=>{});
       if(renderer){renderer.resize();renderer.start();}
       else{
         try{renderer=createRenderer(win,canvas);renderer.setState(function(){return {mode:mode,galaxy:galaxy,system:activeSystem(),camera:camera};},function(id){if(mode==="galaxy")openSystem(id);else focusPlanet(id);});}
