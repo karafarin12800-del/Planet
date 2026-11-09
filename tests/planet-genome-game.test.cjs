@@ -1,7 +1,9 @@
 "use strict";
 const assert=require("node:assert/strict");
-const Life=require("../planet-autonomous-evolution.js");
 const Genome=require("../evolution-engine.js");
+global.PlanetEvolutionModel=Genome;
+const Life=require("../planet-autonomous-evolution.js");
+global.PlanetAutonomousEvolution=Life;
 const Game=require("../planet-genome-game.js");
 const planet={id:"system-04-p2",name:"آوید",type:"terrestrial",meanTemperatureC:22,waterCoverage:.55,gravity:1.1,atmosphere:"nitrogen-rich"};
 const earth=Life.createEarthGenomePool(20261109);
