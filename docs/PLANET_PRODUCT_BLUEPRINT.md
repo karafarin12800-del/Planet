@@ -101,3 +101,13 @@ The autonomous evolution engine now persists a version-2 environment profile per
 ### Phase 3 implementation milestone — ecosystem dynamics
 
 The autonomous biosphere now runs deterministic, per-biome resource cycles with bounded biomass, nutrients and detritus. Species carry producer, grazer, predator or decomposer roles; predator populations consume local prey, grazers compete for available biomass, producers draw on nutrient pools, and decomposers return detritus to nutrient availability. Food limitation, predation and habitat carrying capacity influence population pressure and extinction. Resource pools, trophic roles and detritus persist in version-3 saves; version-1 and version-2 saves migrate with initialized ecosystem state. The in-game interface receives concise event outcomes only and adds no tutorial text explaining these mechanics. This is a deliberately bounded deterministic digital ecology model, not a predictive ecological or biological simulation.
+
+
+### Phase 3 implementation milestone — persistent creature collection and prototype marketplace
+
+- Added a versioned collection save isolated by stable planet ID. Individual specimens retain their own identity, genome, form, habitat, generation, fitness, origin and acquisition timestamp independently of the live species population.
+- Living species can be added to the collection as individual specimens; the marketplace can create a separately identified purchased specimen from a living species on that planet.
+- Selling permanently removes that specimen record and credits the local gameplay wallet. The same sold specimen cannot be sold twice or restored by a collection refresh; acquiring the species again creates a new specimen ID.
+- Added a local-credit shop for optional habitat/gallery cosmetics and bounded transaction history. Collections, balances and cosmetic entitlements are per-device and per-planet in this prototype.
+- Real-money checkout, premium currency purchases, cloud ownership and player-to-player trading are not enabled. They require account identity, server-authoritative inventory, verified platform receipts, idempotent grants, restore/refund flows and fraud controls. Local storage is never proof of a real purchase.
+- No new tutorial or explanatory ecology panel is added to the simulation.
