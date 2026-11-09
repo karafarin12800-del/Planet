@@ -356,7 +356,7 @@
     return {ok:initial===EARTH_SPECIES_COUNT&&b.year===40&&b.species.length===EARTH_SPECIES_COUNT&&c.species.length>=OFFWORLD_SPECIES_COUNT&&c.species.length<=OFFWORLD_SPECIES_LIMIT&&
       b.species.concat(c.species).every(s=>engine.normalizeSyntheticGenome(s.dna)&&s.traits&&s.form&&s.bodyLengthCm>2)&&
       a.species.every(s=>!s.marketEligible||(s.special&&s.bodyLengthCm>=EARTH_MIN_MARKET_SIZE_CM))&&
-      alienFoundersNonMarketable&&c.species.some(s=>s.special&&isMarketEligible(s))&&!!b.planetEnvironment,
+      alienFoundersNonMarketable&&c.species.every(s=>!s.marketEligible)&&!!b.planetEnvironment,
       years:b.year,species:b.species.length,offworldSpecies:c.species.length,engine:"PlanetAutonomousEvolution-v6"};
   }
   return {version:VERSION,createState,createEarthGenomePool,advanceYears,advanceOneYear,serialize,restore,selfTest,visibleSpecies,isMarketEligible,
