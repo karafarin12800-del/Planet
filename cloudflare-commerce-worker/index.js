@@ -136,9 +136,9 @@ async function route(req, env, url) {
   const user=await authenticate(req,env);
   if(!user) return response({error:"UNAUTHORIZED"},401);
   if(method==="GET"&&path==="/profile"){
-    const vip=await env.DB.prepare("SELECT expires_at FROM vip_entitlements WHERE user_id=?").bind(user.id).first();
+    const vip=await env.DB.prepare("SELECT expires_at,last_daily_claim_date=date('now') AS daily_claimed_today FROM vip_entitlements WHERE user_id=?").bind(user.id).first();
     const vipActive=!!vip&&Date.parse(String(vip.expires_at).replace(" ","T")+"Z")>Date.now();
-    return response({id:user.id,email:user.email,displayName:user.display_name||"",vipActive,vipExpiresAt:vip?.expires_at||null});
+    return response({id:user.id,email:user.email,displayName:user.display_name||"",vipActive,vipExpiresAt:vip?.expires_at||null,vipDailyClaimedToday:!!vip?.daily_claimed_today});
   }
   if(method==="POST"&&path==="/profile"){
     const b=await jsonBody(req),displayName=String(b?.displayName||"").normalize("NFC").trim();
