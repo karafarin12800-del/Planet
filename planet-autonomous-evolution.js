@@ -333,7 +333,7 @@
         event(state,"origin",s,"گونهٔ پایهٔ زمین؛ برای همهٔ بازیکنان مشترک و غیرقابل‌فروش");
       }
     }else{
-      state.species=state.species.slice(0,OFFWORLD_SPECIES_COUNT);
+      state.species=state.species.slice(0,OFFWORLD_SPECIES_LIMIT);
       state.species.forEach(s=>{
         s.originWorldType="alien";
         const divergence=distance(s.dna,s.lineageDNA||s.dna);

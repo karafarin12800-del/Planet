@@ -127,6 +127,8 @@ jobs:
           node tests/planet-world-state.test.cjs
           node --check planet-collection-commerce.js
           node tests/planet-collection-commerce.test.cjs
+          node --check planet-genome-game.js
+          node tests/planet-genome-game.test.cjs
           node --check planet-galaxy-viewer.js
           node tests/planet-galaxy-viewer.test.cjs
 

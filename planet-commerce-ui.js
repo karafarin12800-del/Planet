@@ -3,6 +3,7 @@
 const $=id=>document.getElementById(id);
 const client=window.PlanetCommerceClient;
 function status(value){const el=$("commerceStatus");if(el)el.textContent=String(value||"");}
+async function notifyAccountReady(){try{const profile=await client.profile();window.dispatchEvent(new CustomEvent("planet:account-ready",{detail:{profile}}));}catch(error){status(error.message||"پروفایل حساب دریافت نشد.");}}
 function authView(){const signed=client.hasSession();$("commerceAuthPanel").hidden=signed;$("commerceAccountPanel").hidden=!signed;}
 function row(box,title,details,buttonText,onClick){
  const item=document.createElement("div");item.className="species-item";
@@ -33,6 +34,7 @@ async function refresh(){
   $("commerceVipDaily").disabled=!profile.vipActive||profile.vipDailyClaimedToday;
   $("commerceVipDaily").textContent=profile.vipDailyClaimedToday?"پاداش امروز دریافت شده":"دریافت ۱۰ توکن روزانه";
   $("commerceTokenBalance").textContent=Number(wallet.balance||0).toLocaleString("fa-IR");
+  window.dispatchEvent(new CustomEvent("planet:wallet-updated",{detail:{balance:Number(wallet.balance||0)}}));
   const ownedIds=new Set((owned.planets||[]).map(x=>x.id)),catalogBox=$("commercePlanetCatalog");catalogBox.textContent="";
   (catalog.planets||[]).forEach(planet=>{
    row(catalogBox,planet.name,planet.type+" · "+planet.price+" توکن"+(profile.vipActive?" · VIP: "+Math.round(planet.price*.9)+" توکن":""),ownedIds.has(planet.id)?"خریداری‌شده":"خرید",async()=>{
@@ -43,7 +45,8 @@ async function refresh(){
    });
    if(ownedIds.has(planet.id))catalogBox.lastElementChild.querySelector("button").disabled=true;
   });
-  const specimens=collection.specimens||[],own=specimens.filter(x=>x.status==="owned"&&Number(x.market_eligible)===1),myBox=$("commerceMySpecimens");myBox.textContent="";fillOwnSelect(own);
+  const specimens=collection.specimens||[],own=specimens.filter(x=>x.status==="owned"),eligibleOwn=own.filter(x=>Number(x.market_eligible)===1),myBox=$("commerceMySpecimens");myBox.textContent="";fillOwnSelect(eligibleOwn);
+  own.forEach(x=>row(myBox,x.name,x.form+" · "+Number(x.body_length_cm||0)+" cm · نسل "+Number(x.generation||0)+(Number(x.market_eligible)===1?" · آمادهٔ فروش":" · نگهداری در آلبوم"),Number(x.market_eligible)===1?"انتخاب برای فروش":"در آلبوم",()=>{if(Number(x.market_eligible)===1){$("commerceOwnSpecimen").value=String(x.id);$("commerceSpecimenPrice").focus();}}));
   specimens.filter(x=>x.status==="listed").forEach(x=>row(myBox,x.name,x.form+" · "+Number(x.body_length_cm||0)+" cm · آگهی فعال","لغو آگهی",async()=>{
    try{await client.cancelListing(x.listing_id);status("آگهی لغو شد و نمونه به کلکسیون برگشت.");await refresh();}catch(error){status(error.message);}
   }));
@@ -72,11 +75,11 @@ $("commerceRegister").addEventListener("click",async()=>{
  catch(error){status(error.message);}
 });
 $("commerceVerify").addEventListener("click",async()=>{
- try{const result=await client.verifyEmail($("commerceEmail").value.trim(),$("commerceVerifyCode").value.trim());authView();status("ایمیل تأیید شد؛ "+Number(result.welcomeTokens||100)+" توکن خوش‌آمدگویی اضافه شد.");await refresh();retryPendingBazaarToken();}
+ try{const result=await client.verifyEmail($("commerceEmail").value.trim(),$("commerceVerifyCode").value.trim());authView();status("ایمیل تأیید شد؛ "+Number(result.totalTokens||result.welcomeTokens||100)+" توکن خوش‌آمدگویی اضافه شد.");await refresh();retryPendingBazaarToken();await notifyAccountReady();}
  catch(error){status(error.message);}
 });
 $("commerceLogin").addEventListener("click",async()=>{
- try{await client.login($("commerceEmail").value.trim(),$("commercePassword").value);authView();status("ورود موفق بود.");await refresh();retryPendingBazaarToken();}
+ try{await client.login($("commerceEmail").value.trim(),$("commercePassword").value);authView();status("ورود موفق بود.");await refresh();retryPendingBazaarToken();await notifyAccountReady();}
  catch(error){status(error.message);}
 });
 $("commerceLogout").addEventListener("click",()=>{client.logout();authView();$("commerceTokenBalance").textContent="۰";status("از حساب آنلاین خارج شدی.");});
@@ -138,6 +141,11 @@ function retryPendingBazaarToken(){
  if(bridge.getPendingVipSubscriptionToken){const vip=bridge.getPendingVipSubscriptionToken();if(vip)verifyPendingVipToken(vip);}
 }
 window.PlanetCommerceUI={
+ openSection:function(sectionId){
+  if(!client.hasSession()){$("openCollectionShop")?.click();return;}
+  $("collectionOverlay").classList.add("open");authView();refresh();
+  const target=$(sectionId);if(target)target.scrollIntoView({behavior:"smooth",block:"start"});
+ },
  open:function(){
   authView();updateNativeButtons();
   if(!client.getApiBase()){status("سرویس حساب آنلاین هنوز در حال آماده‌سازی است. لطفاً بعداً دوباره تلاش کن.");return;}
@@ -146,7 +154,7 @@ window.PlanetCommerceUI={
   if(client.hasSession()){refresh();retryPendingBazaarToken();}
  },
  handleGoogleIdToken:async function(token,nonce){
-  try{await client.googleLogin(token,nonce);authView();status("ورود با Google موفق بود.");await refresh();retryPendingBazaarToken();}
+  try{await client.googleLogin(token,nonce);authView();status("ورود با Google موفق بود.");await refresh();retryPendingBazaarToken();await notifyAccountReady();}
   catch(error){status(error.message);}
  },
  handleGoogleError:function(message){status(message||"ورود Google انجام نشد.");},

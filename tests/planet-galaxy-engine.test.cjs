@@ -35,9 +35,9 @@ assert.equal(galaxyEngine.selectPlanet(a,"missing-planet"),false);
 galaxyEngine.setYear(a,2000);
 const restored=galaxyEngine.restore(galaxyEngine.serialize(a));
 assert.equal(restored.year,2000);
-assert.equal(restored.version,2);
+assert.equal(restored.version,3);
 assert.equal(restored.systems.flatMap(s=>s.planets).filter(p=>p.commercePlanetId).length,100);
-const legacy=JSON.parse(galaxyEngine.serialize(a));legacy.version=1;const migrated=galaxyEngine.restore(legacy);assert.equal(migrated.version,2);assert.equal(migrated.systems.flatMap(s=>s.planets).filter(p=>p.commercePlanetId).length,100);
+const legacy=JSON.parse(galaxyEngine.serialize(a));legacy.version=1;const migrated=galaxyEngine.restore(legacy);assert.equal(migrated.version,3);assert.equal(migrated.systems.flatMap(s=>s.planets).filter(p=>p.commercePlanetId).length,100);
 assert.equal(restored.activePlanetId,next.id);
 assert.deepEqual(galaxyEngine.getSummary(restored),galaxyEngine.getSummary(a));
 

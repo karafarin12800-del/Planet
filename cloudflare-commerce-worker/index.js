@@ -114,9 +114,9 @@ async function route(req, env, url) {
     if(!v||v.code_hash!==await sha256(user.id+":"+code)) return response({error:"INVALID_OR_EXPIRED_CODE"},400);
     await env.DB.prepare("UPDATE users SET verified_at=datetime('now') WHERE id=?").bind(user.id).run();
     await env.DB.prepare("DELETE FROM email_verifications WHERE user_id=?").bind(user.id).run();
-    await grantWelcome(env.DB,user.id);
+    const granted=await grantWelcome(env.DB,user.id);
     const account={id:user.id,email};
-    return response({ok:true,token:await signToken(account,env),welcomeTokens:WELCOME_GRANT});
+    return response({ok:true,token:await signToken(account,env),welcomeTokens:granted?WELCOME_GRANT:0,starterTokens:granted?STARTER_GRANT:0,totalTokens:granted?WELCOME_GRANT+STARTER_GRANT:0});
   }
   if(method==="POST"&&path==="/auth/login"){
     const b=await jsonBody(req),email=String(b?.email||"").trim().toLowerCase(),password=String(b?.password||"");
@@ -139,8 +139,8 @@ async function route(req, env, url) {
       await env.DB.prepare("UPDATE users SET google_sub=?,verified_at=datetime('now') WHERE id=?").bind(claims.sub,user.id).run();
       user.verified_at=1;
     }
-    await grantWelcome(env.DB,user.id);
-    return response({token:await signToken(user,env),email:user.email,welcomeTokens:WELCOME_GRANT});
+    const granted=await grantWelcome(env.DB,user.id);
+    return response({token:await signToken(user,env),email:user.email,welcomeTokens:granted?WELCOME_GRANT:0,starterTokens:granted?STARTER_GRANT:0,totalTokens:granted?WELCOME_GRANT+STARTER_GRANT:0});
   }
   const user=await authenticate(req,env);
   if(!user) return response({error:"UNAUTHORIZED"},401);
