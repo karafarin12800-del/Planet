@@ -15,16 +15,17 @@
 ### مسیر داشبورد (بدون نصب ابزار)
 
 1. وارد Cloudflare Dashboard شو و بخش **Workers & Pages** را باز کن.
-2. یک Worker جدید بساز؛ در ویرایشگر کد، محتوای `services/image-generation-worker/index.js` را جایگزین کد نمونه کن و Deploy بزن.
-3. در Worker به **Settings → Variables and Secrets** برو و دو مقدار از نوع **Secret** اضافه کن:
+2. در Cloudflare یک R2 bucket با نام `planet-organism-images` بساز.
+3. یک Worker جدید بساز؛ کد `services/image-generation-worker/index.js` را قرار بده و binding به نام `ORGANISM_IMAGES` را به همان bucket وصل کن.
+4. در Worker به **Settings → Variables and Secrets** برو و دو مقدار از نوع **Secret** اضافه کن:
    - `OPENAI_API_KEY`: کلید API ارائه‌دهندهٔ تصویر.
    - `PLANET_ACCESS_CODE`: یک رمز تصادفی و بلند که فقط خودت می‌دانی.
-4. دو مقدار **Variable** اضافه کن:
+5. دو مقدار **Variable** اضافه کن:
    - `OPENAI_IMAGE_MODEL` = `gpt-image-2.5-flare`
    - `ALLOWED_ORIGINS` = `https://karafarin12800-del.github.io` (وب Worker، مبدأ WebView اندروید `https://appassets.androidplatform.net` نیز به فهرست پیش‌فرض مجاز اضافه شده است.)
-5. دوباره Deploy کن. نشانی Worker معمولاً شبیه `https://نام-کارگر.نام-حساب.workers.dev` است.
-6. در PLANET، کاتالوگ گونه‌ها را باز کن، روی **تولید تصویر هوش مصنوعی** بزن و از تنظیم سرویس، نشانی Worker و همان `PLANET_ACCESS_CODE` را وارد و ذخیره کن. کلید `OPENAI_API_KEY` را در اپ وارد نکن.
-7. برای بررسی پیکربندی، نشانی `https://نشانی-Worker/health` را باز کن؛ فیلد `configured` باید `true` باشد.
+6. دوباره Deploy کن. نشانی Worker معمولاً شبیه `https://نام-کارگر.نام-حساب.workers.dev` است.
+7. در PLANET، کاتالوگ گونه‌ها را باز کن، روی **تولید تصویر هوش مصنوعی** بزن و از تنظیم سرویس، نشانی Worker و همان `PLANET_ACCESS_CODE` را وارد و ذخیره کن. کلید `OPENAI_API_KEY` را در اپ وارد نکن.
+8. برای بررسی پیکربندی، نشانی `https://نشانی-Worker/health` را باز کن؛ فیلد `configured` و `persistentCacheAvailable` باید `true` باشند. R2 تصویر را با هش ژنوم نگه می‌دارد؛ هر ژنوم دقیقاً یک تصویر ثابت دارد و تغییر ژنوم در نسل تکامل کلید تصویر جدید می‌سازد.
 
 در APK فعلی، صفحه با `WebViewAssetLoader` از مبدأ `https://appassets.androidplatform.net` بارگذاری می‌شود و Worker این مبدأ را در allowlist پیش‌فرض می‌پذیرد. فقط اگر با بررسی درخواست واقعی ثابت شد Origin برابر `null` است، متغیر `ALLOW_NULL_ORIGIN=true` را اضافه کن؛ بی‌دلیل آن را فعال نکن. برای توسعهٔ محلی، Originهای لازم را با فهرست جداشده با کاما به `ALLOWED_ORIGINS` اضافه کن.
 
