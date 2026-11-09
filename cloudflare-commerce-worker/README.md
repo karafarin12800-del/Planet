@@ -113,3 +113,6 @@ Player-selected display names remain part of the account profile for player iden
 
 
 The online catalog reproduces the deterministic 3D galaxy seed. The shared Earth home world is not sold; the first 100 non-Earth planets receive stable `market-world-NNN` IDs, and each purchased planet has one global owner. Prices come from that same planet's life potential and special-species potential.
+
+
+Off-world specimen registration is accepted only when the authenticated account owns the corresponding stable galaxy-world ID. Earth remains a shared starter biosphere. The server determines Earth/off-world origin from the registered planet ID rather than trusting the client-supplied origin flag.
