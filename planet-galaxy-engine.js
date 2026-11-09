@@ -8,7 +8,7 @@
   if(root) root.PlanetGalaxyEngine=api;
 })(typeof globalThis!=="undefined"?globalThis:this,function(){
   "use strict";
-  const VERSION=1, MAX_SYSTEMS=24, MAX_PLANETS_PER_SYSTEM=8, MAX_EVENTS=50;
+  const VERSION=2, MAX_SYSTEMS=24, MAX_PLANETS_PER_SYSTEM=8, TARGET_SYSTEMS=17, MAX_EVENTS=50;
   const PLANET_TYPES=[
     {id:"terrestrial",label:"سنگی",biomes:["دشت","کوهستان","بیابان","جنگل"],radius:[4200,8200],water:[0.05,0.65],temp:[-25,42]},
     {id:"ocean",label:"اقیانوسی",biomes:["اقیانوس","جزیره","آب‌های کم‌عمق"],radius:[5000,10500],water:[0.72,0.99],temp:[-5,35]},
@@ -60,11 +60,13 @@
   function createGalaxy(seed){
     const normalized=Number(seed)>>>0||0x504c414e;
     const systems=[];
-    for(let i=0;i<12;i++) systems.push(makeSystem(i,normalized,i===0));
+    for(let i=0;i<TARGET_SYSTEMS;i++) systems.push(makeSystem(i,normalized,i===0));
     const home=systems[0].planets[0];
+    assignCommercePlanetIds({systems});
     return {version:VERSION,seed:normalized,year:0,activeSystemId:systems[0].id,activePlanetId:home.id,
       systems,events:[{year:0,kind:"origin",systemId:systems[0].id,planetId:home.id,detail:"آغاز جهان در سیارهٔ خانه"}]};
   }
+  function assignCommercePlanetIds(galaxy){let index=0;for(const system of galaxy.systems||[])for(const planet of system.planets||[]){if(planet.home){planet.commercePlanetId=null;continue;}index++;planet.commercePlanetId=index<=100?"market-world-"+String(index).padStart(3,"0"):null;}return galaxy;}
   function findSystem(galaxy,id){return galaxy.systems.find(s=>s.id===id)||null;}
   function findPlanet(galaxy,id){for(const s of galaxy.systems){const p=s.planets.find(x=>x.id===id);if(p)return {system:s,planet:p};}return null;}
   function record(galaxy,kind,system,planet,detail){galaxy.events.unshift({year:galaxy.year,kind,systemId:system.id,planetId:planet?planet.id:null,detail:String(detail||"")});galaxy.events=galaxy.events.slice(0,MAX_EVENTS);}
@@ -93,7 +95,7 @@
   function serialize(galaxy){return JSON.stringify(galaxy);}
   function restore(serialized){
     const data=typeof serialized==="string"?JSON.parse(serialized):JSON.parse(JSON.stringify(serialized));
-    if(!data||data.version!==VERSION||!Array.isArray(data.systems)||data.systems.length<1||data.systems.length>MAX_SYSTEMS)throw new Error("Invalid or unsupported Planet galaxy save.");
+    if(!data||![1,VERSION].includes(data.version)||!Array.isArray(data.systems)||data.systems.length<1||data.systems.length>MAX_SYSTEMS)throw new Error("Invalid or unsupported Planet galaxy save.");
     let planetCount=0,activeFound=false;
     for(const s of data.systems){
       if(!s||typeof s.id!=="string"||!Array.isArray(s.planets)||s.planets.length>MAX_PLANETS_PER_SYSTEM)throw new Error("Invalid star system in Planet save.");
@@ -104,9 +106,10 @@
     data.events=Array.isArray(data.events)?data.events.slice(0,MAX_EVENTS):[];
     data.year=Math.max(0,Math.floor(clamp(data.year,0,Number.MAX_SAFE_INTEGER)));
     for(const system of data.systems)for(const planet of system.planets)planetEconomy(planet);
-    for(let i=data.systems.length;i<12&&i<MAX_SYSTEMS;i++)data.systems.push(makeSystem(i,Number(data.seed)>>>0||0x504c414e,false));
+    for(let i=data.systems.length;i<TARGET_SYSTEMS&&i<MAX_SYSTEMS;i++)data.systems.push(makeSystem(i,Number(data.seed)>>>0||0x504c414e,false));
+    data.version=VERSION;assignCommercePlanetIds(data);
     return data;
   }
   return {version:VERSION,maxSystems:MAX_SYSTEMS,maxPlanetsPerSystem:MAX_PLANETS_PER_SYSTEM,
-    createGalaxy,discoverPlanet,selectPlanet,setYear,getPlanet,getActivePlanet,getSummary,serialize,restore,planetEconomy};
+    createGalaxy,discoverPlanet,selectPlanet,setYear,getPlanet,getActivePlanet,getSummary,serialize,restore,planetEconomy,assignCommercePlanetIds};
 });
