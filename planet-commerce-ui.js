@@ -26,9 +26,10 @@ async function refresh(){
   const [wallet,collection,market,catalog,owned,profile]=await Promise.all([client.wallet(),client.collection(),client.listings(),client.planets(),client.ownedPlanets(),client.profile()]);
   $("commerceDisplayName").value=profile.displayName||"";
   $("commerceProfileHint").textContent=profile.displayName?"نام عمومی حساب تو ثبت شده است؛ می‌توانی آن را تغییر بدهی.":"برای پروفایل و شناسایی حساب در بازار موجودات، یک نام نمایشی انتخاب و ذخیره کن.";
-  $("commerceVipBadge").hidden=!profile.vipActive;
+  $("commerceVipBadge").style.display=profile.vipActive?"inline-block":"none";
   $("commerceVipStatus").textContent=profile.vipActive?"VIP فعال تا "+String(profile.vipExpiresAt||"").slice(0,10):"اشتراک VIP فعال نیست.";
-  $("commerceVipDaily").disabled=!profile.vipActive;
+  $("commerceVipDaily").disabled=!profile.vipActive||profile.vipDailyClaimedToday;
+  $("commerceVipDaily").textContent=profile.vipDailyClaimedToday?"پاداش امروز دریافت شده":"دریافت ۱۰ توکن روزانه";
   $("commerceTokenBalance").textContent=Number(wallet.balance||0).toLocaleString("fa-IR");
   const ownedIds=new Set((owned.planets||[]).map(x=>x.id)),catalogBox=$("commercePlanetCatalog");catalogBox.textContent="";
   (catalog.planets||[]).forEach(planet=>{
