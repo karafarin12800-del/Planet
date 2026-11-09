@@ -342,7 +342,7 @@ async function route(req, env, url) {
     const marketEligible=special&&(originWorldType==="earth"?(generation>=18&&bodyLengthCm>=45):(generation>=6&&bodyLengthCm>5));
     if(!clientKey||!planetId||!/^[ACGT]{1,100000}$/.test(dna)||!Number.isFinite(Number(b?.bodyLengthCm))) return response({error:"INVALID_SPECIMEN"},400);
     if(originWorldType==="alien"){
-      const world=planets().find(p=>p.galaxyId===planetId);
+      const world=planets().find(p=>p.id===planetId||p.galaxyId===planetId);
       if(!world)return response({error:"INVALID_SPECIMEN"},400);
       const ownedWorld=await env.DB.prepare("SELECT 1 AS owned FROM planet_ownership WHERE user_id=? AND galaxy_planet_id=?").bind(user.id,world.galaxyPlanetId).first();
       if(!ownedWorld)return response({error:"PLANET_NOT_OWNED"},403);

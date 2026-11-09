@@ -149,9 +149,15 @@
     }
     async function refreshAccountSnapshot(){
       const c=win.PlanetCommerceClient;if(!c||!c.hasSession())return;
-      const r=await Promise.all([c.wallet(),c.ownedPlanets(),c.profile()]);
+      const r=await Promise.all([c.wallet(),c.ownedPlanets(),c.profile(),c.planets()]);
       playerTokenBalance=Number(r[0].balance||0);playerProfile=r[2]||null;
       ownedCommerceIds=new Set((r[1].planets||[]).map(x=>x.galaxyPlanetId).filter(Boolean));
+      const catalog=Array.isArray(r[3].planets)?r[3].planets:[];
+      const byId=new Map(catalog.map(x=>[x.galaxyPlanetId,x]));
+      for(const system of (galaxy.systems||[]))for(const planet of (system.planets||[])){
+        const server=byId.get(planet.commercePlanetId);
+        if(server){planet.priceTokens=Number(server.price);planet.serverCatalogName=server.name;}
+      }
       updateWalletBadge(playerTokenBalance);if(open)renderUI();
     }
     function openAccountSection(id){
@@ -281,7 +287,7 @@
       const clientKey="genome:"+s.seed+":"+x.id;
       if((s.specimens||[]).some(y=>y.client_key===clientKey)){showNotice("این موجود قبلاً در آلبوم ثبت شده است.");return;}
       try{
-        const result=await win.PlanetCommerceClient.registerSpecimen({clientKey,planetId:s.planet.id,
+        const result=await win.PlanetCommerceClient.registerSpecimen({clientKey,planetId:"planet-"+String(s.planet.commercePlanetId).slice(-3),
           name:x.name,form:x.form,dna:x.dna,generation:x.generation,fitness:x.fitness,bodyLengthCm:x.bodyLengthCm,special:x.special,rarityScore:x.rarityScore});
         const [collection,wallet]=await Promise.all([win.PlanetCommerceClient.collection(),win.PlanetCommerceClient.wallet()]);
         s.specimens=collection.specimens||[];updateWalletBadge(wallet.balance);
