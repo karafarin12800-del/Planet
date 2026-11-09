@@ -67,11 +67,11 @@ $("commerceRegister").addEventListener("click",async()=>{
  catch(error){status(error.message);}
 });
 $("commerceVerify").addEventListener("click",async()=>{
- try{const result=await client.verifyEmail($("commerceEmail").value.trim(),$("commerceVerifyCode").value.trim());authView();status("ایمیل تأیید شد؛ "+Number(result.welcomeTokens||20)+" توکن خوش‌آمدگویی اضافه شد.");await refresh();}
+ try{const result=await client.verifyEmail($("commerceEmail").value.trim(),$("commerceVerifyCode").value.trim());authView();status("ایمیل تأیید شد؛ "+Number(result.welcomeTokens||20)+" توکن خوش‌آمدگویی اضافه شد.");await refresh();retryPendingBazaarToken();}
  catch(error){status(error.message);}
 });
 $("commerceLogin").addEventListener("click",async()=>{
- try{await client.login($("commerceEmail").value.trim(),$("commercePassword").value);authView();status("ورود موفق بود.");await refresh();}
+ try{await client.login($("commerceEmail").value.trim(),$("commercePassword").value);authView();status("ورود موفق بود.");await refresh();retryPendingBazaarToken();}
  catch(error){status(error.message);}
 });
 $("commerceLogout").addEventListener("click",()=>{client.logout();authView();$("commerceTokenBalance").textContent="۰";status("از حساب آنلاین خارج شدی.");});

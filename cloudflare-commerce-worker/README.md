@@ -11,7 +11,7 @@ Cafe Bazaar receipt verification and a player-to-player specimen marketplace.
 3. Put the resulting D1 database ID in \`wrangler.toml\`.
 4. Deploy from this directory with Wrangler.
 5. Configure Worker secrets: \`AUTH_SECRET\` (random 32+ bytes), \`RESEND_API_KEY\`,
-   \`BAZAAR_ACCESS_TOKEN\`. Configure variables: \`BAZAAR_PACKAGE_NAME\`,
+   \`BAZAAR_CLIENT_ID, BAZAAR_CLIENT_SECRET, BAZAAR_REFRESH_TOKEN\`. Configure variables: \`BAZAAR_PACKAGE_NAME\`,
    \`VERIFY_FROM_EMAIL\`, \`GOOGLE_CLIENT_ID\`, and \`ALLOWED_ORIGINS\`.
 6. In Cafe Bazaar developer console create in-app product \`planet_tokens_200\`.
    The actual cash price is defined in Bazaar, not guessed in this repository.
@@ -25,7 +25,7 @@ server-verified receipt has been tested.
 
 - \`GET /health\`, \`GET /catalog/planets\`
 - \`POST /auth/register\`, \`POST /auth/verify-email\`, \`POST /auth/login\`
-- \`POST /auth/google\` (Google ID token audience is checked against GOOGLE_CLIENT_ID)
+- \`POST /auth/google\` (Google ID token audience and signed nonce are checked against GOOGLE_CLIENT_ID)
 - Authenticated: \`GET /wallet\`, \`POST /billing/bazaar/verify\`
 - Authenticated: \`POST /specimens/register\`, \`GET /collection\`
 - Authenticated: \`GET /market/listings\`, \`POST /market/list\`, \`POST /market/buy\`
@@ -41,15 +41,69 @@ cannot prove that a modified client did not fabricate its genome. Do not market 
 cheat-proof. Before enabling high-value trades, move specimen creation/claims to signed
 server-issued provenance or a server-authoritative simulation.
 
-The current Android app is not yet wired to these endpoints. Local credits remain local prototype
-credits and are not purchased tokens. Live billing and online trading are not active until
-the app integration and Cloudflare deployment steps above are completed.
+The Android client in the current branch is connected to the account, wallet, planet and specimen-market endpoints. Local credits remain separate prototype credits and are never converted into purchased tokens. Live operation still requires the Cloudflare Worker and D1 database to be deployed.
 
 
-## Android client integration (current branch)
+## Native Android sign-in and payments
 
-The Android asset bundle includes `planet-commerce-client.js` and `planet-commerce-ui.js`. Open the Collection and Shop screen, enter the deployed HTTPS Worker URL, and connect. Email registration requires a working Resend sender and a verified account before the wallet is available. The UI keeps prototype/local credits separate from server tokens.
+Native Google sign-in uses Android Credential Manager and a fresh nonce. The Worker checks the
+Google ID token audience, verified email, subject and nonce before issuing a session.
 
-The client can sync local specimens using a per-account idempotency key, list owned specimens for sale, cancel an active listing, buy another player's listing with zero fee, and buy one of the 100 server-priced planets. The Worker stores the original DNA sequence and returns it only through that owner's authenticated collection endpoint; public listings do not expose DNA. D1 must be created from the updated `schema.sql` before deploying this Worker. A pre-existing D1 database needs a migration adding `specimens.client_key`, its unique owner/key constraint, and `planet_ownership` before the updated Worker can run.
+Cafe Bazaar in-app billing uses Poolakey. The app stores a successful purchase token in private
+app storage, asks the Worker to verify it through the official Developer API v2, and consumes
+the token only after the Worker confirms the purchase. A failed network verification keeps the
+receipt pending for retry.
 
-This does not yet make purchased planets renderable in the galaxy viewer. Google OAuth UI/native token acquisition and Cafe Bazaar's Android purchase SDK are also not yet wired; the UI does not claim those flows are live. Do not enable real purchases until Cloudflare and Bazaar verification are deployed and tested.
+Set these GitHub Actions repository variables under Settings → Secrets and variables → Actions → Variables:
+
+- PLANET_GOOGLE_WEB_CLIENT_ID: Google OAuth Web application client ID; set the same value in
+  the Worker variable GOOGLE_CLIENT_ID.
+- PLANET_BAZAAR_RSA_PUBLIC_KEY: public RSA key registered for this app in Cafe Bazaar.
+
+The Worker also requires D1, AUTH_SECRET, RESEND_API_KEY, VERIFY_FROM_EMAIL, GOOGLE_CLIENT_ID,
+BAZAAR_CLIENT_ID, BAZAAR_CLIENT_SECRET, BAZAAR_REFRESH_TOKEN, BAZAAR_PACKAGE_NAME and
+ALLOWED_ORIGINS. Complete Cafe Bazaar Developer API OAuth authorization to obtain its client
+values and refresh token. Create the consumable product planet_tokens_200 before testing.
+
+Never put a Bazaar client secret, refresh token, AUTH_SECRET or Resend key in the APK or Git.
+Poolakey needs Cafe Bazaar installed on the Android test device. Do not enable production
+purchases until the deployed Worker validates test receipts and an end-to-end test succeeds.
+
+## Android client and native billing
+
+The Android asset bundle includes `planet-commerce-client.js` and `planet-commerce-ui.js`.
+Open the Collection and Shop screen, enter the deployed HTTPS Worker URL, and connect.
+Email registration requires a working Resend sender and verified email. Prototype credits
+remain local and are never transferred to the online wallet.
+
+The client can sync local specimens using a per-account idempotency key, publish and cancel
+listings, buy another player's specimen with zero fee, and buy one of the 100 server-priced
+planets. The Worker stores specimen DNA privately and does not return it in public listings.
+A pre-existing D1 database requires a migration adding `specimens.client_key`, its unique
+owner/key constraint, and the `planet_ownership` table before this version of the Worker runs.
+
+Native Google sign-in uses Android Credential Manager and a fresh nonce. The Worker checks the
+Google ID token audience, verified email, subject and nonce before issuing a session.
+
+Cafe Bazaar in-app billing uses Poolakey and the official Developer API v2 validation endpoint.
+The app stores a successful purchase token in private app storage, asks the Worker to verify it,
+and consumes the token only after the server confirms the purchase. A failed network verification
+keeps the receipt pending for retry. The receipt hash is unique across accounts, so it cannot be
+credited twice or replayed into another player's wallet.
+
+Set these GitHub Actions repository variables under Settings → Secrets and variables → Actions → Variables:
+
+- `PLANET_GOOGLE_WEB_CLIENT_ID`: Google OAuth Web application client ID; set the same value in
+  the Worker variable `GOOGLE_CLIENT_ID`.
+- `PLANET_BAZAAR_RSA_PUBLIC_KEY`: public RSA key registered for this application in Cafe Bazaar.
+
+The Worker also requires D1, `AUTH_SECRET`, `RESEND_API_KEY`, `VERIFY_FROM_EMAIL`,
+`GOOGLE_CLIENT_ID`, `BAZAAR_CLIENT_ID`, `BAZAAR_CLIENT_SECRET`,
+`BAZAAR_REFRESH_TOKEN`, `BAZAAR_PACKAGE_NAME` and `ALLOWED_ORIGINS`.
+Complete Cafe Bazaar Developer API OAuth authorization to obtain its client values and refresh
+token. Create the consumable product `planet_tokens_200` before testing.
+
+Never put a Bazaar client secret, refresh token, `AUTH_SECRET` or Resend key in the APK or Git.
+Poolakey requires Cafe Bazaar installed on the Android test device. Do not enable production
+purchases until the deployed Worker validates test receipts and an end-to-end test succeeds.
+Purchased planets are recorded in the account but are not yet selected/rendered in the galaxy viewer.

@@ -111,6 +111,7 @@ jobs:
           node --check planet-commerce-ui.js
           node tests/planet-commerce-client.test.cjs
           node tests/planet-commerce-contract.test.cjs
+          node tests/android-native-commerce.test.cjs
 
       - name: Validate offline evolution lifecycle controller syntax
         run: node --check offline-evolution.js
@@ -278,6 +279,8 @@ jobs:
           PLAY_UPLOAD_STORE_PASSWORD: ${{ secrets.PLAY_UPLOAD_STORE_PASSWORD }}
           PLAY_UPLOAD_KEY_ALIAS: ${{ secrets.PLAY_UPLOAD_KEY_ALIAS }}
           PLAY_UPLOAD_KEY_PASSWORD: ${{ secrets.PLAY_UPLOAD_KEY_PASSWORD }}
+          PLANET_GOOGLE_WEB_CLIENT_ID: ${{ vars.PLANET_GOOGLE_WEB_CLIENT_ID }}
+          PLANET_BAZAAR_RSA_PUBLIC_KEY: ${{ vars.PLANET_BAZAAR_RSA_PUBLIC_KEY }}
         run: |
           set -euo pipefail
           mkdir -p dist
@@ -285,6 +288,8 @@ jobs:
             KEYSTORE_PATH="$RUNNER_TEMP/planet-upload.jks"
             printf '%s' "$PLAY_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
             gradle --no-daemon --stacktrace assembleDebug assembleRelease bundleRelease \
+              -PPLANET_GOOGLE_WEB_CLIENT_ID="$PLANET_GOOGLE_WEB_CLIENT_ID" \
+              -PPLANET_BAZAAR_RSA_PUBLIC_KEY="$PLANET_BAZAAR_RSA_PUBLIC_KEY" \
               -PUPLOAD_STORE_FILE="$KEYSTORE_PATH" \
               -PUPLOAD_STORE_PASSWORD="$PLAY_UPLOAD_STORE_PASSWORD" \
               -PUPLOAD_KEY_ALIAS="$PLAY_UPLOAD_KEY_ALIAS" \
@@ -311,7 +316,9 @@ jobs:
             test -s dist/PLANET-PlayBundle-SIGNED.bin
             echo "Generated matching Cafe Bazaar BIN file."
           else
-            gradle --no-daemon --stacktrace assembleDebug assembleRelease bundleRelease
+            gradle --no-daemon --stacktrace assembleDebug assembleRelease bundleRelease \
+              -PPLANET_GOOGLE_WEB_CLIENT_ID="$PLANET_GOOGLE_WEB_CLIENT_ID" \
+              -PPLANET_BAZAAR_RSA_PUBLIC_KEY="$PLANET_BAZAAR_RSA_PUBLIC_KEY"
             cp app/build/outputs/bundle/release/app-release.aab dist/PLANET-PlayBundle-UNSIGNED-NEEDS-SIGNING.aab
             cp app/build/outputs/apk/release/app-release-unsigned.apk dist/PLANET-Android-Release-UNSIGNED.apk
           fi

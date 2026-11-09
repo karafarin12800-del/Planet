@@ -1,0 +1,34 @@
+"use strict";
+const assert=require("node:assert/strict");
+const fs=require("node:fs");
+const path=require("node:path");
+const read=p=>fs.readFileSync(path.join(__dirname,"..",p),"utf8");
+const activity=read("app/src/main/java/com/planet/live/MainActivity.java");
+const gradle=read("app/build.gradle");
+const settings=read("settings.gradle");
+const workflow=read(".github/workflows/android-apk.yml");
+const html=read("index.html");
+const ui=read("planet-commerce-ui.js");
+const client=read("planet-commerce-client.js");
+const worker=read("cloudflare-commerce-worker/index.js");
+
+assert.ok(activity.includes("extends ComponentActivity"),"Poolakey uses ActivityResultRegistry-compatible Activity");
+assert.ok(activity.includes("CredentialManager.create(this)"),"native Credential Manager is initialized");
+assert.ok(activity.includes("GetSignInWithGoogleOption.Builder(clientId).setNonce(nonce)"),"Google ID tokens use a fresh nonce");
+assert.ok(activity.includes("PENDING_TOKEN_KEY")&&activity.includes("billingPrefs().edit().putString"),"pending Bazaar receipt survives app restarts");
+assert.ok(activity.includes("consumeVerifiedPurchase"),"receipt consumption is gated behind the explicit server callback");
+assert.ok(activity.includes("purchase.getPurchaseToken()"),"Poolakey purchase token is passed to server verification");
+assert.ok(activity.includes('new PurchaseRequest(TOKEN_PRODUCT_ID, "planet_tokens_200", null)'),"Cafe Bazaar purchase uses the configured consumable product id");
+assert.ok(gradle.includes("Poolakey:poolakey:2.2.0"),"Poolakey dependency is pinned");
+assert.ok(gradle.includes("credentials:1.6.0")&&gradle.includes("googleid:1.2.1"),"Credential Manager dependencies are explicit");
+assert.ok(settings.includes("https://jitpack.io"),"JitPack is configured for Poolakey");
+assert.ok(workflow.includes("PLANET_GOOGLE_WEB_CLIENT_ID")&&workflow.includes("PLANET_BAZAAR_RSA_PUBLIC_KEY"),"native public config is passed from Actions variables");
+assert.ok(html.includes('id="commerceGoogleLogin"')&&html.includes('id="commerceBuyTokens"'),"native auth and billing controls exist");
+assert.ok(ui.includes("client.googleLogin(token,nonce)"),"Google ID token is sent with the native nonce");
+assert.ok(ui.includes('client.verifyBazaarReceipt("planet_tokens_200",token)'),"Bazaar receipt reaches the Worker before consumption");
+assert.ok(ui.includes("bridge.consumeBazaarPurchase(token)"),"the verified receipt is consumed through Poolakey");
+assert.ok(client.includes("body:{idToken,nonce}"),"Google nonce is sent to the Worker");
+assert.ok(worker.includes("claims.nonce!==nonce"),"Worker validates the nonce claim");
+assert.ok(worker.includes("BAZAAR_RECEIPT_ALREADY_USED"),"a Bazaar receipt cannot be replayed into another account");
+
+console.log("Planet native Google and Cafe Bazaar integration contract tests passed.");

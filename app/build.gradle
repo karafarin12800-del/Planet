@@ -2,9 +2,23 @@ plugins {
     id "com.android.application"
 }
 
+def buildConfigString = { value ->
+    '"' + value.toString()
+            .replace("\\", "\\\\")
+            .replace('"', '\\"')
+            .replace("\r", "")
+            .replace("\n", "") + '"'
+}
+def googleWebClientId = providers.gradleProperty("PLANET_GOOGLE_WEB_CLIENT_ID").orElse("").get()
+def bazaarRsaPublicKey = providers.gradleProperty("PLANET_BAZAAR_RSA_PUBLIC_KEY").orElse("").get()
+
 android {
     namespace "com.planet.live"
     compileSdk 36
+
+    buildFeatures {
+        buildConfig true
+    }
 
     defaultConfig {
         applicationId "com.planet.live"
@@ -12,6 +26,8 @@ android {
         targetSdk 36
         versionCode 1
         versionName "1.0.0"
+        buildConfigField "String", "PLANET_GOOGLE_WEB_CLIENT_ID", buildConfigString(googleWebClientId)
+        buildConfigField "String", "PLANET_BAZAAR_RSA_PUBLIC_KEY", buildConfigString(bazaarRsaPublicKey)
     }
 
     compileOptions {
@@ -45,4 +61,9 @@ android {
 
 dependencies {
     implementation "androidx.webkit:webkit:1.14.0"
+    implementation "androidx.activity:activity:1.13.0"
+    implementation "androidx.credentials:credentials:1.6.0"
+    implementation "androidx.credentials:credentials-play-services-auth:1.6.0"
+    implementation "com.google.android.libraries.identity.googleid:googleid:1.2.1"
+    implementation "com.github.cafebazaar.Poolakey:poolakey:2.2.0"
 }

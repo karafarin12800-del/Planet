@@ -125,11 +125,11 @@ async function route(req, env, url) {
     return response({token:await signToken(user,env),email:user.email});
   }
   if(method==="POST"&&path==="/auth/google"){
-    const b=await jsonBody(req),idToken=String(b?.idToken||"");
-    if(!idToken||!env.GOOGLE_CLIENT_ID) return response({error:"GOOGLE_LOGIN_NOT_CONFIGURED"},503);
+    const b=await jsonBody(req),idToken=String(b?.idToken||""),nonce=String(b?.nonce||"");
+    if(!idToken||!nonce||nonce.length<20||nonce.length>200||!env.GOOGLE_CLIENT_ID) return response({error:"GOOGLE_LOGIN_NOT_CONFIGURED"},503);
     const check=await fetch("https://oauth2.googleapis.com/tokeninfo?id_token="+encodeURIComponent(idToken));
     const claims=await check.json().catch(()=>({}));
-    if(!check.ok||claims.aud!==env.GOOGLE_CLIENT_ID||claims.email_verified!=="true"||!claims.sub||!claims.email) return response({error:"INVALID_GOOGLE_TOKEN"},401);
+    if(!check.ok||claims.aud!==env.GOOGLE_CLIENT_ID||claims.email_verified!=="true"||claims.nonce!==nonce||!claims.sub||!claims.email) return response({error:"INVALID_GOOGLE_TOKEN"},401);
     let user=await env.DB.prepare("SELECT id,email,verified_at FROM users WHERE google_sub=? OR email=?").bind(claims.sub,String(claims.email).toLowerCase()).first();
     if(!user){
       const id=crypto.randomUUID();
@@ -174,19 +174,43 @@ async function route(req, env, url) {
   }
   if(method==="POST"&&path==="/billing/bazaar/verify"){
     const b=await jsonBody(req),purchaseToken=String(b?.purchaseToken||""),productId=String(b?.productId||"");
-    if(!purchaseToken||productId!==TOKEN_PRODUCT) return response({error:"INVALID_PRODUCT_OR_TOKEN"},400);
-    if(!env.BAZAAR_ACCESS_TOKEN||!env.BAZAAR_PACKAGE_NAME) return response({error:"BAZAAR_SERVER_VALIDATION_NOT_CONFIGURED"},503);
-    const endpoint="https://api.cafebazaar.ir/api/v2/payments/"+encodeURIComponent(env.BAZAAR_PACKAGE_NAME)+"/tokens/"+encodeURIComponent(purchaseToken)+"/?access_token="+encodeURIComponent(env.BAZAAR_ACCESS_TOKEN);
-    const check=await fetch(endpoint,{headers:{accept:"application/json"}});
-    const receipt=await check.json().catch(()=>({}));
-    if(!check.ok||Number(receipt.purchaseState)!==0||receipt.productId!==TOKEN_PRODUCT) return response({error:"BAZAAR_RECEIPT_INVALID"},402);
+    if(!purchaseToken||purchaseToken.length>2048||productId!==TOKEN_PRODUCT) return response({error:"INVALID_PRODUCT_OR_TOKEN"},400);
+    if(!env.BAZAAR_CLIENT_ID||!env.BAZAAR_CLIENT_SECRET||!env.BAZAAR_REFRESH_TOKEN||!env.BAZAAR_PACKAGE_NAME) return response({error:"BAZAAR_SERVER_VALIDATION_NOT_CONFIGURED"},503);
     const tokenHash=await sha256(purchaseToken);
+    const prior=await env.DB.prepare("SELECT user_id FROM purchases WHERE provider='cafebazaar' AND receipt_hash=?").bind(tokenHash).first();
+    if(prior){
+      if(prior.user_id!==user.id) return response({error:"BAZAAR_RECEIPT_ALREADY_USED"},409);
+      return response({ok:true,alreadyCredited:true,tokenAmount:TOKEN_GRANT});
+    }
+    const tokenBody=new URLSearchParams({
+      grant_type:"refresh_token",
+      client_id:env.BAZAAR_CLIENT_ID,
+      client_secret:env.BAZAAR_CLIENT_SECRET,
+      refresh_token:env.BAZAAR_REFRESH_TOKEN
+    });
+    const tokenResponse=await fetch("https://pardakht.cafebazaar.ir/devapi/v2/auth/token/",{
+      method:"POST",
+      headers:{"content-type":"application/x-www-form-urlencoded","accept":"application/json"},
+      body:tokenBody.toString()
+    });
+    const tokenData=await tokenResponse.json().catch(()=>({}));
+    if(!tokenResponse.ok||!tokenData.access_token) return response({error:"BAZAAR_SERVER_VALIDATION_NOT_CONFIGURED"},503);
+    const endpoint="https://pardakht.cafebazaar.ir/devapi/v2/api/validate/"
+      +encodeURIComponent(env.BAZAAR_PACKAGE_NAME)+"/inapp/"+encodeURIComponent(TOKEN_PRODUCT)
+      +"/purchases/"+encodeURIComponent(purchaseToken)+"/";
+    const check=await fetch(endpoint,{headers:{accept:"application/json",authorization:"Bearer "+tokenData.access_token}});
+    const receipt=await check.json().catch(()=>({}));
+    if(!check.ok||receipt.error||Number(receipt.purchaseState)!==0) return response({error:"BAZAAR_RECEIPT_INVALID"},402);
     const grant=await env.DB.batch([
       env.DB.prepare("INSERT OR IGNORE INTO purchases(user_id,provider,product_id,receipt_hash,token_amount,created_at) VALUES(?,?,?,?,?,datetime('now'))").bind(user.id,"cafebazaar",TOKEN_PRODUCT,tokenHash,TOKEN_GRANT),
       env.DB.prepare("INSERT INTO wallets(user_id,balance) SELECT ?,? WHERE changes()=1 ON CONFLICT(user_id) DO UPDATE SET balance=balance+excluded.balance").bind(user.id,TOKEN_GRANT),
       env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'bazaar_purchase',? WHERE changes()=1").bind(user.id,TOKEN_GRANT,tokenHash)
     ]);
-    if(!grant[0].meta.changes) return response({ok:true,alreadyCredited:true,tokenAmount:TOKEN_GRANT});
+    if(!grant[0].meta.changes){
+      const priorOwner=await env.DB.prepare("SELECT user_id FROM purchases WHERE provider='cafebazaar' AND receipt_hash=?").bind(tokenHash).first();
+      if(!priorOwner||priorOwner.user_id!==user.id) return response({error:"BAZAAR_RECEIPT_ALREADY_USED"},409);
+      return response({ok:true,alreadyCredited:true,tokenAmount:TOKEN_GRANT});
+    }
     return response({ok:true,tokenAmount:TOKEN_GRANT});
   }
   if(method==="GET"&&path==="/market/listings"){
