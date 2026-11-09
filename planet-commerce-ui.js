@@ -26,13 +26,17 @@ async function refresh(){
   const [wallet,collection,market,catalog,owned,profile]=await Promise.all([client.wallet(),client.collection(),client.listings(),client.planets(),client.ownedPlanets(),client.profile()]);
   $("commerceDisplayName").value=profile.displayName||"";
   $("commerceProfileHint").textContent=profile.displayName?"نام عمومی حساب تو ثبت شده است؛ می‌توانی آن را تغییر بدهی.":"برای پروفایل و شناسایی حساب در بازار موجودات، یک نام نمایشی انتخاب و ذخیره کن.";
+  $("commerceVipBadge").hidden=!profile.vipActive;
+  $("commerceVipStatus").textContent=profile.vipActive?"VIP فعال تا "+String(profile.vipExpiresAt||"").slice(0,10):"اشتراک VIP فعال نیست.";
+  $("commerceVipDaily").disabled=!profile.vipActive;
   $("commerceTokenBalance").textContent=Number(wallet.balance||0).toLocaleString("fa-IR");
   const ownedIds=new Set((owned.planets||[]).map(x=>x.id)),catalogBox=$("commercePlanetCatalog");catalogBox.textContent="";
   (catalog.planets||[]).forEach(planet=>{
-   row(catalogBox,planet.name,planet.type+" · "+planet.price+" توکن",ownedIds.has(planet.id)?"خریداری‌شده":"خرید",async()=>{
+   row(catalogBox,planet.name,planet.type+" · "+planet.price+" توکن"+(profile.vipActive?" · VIP: "+Math.round(planet.price*.9)+" توکن":""),ownedIds.has(planet.id)?"خریداری‌شده":"خرید",async()=>{
     if(ownedIds.has(planet.id))return;
-    if(!confirm("سیارهٔ "+planet.name+" با قیمت "+planet.price+" توکن خریداری شود؟"))return;
-    try{const result=await client.buyPlanet(planet.id);status("سیارهٔ "+result.planet.name+" در حساب ثبت شد.");await refresh();}catch(error){status(error.message);}
+    const shownPrice=profile.vipActive?Math.round(planet.price*.9):planet.price;
+    if(!confirm("سیارهٔ "+planet.name+" با قیمت "+shownPrice+" توکن"+(profile.vipActive?" (با تخفیف VIP)":"")+" خریداری شود؟"))return;
+    try{const result=await client.buyPlanet(planet.id);status("سیارهٔ "+result.planet.name+" ثبت شد؛ "+result.paid+" توکن پرداخت شد.");await refresh();}catch(error){status(error.message);}
    });
    if(ownedIds.has(planet.id))catalogBox.lastElementChild.querySelector("button").disabled=true;
   });
@@ -69,7 +73,7 @@ $("commerceRegister").addEventListener("click",async()=>{
  catch(error){status(error.message);}
 });
 $("commerceVerify").addEventListener("click",async()=>{
- try{const result=await client.verifyEmail($("commerceEmail").value.trim(),$("commerceVerifyCode").value.trim());authView();status("ایمیل تأیید شد؛ "+Number(result.welcomeTokens||20)+" توکن خوش‌آمدگویی اضافه شد.");await refresh();retryPendingBazaarToken();}
+ try{const result=await client.verifyEmail($("commerceEmail").value.trim(),$("commerceVerifyCode").value.trim());authView();status("ایمیل تأیید شد؛ "+Number(result.welcomeTokens||100)+" توکن خوش‌آمدگویی اضافه شد.");await refresh();retryPendingBazaarToken();}
  catch(error){status(error.message);}
 });
 $("commerceLogin").addEventListener("click",async()=>{
@@ -90,31 +94,48 @@ $("commerceListSpecimen").addEventListener("click",async()=>{
   await client.listSpecimen(id,price);status("آگهی ثبت شد؛ فروشنده دقیقاً مبلغ آگهی را می‌گیرد و کارمزد صفر است.");await refresh();
  }catch(error){status(error.message);}
 });
-let activeBazaarToken="";
+let activeBazaarToken="",activeVipToken="";
+const tokenAmounts={planet_tokens_200:200,planet_tokens_500:500,planet_tokens_1000:1000};
 function updateNativeButtons(){
- const bridge=window.AndroidCommerceBridge;
- const google=$("commerceGoogleLogin"),buy=$("commerceBuyTokens");
+ const bridge=window.AndroidCommerceBridge,configured=!!(bridge&&bridge.isBazaarConfigured&&bridge.isBazaarConfigured());
+ const google=$("commerceGoogleLogin");
  if(google)google.hidden=!(bridge&&bridge.startGoogleSignIn);
- if(buy)buy.hidden=!(bridge&&bridge.isBazaarConfigured&&bridge.isBazaarConfigured());
+ ["200","500","1000"].forEach(n=>{const b=$("commerceBuyTokens"+n);if(b)b.hidden=!configured;});
+ $("commerceBuyVip").hidden=!(configured&&bridge.startBazaarVipSubscription);
 }
-async function verifyPendingBazaarToken(token){
+async function verifyPendingBazaarToken(token,productId){
  if(!token||!client.hasSession()||activeBazaarToken===token)return;
- activeBazaarToken=token;
+ activeBazaarToken=token;productId=tokenAmounts[productId]?productId:"planet_tokens_200";
  try{
-  status("در حال تأیید رسید ۲۰۰ توکن در سرور…");
-  const result=await client.verifyBazaarReceipt("planet_tokens_200",token);
+  status("در حال تأیید رسید بستهٔ "+tokenAmounts[productId]+" توکنی در سرور…");
+  const result=await client.verifyBazaarReceipt(productId,token);
   if(!result.ok)throw new Error("تأیید رسید کافه‌بازار ناموفق بود.");
   const bridge=window.AndroidCommerceBridge;
   if(!bridge||!bridge.consumeBazaarPurchase)throw new Error("برای نهایی‌سازی خرید، نسخهٔ اندروید Planet را باز کن.");
   status("رسید در سرور تأیید شد؛ در حال نهایی‌سازی پرداخت…");
-  bridge.consumeBazaarPurchase(token);
+  bridge.consumeBazaarPurchase(token,productId);
  }catch(error){activeBazaarToken="";status(error.message);}
+}
+async function verifyPendingVipToken(token){
+ if(!token||!client.hasSession()||activeVipToken===token)return;
+ activeVipToken=token;
+ try{
+  status("در حال اعتبارسنجی اشتراک VIP شصت‌روزه…");
+  const result=await client.verifyVipReceipt("planet_vip_60d",token);
+  if(!result.ok)throw new Error("اعتبارسنجی اشتراک VIP ناموفق بود.");
+  const bridge=window.AndroidCommerceBridge;
+  if(bridge&&bridge.clearPendingVipSubscription)bridge.clearPendingVipSubscription(token);
+  activeVipToken="";status("اشتراک VIP فعال شد؛ مزایا تا پایان اعتبار اشتراک در دسترس‌اند.");await refresh();
+ }catch(error){activeVipToken="";status(error.message);}
 }
 function retryPendingBazaarToken(){
  const bridge=window.AndroidCommerceBridge;
- if(!bridge||!bridge.getPendingBazaarPurchaseToken||!client.hasSession())return;
- const token=bridge.getPendingBazaarPurchaseToken();
- if(token)verifyPendingBazaarToken(token);
+ if(!bridge||!client.hasSession())return;
+ if(bridge.getPendingBazaarPurchaseToken){
+  const token=bridge.getPendingBazaarPurchaseToken(),product=bridge.getPendingBazaarPurchaseProductId?bridge.getPendingBazaarPurchaseProductId():"planet_tokens_200";
+  if(token)verifyPendingBazaarToken(token,product);
+ }
+ if(bridge.getPendingVipSubscriptionToken){const vip=bridge.getPendingVipSubscriptionToken();if(vip)verifyPendingVipToken(vip);}
 }
 window.PlanetCommerceUI={
  open:function(){
@@ -127,14 +148,18 @@ window.PlanetCommerceUI={
   catch(error){status(error.message);}
  },
  handleGoogleError:function(message){status(message||"ورود Google انجام نشد.");},
- handleBazaarPurchaseToken:function(token){
+ handleBazaarPurchaseToken:function(token,productId){
   if(!client.hasSession()){status("رسید خرید محفوظ ماند؛ ابتدا وارد حساب Planet شو تا خرید تأیید شود.");return;}
-  verifyPendingBazaarToken(token);
+  verifyPendingBazaarToken(token,productId);
  },
- handleBazaarNativeError:function(message){activeBazaarToken="";status(message||"پرداخت کافه‌بازار کامل نشد.");},
+ handleBazaarVipPurchaseToken:function(token){
+  if(!client.hasSession()){status("رسید اشتراک VIP محفوظ ماند؛ ابتدا وارد حساب Planet شو.");return;}
+  verifyPendingVipToken(token);
+ },
+ handleBazaarNativeError:function(message){activeBazaarToken="";activeVipToken="";status(message||"پرداخت کافه‌بازار کامل نشد.");},
  handleBazaarStatus:function(message){status(message||"");},
- onBazaarConsumed:async function(){
-  activeBazaarToken="";status("۲۰۰ توکن به کیف پول آنلاین اضافه شد و رسید نهایی شد.");await refresh();
+ onBazaarConsumed:async function(productId){
+  activeBazaarToken="";status((tokenAmounts[productId]||200)+" توکن به کیف پول آنلاین اضافه شد و رسید نهایی شد.");await refresh();
  },
  onBazaarReady:function(){updateNativeButtons();retryPendingBazaarToken();}
 };
@@ -143,10 +168,19 @@ $("commerceGoogleLogin").addEventListener("click",()=>{
  if(bridge&&bridge.startGoogleSignIn)bridge.startGoogleSignIn();
  else status("ورود Google فقط در نسخهٔ اندروید فعال است.");
 });
-$("commerceBuyTokens").addEventListener("click",()=>{
- const bridge=window.AndroidCommerceBridge;
- if(bridge&&bridge.startBazaarPurchase)bridge.startBazaarPurchase();
+["200","500","1000"].forEach(n=>$("commerceBuyTokens"+n).addEventListener("click",()=>{
+ const bridge=window.AndroidCommerceBridge,productId="planet_tokens_"+n;
+ if(bridge&&bridge.startBazaarPurchase)bridge.startBazaarPurchase(productId);
  else status("پرداخت کافه‌بازار فقط در نسخهٔ اندروید فعال است.");
+}));
+$("commerceBuyVip").addEventListener("click",()=>{
+ const bridge=window.AndroidCommerceBridge;
+ if(bridge&&bridge.startBazaarVipSubscription)bridge.startBazaarVipSubscription();
+ else status("خرید اشتراک VIP فقط در نسخهٔ اندروید فعال است.");
+});
+$("commerceVipDaily").addEventListener("click",async()=>{
+ try{const result=await client.claimVipDaily();status("۱۰ توکن پاداش روزانهٔ VIP دریافت شد.");$("commerceTokenBalance").textContent=Number(result.balance||0).toLocaleString("fa-IR");$("commerceVipDaily").disabled=true;}
+ catch(error){status(error.message);}
 });
 updateNativeButtons();
 })();
