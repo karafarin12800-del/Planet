@@ -1,6 +1,6 @@
 /* PLANET Galaxy Explorer
- * Interactive WebGL galaxy/system navigator connected to the metadata-only galaxy engine.
- * Planet selection records the active catalog world; it does not create terrain or a life simulation.
+ * Interactive WebGL galaxy/system navigator connected to per-planet digital biospheres.
+ * Planet surfaces remain illustrative; environmental catalog values drive the isolated simulation.
  */
 (function(root,factory){
   const api=factory();
@@ -210,14 +210,14 @@
       selectedSystemId=found.system.id;selectedPlanetId=id;mode="planet";
       camera.target=[0,0,0];camera.distance=4.6;camera.yaw=-0.72;camera.pitch=0.38;
       renderUI();if(renderer)renderer.invalidate();
-      showNotice("سطح سیاره با الگوهای رویه‌ای و داده‌های کاتالوگ نمایش داده می‌شود؛ این هنوز زمین‌نمای علمی یا زیست‌کرهٔ شبیه‌سازی‌شده نیست.");
+      showNotice("نمای سطح سیاره هنوز تصویرسازی رویه‌ای است؛ اما دما، آب، گرانش و جؤ ثبت‌شدهٔ آن در زیست‌کرهٔ دیجیتال مستقل اثر می‌گذارند.");
     }
     function discover(id){
       const found=findPlanet(id);if(!found)return;
       if(!found.planet.discovered){
         Engine.discoverPlanet(galaxy,id);persist();
         selectedPlanetId=id;
-        showNotice("سیاره کشف شد و اطلاعات کاتالوگ آن روی همین دستگاه ذخیره شد. هنوز زمین‌نما یا زیست‌کرهٔ اختصاصی ندارد.");
+        showNotice("سیاره کشف شد؛ با انتخاب آن، زیست‌کرهٔ دیجیتال اختصاصی و شرایط محیطی ثبت‌شده‌اش فعال می‌شود.");
       }else showNotice("این سیاره قبلاً کشف شده است.");
       renderUI();if(renderer)renderer.invalidate();
     }

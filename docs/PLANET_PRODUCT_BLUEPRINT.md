@@ -43,12 +43,13 @@
 - **Implemented:** a separate WebGL galaxy explorer with a rotatable/zoomable galaxy map, selectable star systems, orbital views, per-planet discovery and active-catalog-world selection.
 - **Implemented:** discovered planets can open a dedicated close-up 3D globe view. A procedural surface shader uses catalog planet type and water-coverage metadata to vary surface palettes and patterns; gas giants receive a simple illustrative ring. The globe can be orbited and zoomed with the same touch/mouse controls.
 - Discovery and selection use the existing versioned galaxy engine and are saved locally on the device. The existing Earth scene and renderer remain intact.
-- **Boundary:** procedural surface patterns are illustrative visualizations, not measured terrain, scientific climate maps, or an independently evolving biosphere. The selected planet is not yet connected to a separate life simulation.
+- **Boundary:** procedural surface patterns remain illustrative rather than measured terrain or scientific climate maps. Each selected planet is connected to its own digital biosphere; temperature, water coverage, gravity, atmosphere and surface class now influence modeled fitness, population pressure and habitat migration.
 - **Next within this phase:** connect the selected home world to its existing Earth renderer without duplicating or resetting its saved state; then add world-specific biome scenes and profile touch/GPU performance on Android.
 
 ### Phase 3 — Ecosystems and species collection
 - Connect each planet to an isolated life-simulation state.
-- Add biome-specific resources and environmental parameters.
+- **Implemented foundation:** map catalog temperature, water coverage, gravity, atmosphere and surface class into each planet's independent biosphere; apply environmental suitability to fitness, population pressure and habitat migration.
+- Next: add explicit biome resources, predator/prey relationships and resource competition.
 - Ensure genetic changes affect visible procedural morphology and distinguish species beyond color.
 - Add species archive, lineage history and discovery milestones.
 
@@ -89,3 +90,8 @@ The galaxy engine stores catalog metadata, and the new viewer renders a navigabl
 ### Phase 2 integration milestone — per-planet digital biospheres
 
 The selected catalog planet now emits an active-world change event consumed by the existing autonomous digital biosphere UI. Each stable planet ID receives its own saved biosphere, deterministic initialization seed, speed and live-state metadata. Switching worlds saves the current state and restores the destination state; creating/resetting a biosphere affects only the active planet. The previous single biosphere save is migrated to the original home planet only and retained as a backup. The existing Earth renderer and its separate evolutionary timeline are intentionally not silently relabeled as another planet; world-specific terrain, climate coupling and a true per-world rendering scene remain later integration work.
+
+
+### Phase 3 implementation milestone — environmental selection pressure
+
+The autonomous evolution engine now persists a version-2 environment profile per world while migrating version-1 biosphere saves. It derives the profile from the selected planet catalog and models temperature, water, gravity, atmosphere and surface compatibility in species fitness. Environmental stress influences population change; migration options vary by world class, and gas giants use a clearly labeled hypothetical atmospheric habitat rather than a solid surface. The Android/PWA UI reports the active planet's modeled conditions and baseline suitability. This remains a bounded educational abstraction: no fluid dynamics, geochemistry, measured climate simulation or biological prediction is claimed.

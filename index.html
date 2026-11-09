@@ -1807,8 +1807,10 @@ html[lang="en"] .scene-coords{direction:ltr}
   let state, live = false, timer = 0, saveTimer = 0, fastRunning = false, pendingWorldId = null, lastWall = Date.now(), liveAccumulator = 0, savedSpeed = 1;
   function restoreWorld(worldId) {
     const saved = WorldState.load(localStorage, worldId, { homeWorldId: homeWorldId, legacyKey: STORE });
+    const planet = WorldState.getPlanet(localStorage, window.PlanetGalaxyEngine, worldId) || { id: worldId, name: worldId, type: 'terrestrial', meanTemperatureC: 15, waterCoverage: 0.71, gravity: 1, atmosphere: 'nitrogen-oxygen' };
     try {
-      state = saved && saved.state ? Model.restore(saved.state) : Model.createState(WorldState.seedFor(worldId));
+      state = saved && saved.state ? Model.restore(saved.state) : Model.createState(WorldState.seedFor(worldId), planet);
+      Model.setEnvironment(state, planet);
       live = saved && Object.prototype.hasOwnProperty.call(saved, 'live') ? !!saved.live : true;
       savedSpeed = Math.max(1, Math.min(20, Number(saved && saved.speed) || 1));
       const elapsed = saved && saved.live ? Math.max(0, Math.min(7 * 86400, (Date.now() - Number(saved.lastWall || Date.now())) / 1000)) : 0;
@@ -1816,10 +1818,11 @@ html[lang="en"] .scene-coords{direction:ltr}
       if (catchupYears > 0) Model.advanceYears(state, catchupYears);
     } catch (error) {
       console.warn('Autonomous biosphere restore failed for ' + worldId + '; starting an isolated local world.', error);
-      state = Model.createState(WorldState.seedFor(worldId));
+      state = Model.createState(WorldState.seedFor(worldId), planet);
       live = true;
       savedSpeed = 1;
     }
+    Model.setEnvironment(state, planet);
     return live;
   }
   restoreWorld(activeWorldId);
@@ -1831,6 +1834,7 @@ html[lang="en"] .scene-coords{direction:ltr}
     '.pb-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.pb-head h2{font-size:18px;margin:4px 0 12px}.pb-close,.pb-btn{border:1px solid #3a607d;background:#142b43;color:#e8f3ff;border-radius:10px;padding:9px 12px;font:inherit}.pb-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.pb-btn.primary{background:#13505a;border-color:#36a99e}.pb-btn:disabled{opacity:.5}',
     '.pb-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}.pb-stat{background:#10263c;border:1px solid #29445f;border-radius:11px;padding:10px}.pb-stat b{display:block;font-size:19px;color:#8ee6d9}.pb-stat small{color:#a9bfd4;font-size:11px}',
     '.pb-progress{height:7px;background:#1b3148;border-radius:9px;overflow:hidden}.pb-progress i{display:block;height:100%;width:0;background:#50c9b9;transition:width .15s}',
+    '.pb-environment{background:#102b40;border:1px solid #326078;border-radius:11px;padding:9px 11px;margin:10px 0;color:#bce8ed;font-size:11px;line-height:1.9}',
     '.pb-note{font-size:11px;line-height:1.8;color:#9eb7ce;margin:10px 0}.pb-speed{display:flex;align-items:center;gap:10px;margin:10px 0}.pb-speed input{flex:1;min-width:0}',
     '.pb-species{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px;margin-top:12px}.pb-species-card{background:#10243a;border:1px solid #29445f;border-radius:12px;padding:8px;min-width:0}.pb-species-card canvas{width:100%;height:90px;display:block;background:radial-gradient(ellipse,#183d52,#0b192a);border-radius:8px}.pb-species-card strong{display:block;font-size:12px;margin:7px 0 4px}.pb-species-card small{font-size:10px;color:#a9bfd4;line-height:1.6}',
     '.pb-events{max-height:180px;overflow:auto;background:#091726;border-radius:10px;padding:8px;font-size:11px;line-height:1.9;color:#b8cde0}.pb-events div{border-bottom:1px solid #1b3148;padding:3px 0}@media(max-width:480px){#planet-biosphere-overlay{padding:7px}#planet-biosphere-panel{padding:11px}.pb-stat b{font-size:16px}.pb-head h2{font-size:15px}}'
@@ -1841,7 +1845,7 @@ html[lang="en"] .scene-coords{direction:ltr}
   launch.setAttribute('aria-haspopup', 'dialog');
   const overlay = document.createElement('section');
   overlay.id = 'planet-biosphere-overlay'; overlay.setAttribute('role', 'dialog'); overlay.setAttribute('aria-modal', 'true');
-  overlay.innerHTML = '<div id="planet-biosphere-panel"><div class="pb-head"><div><h2>🧬 تکامل خودمختار حیات دیجیتال</h2><small id="pbWorld" class="pb-note">سیارهٔ فعال</small></div><button class="pb-close" id="pbClose">✕ بستن</button></div><div class="pb-stats"><div class="pb-stat"><b id="pbYear">۰</b><small>سال شبیه‌سازی‌شده</small></div><div class="pb-stat"><b id="pbGeneration">۰</b><small>نسل‌های مدل</small></div><div class="pb-stat"><b id="pbSpecies">۰</b><small>گونه‌های ثبت‌شده</small></div></div><div class="pb-progress"><i id="pbProgress"></i></div><div class="pb-actions"><button class="pb-btn primary" id="pbFast">⏩ شبیه‌سازی سریع ۲۰۰۰ سال</button><button class="pb-btn" id="pbLive">▶ شروع جهان زنده</button><button class="pb-btn" id="pbReset">↺ جهان تازه</button></div><div class="pb-speed"><label for="pbSpeed">سرعت جهان زنده</label><input id="pbSpeed" type="range" min="1" max="20" value="1"><b id="pbSpeedLabel">×۱</b></div><div class="pb-note" id="pbStatus">جهان آماده است. برای شروع، شبیه‌سازی سریع یا جهان زنده را انتخاب کن.</div><h3>گونه‌های پدیدآمده</h3><div class="pb-species" id="pbSpeciesGrid"></div><h3>تاریخچهٔ رویدادها</h3><div class="pb-events" id="pbEvents"></div><p class="pb-note">این زیست‌کره یک مدل حیات دیجیتال آموزشی است؛ ژنوم ۱۶۸ بازی و نگاشت ژنوتیپ به ظاهر، مصنوعی و فرضی‌اند و پیش‌بینی تکامل واقعی زمین یا زیست‌شناسی موجودات نیستند. تصاویر به‌صورت هندسی و محلی از صفات مدل رسم می‌شوند؛ تولید تصویر با مدل مولد واقعی، قابلیت جداگانه و نیازمند سرویس تصویرسازی است. وضعیت جهان روی همین دستگاه ذخیره می‌شود و همگام‌سازی بین دستگاه‌ها ندارد.</p></div>';
+  overlay.innerHTML = '<div id="planet-biosphere-panel"><div class="pb-head"><div><h2>🧬 تکامل خودمختار حیات دیجیتال</h2><small id="pbWorld" class="pb-note">سیارهٔ فعال</small></div><button class="pb-close" id="pbClose">✕ بستن</button></div><div class="pb-stats"><div class="pb-stat"><b id="pbYear">۰</b><small>سال شبیه‌سازی‌شده</small></div><div class="pb-stat"><b id="pbGeneration">۰</b><small>نسل‌های مدل</small></div><div class="pb-stat"><b id="pbSpecies">۰</b><small>گونه‌های ثبت‌شده</small></div></div><div class="pb-environment" id="pbEnvironment" aria-live="polite"></div><div class="pb-progress"><i id="pbProgress"></i></div><div class="pb-actions"><button class="pb-btn primary" id="pbFast">⏩ شبیه‌سازی سریع ۲۰۰۰ سال</button><button class="pb-btn" id="pbLive">▶ شروع جهان زنده</button><button class="pb-btn" id="pbReset">↺ جهان تازه</button></div><div class="pb-speed"><label for="pbSpeed">سرعت جهان زنده</label><input id="pbSpeed" type="range" min="1" max="20" value="1"><b id="pbSpeedLabel">×۱</b></div><div class="pb-note" id="pbStatus">جهان آماده است. برای شروع، شبیه‌سازی سریع یا جهان زنده را انتخاب کن.</div><h3>گونه‌های پدیدآمده</h3><div class="pb-species" id="pbSpeciesGrid"></div><h3>تاریخچهٔ رویدادها</h3><div class="pb-events" id="pbEvents"></div><p class="pb-note">این زیست‌کره یک مدل حیات دیجیتال آموزشی است؛ ژنوم ۱۶۸ بازی و نگاشت ژنوتیپ به ظاهر، مصنوعی و فرضی‌اند و پیش‌بینی تکامل واقعی زمین یا زیست‌شناسی موجودات نیستند. تصاویر به‌صورت هندسی و محلی از صفات مدل رسم می‌شوند؛ تولید تصویر با مدل مولد واقعی، قابلیت جداگانه و نیازمند سرویس تصویرسازی است. وضعیت جهان روی همین دستگاه ذخیره می‌شود و همگام‌سازی بین دستگاه‌ها ندارد.</p></div>';
   document.body.appendChild(launch); document.body.appendChild(overlay);
   $('pbSpeed').value = String(savedSpeed); $('pbSpeedLabel').textContent = '×' + savedSpeed;
   function save() {
@@ -1849,7 +1853,9 @@ html[lang="en"] .scene-coords{direction:ltr}
     if (!ok) $('pbStatus').textContent = 'ذخیره‌سازی محلی این سیاره در دسترس نیست؛ فضای ذخیره‌سازی مرورگر را بررسی کن.';
   }
   function render() {
-    $('pbWorld').textContent = 'سیارهٔ فعال: ' + activeWorldId;
+    const env = state.planetEnvironment || Model.environmentFromPlanet(null);
+    $('pbWorld').textContent = 'سیارهٔ فعال: ' + env.name + ' · ' + activeWorldId;
+    $('pbEnvironment').textContent = 'شرایط محیطی مدل: دما ' + env.temperatureC.toLocaleString('fa-IR') + '°C · آب ' + Math.round(env.waterCoverage * 100).toLocaleString('fa-IR') + '% · گرانش ' + env.gravity.toLocaleString('fa-IR') + 'g · جو ' + env.atmosphere + ' · سازگاری پایهٔ محیط ' + Math.round(Model.planetHabitability(env) * 100).toLocaleString('fa-IR') + '% · ' + (env.surfaceAvailable ? 'سطح جامد' : 'زیستگاه جوی فرضی');
     $('pbYear').textContent = state.year.toLocaleString('fa-IR');
     $('pbGeneration').textContent = state.generation.toLocaleString('fa-IR');
     $('pbSpecies').textContent = state.species.length.toLocaleString('fa-IR');
