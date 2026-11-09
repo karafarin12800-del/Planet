@@ -35,7 +35,7 @@ const migratedV1 = life.restore(legacyV1);
 assert.equal(migratedV1.version, 6);
 assert.equal(migratedV1.planetEnvironment.planetId, "earth");
 
-const rolesById = new Map(state.species.map(s => [s.id, s.trophicRole]));
+const rolesById = new Map(life.createState(99).species.map(s => [s.id, s.trophicRole]));
 assert.deepEqual([1, 2, 3, 4].map(id => rolesById.get(id)), ["producer", "grazer", "predator", "decomposer"]);
 assert.ok(state.resources && state.resources.shore && state.resources.ocean, "each biome has an independent resource pool");
 assert.ok(Object.values(state.resources).every(r => r.biomass >= 0 && r.biomass <= r.capacity && r.nutrients >= 0), "resource cycles remain bounded");
