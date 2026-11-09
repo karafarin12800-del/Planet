@@ -62,8 +62,9 @@
 <ul>
 <li><b>Email account:</b> email address, internal account ID, account creation and verification times, and a salted password hash. The raw password is not stored in the database. A short-lived email verification code is generated.</li>
 <li><b>Google sign-in:</b> if selected, an identity token is sent to the Planet server for validation. The server stores the Google subject identifier and verified account email for future sign-ins. Planet does not receive your Google password.</li>
-<li><b>Profile and marketplace:</b> chosen display name, token balance, wallet ledger, planet identifiers and ownership, and specimens you choose to sync or list, including specimen name, form, digital DNA sequence, generation, size, special status and listing status.</li>
-<li><b>Cafe Bazaar billing:</b> the product identifier and purchase receipt are sent to the server for verification with Cafe Bazaar. The server stores a receipt hash and credit result; the raw receipt token is hashed in the database to prevent reuse.</li>
+<li><b>Profile and marketplace:</b> chosen display name, token balance and wallet ledger, planet identifiers and ownership, specimen details, VIP membership status and expiry, daily reward claim date, and purchase receipt hashes.</li>
+<li><b>Cafe Bazaar billing and subscription:</b> for 200, 500 or 1,000 token packs and the 60-day VIP subscription, the product ID and purchase/subscription receipt are sent to the server for verification. The server stores the receipt hash, subscription state and expiry; the raw receipt token is not stored in the database.</li>
+<li><b>VIP benefits:</b> active status, subscription expiry, the server date of the last 10-token daily reward claim and related benefit state are stored to enforce the selected membership features.</li>
 <li><b>Technical connection data:</b> online service providers may process ordinary connection metadata such as IP address, request time and technical device/browser information under their own policies.</li>
 </ul>
 <h2>2. Local device information</h2>
@@ -73,7 +74,7 @@
 <li>Create and secure accounts, verify email or Google sign-in and maintain sessions;</li>
 <li>Display wallets and record token changes, planet purchases and ownership, and prevent duplicate transactions;</li>
 <li>Register collections, create or cancel listings, and transfer specimens between buyers and sellers;</li>
-<li>Verify genuine Cafe Bazaar purchases and prevent reuse of a receipt;</li>
+<li>Verify token-pack purchases and the Cafe Bazaar VIP subscription, enforce its expiry and benefits, and prevent receipt reuse;</li>
 <li>Respond to support requests, diagnose errors and protect the service.</li>
 </ul>
 <h2>4. Service providers and sharing</h2>
@@ -81,7 +82,7 @@
 <li><b>Cloudflare:</b> hosts the online API and account, wallet, ownership and marketplace database; R2 may store generated images if that feature is enabled.</li>
 <li><b>Resend:</b> sends account verification emails when configured.</li>
 <li><b>Google:</b> validates Google sign-in when you choose that method.</li>
-<li><b>Cafe Bazaar:</b> processes in-app purchases and validates purchase receipts.</li>
+<li><b>Cafe Bazaar:</b> processes token-pack purchases and the 60-day VIP subscription, and validates purchase and subscription receipts.</li>
 <li><b>OpenAI:</b> only when online AI image generation is enabled and you request it, the genome/description data needed to generate an image is sent to the image service. The generated image may be stored in R2 so the same genome retains the same image.</li>
 </ul>
 <p>Planet does not sell personal information to advertisers. Information is shared with relevant providers only to deliver selected features, maintain security, provide support or comply with legal requirements. Each provider may process technical information under its own privacy policy.</p>
