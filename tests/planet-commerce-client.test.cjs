@@ -6,6 +6,7 @@ global.localStorage={getItem:k=>data.has(k)?data.get(k):null,setItem:(k,v)=>data
 global.fetch=async(url,options)=>{calls.push({url,options});let payload={ok:true};if(url.endsWith("/auth/login"))payload={token:"test-token",email:"player@example.com"};if(url.endsWith("/wallet"))payload={balance:20,ledger:[]};return {ok:true,status:200,json:async()=>payload};};
 (async()=>{
  assert.throws(()=>commerce.setApiBase("http://example.com"),/HTTPS/);
+ await assert.rejects(()=>commerce.health(),/سرویس حساب آنلاین Planet هنوز راه‌اندازی نشده است/);
  commerce.setApiBase("https://planet-commerce.example.workers.dev/");
  assert.equal(commerce.getApiBase(),"https://planet-commerce.example.workers.dev");
  await commerce.login("player@example.com","correct-horse-battery");
