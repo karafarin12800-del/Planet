@@ -32,7 +32,15 @@
     if(!Genome||!Life||!state)throw new Error("جهان ژنومی فعال نیست.");
     const a=validDNA(parentA&&parentA.dna),b=validDNA(parentB&&parentB.dna);
     if(!a||!b)throw new Error("ژنوم هر دو والد باید معتبر باشد.");
-    if(state.species.length>=MAX_CREATURES)throw new Error("ظرفیت این زیست‌کره به ۲۴ گونه رسیده است.");
+    let replacedSpecies=null;
+    if(state.species.length>=MAX_CREATURES){
+      // Keep the ecosystem capped at 24 while allowing players to continue selective breeding.
+      const candidates=state.species.filter(x=>!x.extinct&&Number(x.id)!==Number(parentA.id)&&Number(x.id)!==Number(parentB.id));
+      if(!candidates.length)throw new Error("برای ترکیب باید دو والد انتخاب کنی تا یک جایگاه آزاد بماند.");
+      candidates.sort((x,y)=>(Number(x.fitness)||0)-(Number(y.fitness)||0)||(Number(x.population)||0)-(Number(y.population)||0)||Number(x.id)-Number(y.id));
+      replacedSpecies=candidates[0];
+      state.species.splice(state.species.indexOf(replacedSpecies),1);
+    }
     let dna="";for(let gene=0;gene<8;gene++){const source=randomFor(state)<.5?a:b;dna+=source.slice(gene*21,gene*21+21);}
     dna=Genome.mutateSyntheticGenome(dna,.035,()=>randomFor(state));
     const traits=Genome.phenotypeFromDNA(dna,{ageMa:4300}),form=Genome.inferForm(traits,4300,parentA.habitat||parentB.habitat||"land");
@@ -46,8 +54,9 @@
       habitat:parentA.habitat||parentB.habitat||"land",population:40+Math.floor(randomFor(state)*160),generation,age:0,fitness:.4+randomFor(state)*.55,
       births:0,deaths:0,speciationCooldown:0,traits,form,bodyLengthCm,special,rarityScore:special?Math.min(100,55+divergence+randomFor(state)*30):0,
       originWorldType:"alien",extinct:false,trophicRole:Life.roleForSpecies({id,traits}),marketEligible:false};
-    child.marketEligible=Life.isMarketEligible(child);state.species.push(child);if(state.species.length>MAX_CREATURES)state.species=state.species.slice(-MAX_CREATURES);
-    return Object.assign({},child,{sizeLabel:sizeLabel(bodyLengthCm),marketEligible:child.marketEligible});
+    child.marketEligible=Life.isMarketEligible(child);state.species.push(child);
+    if(replacedSpecies)child.replacedSpeciesId=replacedSpecies.id;
+    return Object.assign({},child,{sizeLabel:sizeLabel(bodyLengthCm),marketEligible:child.marketEligible,replacedSpeciesId:replacedSpecies&&replacedSpecies.id||null});
   }
   function save(state){if(!Life||!state)throw new Error("جهان ژنومی برای ذخیره آماده نیست.");return Life.serialize(state);}
   function restore(value){if(!Life)throw new Error("موتور تکامل ژنومی آماده نیست.");const state=Life.restore(value);state.genomeGameVersion=VERSION;return state;}
