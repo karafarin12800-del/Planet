@@ -18,6 +18,8 @@ Galaxy.discoverPlanet(galaxy,other);
 Galaxy.selectPlanet(galaxy,other);
 storage.setItem(World.galaxyKey,Galaxy.serialize(galaxy));
 assert.equal(World.getActiveWorldId(storage,Galaxy),other,"the active world follows the persisted galaxy selection");
+assert.equal(World.getPlanet(storage,Galaxy,other).id,other,"the selected planet profile is available to the simulation");
+assert.equal(World.getActivePlanet(storage,Galaxy).id,other,"the active planet profile resolves from the saved galaxy");
 assert.notEqual(World.seedFor(home),World.seedFor(other),"each planet receives a deterministic but distinct biosphere seed");
 
 const legacy={state:JSON.stringify({version:1,year:42,species:[]}),live:false,speed:3,lastWall:1234};

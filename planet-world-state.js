@@ -61,6 +61,15 @@
     }
     return null;
   }
+  function getPlanet(storage,engine,worldId){
+    const galaxy=readGalaxy(storage,engine);
+    if(!galaxy||!engine||typeof engine.getPlanet!=="function")return null;
+    return engine.getPlanet(galaxy,validId(worldId)?worldId:galaxy.activePlanetId);
+  }
+  function getActivePlanet(storage,engine){
+    const galaxy=readGalaxy(storage,engine);
+    return galaxy&&engine&&typeof engine.getActivePlanet==="function"?engine.getActivePlanet(galaxy):null;
+  }
   function save(storage,worldId,snapshot){
     if(!storage||!validId(worldId)||!snapshot||typeof snapshot.state!=="string")return false;
     const value={state:snapshot.state,live:!!snapshot.live,speed:Math.max(1,Math.min(20,Number(snapshot.speed)||1)),lastWall:Math.max(0,Number(snapshot.lastWall)||Date.now())};
@@ -72,5 +81,5 @@
     for(let i=0;i<input.length;i++){hash^=input.charCodeAt(i);hash=Math.imul(hash,16777619);}
     return hash>>>0||0x504c414e;
   }
-  return {galaxyKey:GALAXY_KEY,legacyKey:LEGACY_KEY,prefix:PREFIX,storageKey,getHomeWorldId,getActiveWorldId,load,save,seedFor};
+  return {galaxyKey:GALAXY_KEY,legacyKey:LEGACY_KEY,prefix:PREFIX,storageKey,getHomeWorldId,getActiveWorldId,getPlanet,getActivePlanet,load,save,seedFor};
 });
