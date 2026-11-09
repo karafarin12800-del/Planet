@@ -1878,7 +1878,7 @@ html[lang="en"] .scene-coords{direction:ltr}
     const events = $('pbEvents'); events.innerHTML = '';
     state.events.slice(0, 24).forEach(e => {
       const row = document.createElement('div');
-      const labels = { origin: 'پیدایش', speciation: 'گونه‌زایی', extinction: 'انقراض', migration: 'مهاجرت زیستگاهی' };
+      const labels = { origin: 'پیدایش', speciation: 'گونه‌زایی', extinction: 'انقراض', migration: 'مهاجرت زیستگاهی', predation: 'شکار', competition: 'رقابت منابع' };
       row.textContent = 'سال ' + e.year.toLocaleString('fa-IR') + ' · ' + (labels[e.kind] || e.kind) + ' · ' + (e.name || '') + ' — ' + e.detail;
       events.appendChild(row);
     });
@@ -1931,7 +1931,7 @@ html[lang="en"] .scene-coords{direction:ltr}
   $('pbSpeed').addEventListener('input', function () { $('pbSpeedLabel').textContent = '×' + this.value; save(); });
   $('pbReset').addEventListener('click', function () {
     if (!window.confirm('تمام تاریخچهٔ زیست‌کرهٔ همین سیاره پاک و یک جهان تازه ساخته شود؟')) return;
-    stopLive(); state = Model.createState(WorldState.seedFor(activeWorldId)); render(); save(); setStatus('زیست‌کرهٔ تازه فقط برای همین سیاره ساخته شد.');
+    stopLive(); const planet = WorldState.getPlanet(localStorage, window.PlanetGalaxyEngine, activeWorldId); state = Model.createState(WorldState.seedFor(activeWorldId), planet); render(); save(); setStatus('زیست‌کرهٔ تازه فقط برای همین سیاره ساخته شد.');
   });
   function switchWorld(nextWorldId) {
     if (!nextWorldId || nextWorldId === activeWorldId) return;

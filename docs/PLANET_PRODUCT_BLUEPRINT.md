@@ -49,7 +49,7 @@
 ### Phase 3 — Ecosystems and species collection
 - Connect each planet to an isolated life-simulation state.
 - **Implemented foundation:** map catalog temperature, water coverage, gravity, atmosphere and surface class into each planet's independent biosphere; apply environmental suitability to fitness, population pressure and habitat migration.
-- Next: add explicit biome resources, predator/prey relationships and resource competition.
+- **Implemented foundation:** bounded biome resource pools regenerate nutrients and biomass; producers, grazers, predators and decomposers interact through food availability, predation, detritus recycling and carrying-capacity competition. No new in-game tutorial or explanatory panel is added; only simulation outcomes enter the event history.
 - Ensure genetic changes affect visible procedural morphology and distinguish species beyond color.
 - Add species archive, lineage history and discovery milestones.
 
@@ -95,3 +95,9 @@ The selected catalog planet now emits an active-world change event consumed by t
 ### Phase 3 implementation milestone — environmental selection pressure
 
 The autonomous evolution engine now persists a version-2 environment profile per world while migrating version-1 biosphere saves. It derives the profile from the selected planet catalog and models temperature, water, gravity, atmosphere and surface compatibility in species fitness. Environmental stress influences population change; migration options vary by world class, and gas giants use a clearly labeled hypothetical atmospheric habitat rather than a solid surface. The Android/PWA UI reports the active planet's modeled conditions and baseline suitability. This remains a bounded educational abstraction: no fluid dynamics, geochemistry, measured climate simulation or biological prediction is claimed.
+
+
+
+### Phase 3 implementation milestone — ecosystem dynamics
+
+The autonomous biosphere now runs deterministic, per-biome resource cycles with bounded biomass, nutrients and detritus. Species carry producer, grazer, predator or decomposer roles; predator populations consume local prey, grazers compete for available biomass, producers draw on nutrient pools, and decomposers return detritus to nutrient availability. Food limitation, predation and habitat carrying capacity influence population pressure and extinction. Resource pools, trophic roles and detritus persist in version-3 saves; version-1 and version-2 saves migrate with initialized ecosystem state. The in-game interface receives concise event outcomes only and adds no tutorial text explaining these mechanics. This is a deliberately bounded deterministic digital ecology model, not a predictive ecological or biological simulation.
