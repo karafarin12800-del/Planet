@@ -59,7 +59,7 @@ async function authenticate(req, env) {
     if(!await crypto.subtle.verify("HMAC",key,sig,new TextEncoder().encode(parts[0]+"."+parts[1]))) return null;
     const payload=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(parts[1].replace(/-/g,"+").replace(/_/g,"/")+"===".slice((parts[1].length+3)%4)),c=>c.charCodeAt(0))));
     if(!payload.sub||payload.exp<Date.now()/1000) return null;
-    return await env.DB.prepare("SELECT id,email,verified_at,display_name FROM users WHERE id=? AND verified_at IS NOT NULL").bind(payload.sub).first();
+    return await env.DB.prepare("SELECT id,email,verified_at FROM users WHERE id=? AND verified_at IS NOT NULL").bind(payload.sub).first();
   } catch { return null; }
 }
 function planets() {

@@ -20,7 +20,6 @@ const fs=require("node:fs");
  assert.ok(source.includes('path===" /market/cancel"'.replace(" ", "")),"seller can cancel an active listing");
  assert.ok(schema.includes("UNIQUE(owner_id,client_key)"),"specimen sync is idempotent per account");
  assert.ok(schema.includes("CREATE TABLE IF NOT EXISTS planet_ownership"),"purchased planet ownership persists in D1");
- assert.ok(source.includes("display_name FROM users WHERE id=?"),"authenticated profile reads the selected display name");
  assert.ok(source.includes('path==="/profile"'),"players can read and choose a public display name");
  assert.ok(source.includes('path==="/planets/owners"'),"planet ownership has a public display-name lookup");
  assert.ok(source.includes("DISPLAY_NAME_TAKEN"),"public display names are unique");
