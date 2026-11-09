@@ -1,0 +1,21 @@
+"use strict";
+const assert=require("node:assert/strict");
+const commerce=require("../planet-commerce-client.js");
+const data=new Map(),calls=[];
+global.localStorage={getItem:k=>data.has(k)?data.get(k):null,setItem:(k,v)=>data.set(k,String(v)),removeItem:k=>data.delete(k)};
+global.fetch=async(url,options)=>{calls.push({url,options});let payload={ok:true};if(url.endsWith("/auth/login"))payload={token:"test-token",email:"player@example.com"};if(url.endsWith("/wallet"))payload={balance:20,ledger:[]};return {ok:true,status:200,json:async()=>payload};};
+(async()=>{
+ assert.throws(()=>commerce.setApiBase("http://example.com"),/HTTPS/);
+ commerce.setApiBase("https://planet-commerce.example.workers.dev/");
+ assert.equal(commerce.getApiBase(),"https://planet-commerce.example.workers.dev");
+ await commerce.login("player@example.com","correct-horse-battery");
+ assert.equal(commerce.hasSession(),true);
+ assert.equal(data.get("planet-commerce-session-v1"),"test-token");
+ const wallet=await commerce.wallet();assert.equal(wallet.balance,20);
+ assert.equal(calls[1].options.headers.authorization,"Bearer test-token");
+ await commerce.registerSpecimen({clientKey:"local-1",planetId:"planet-001",name:"نمونه",dna:"ACGT"});
+ assert.equal(calls[2].url,"https://planet-commerce.example.workers.dev/specimens/register");
+ assert.equal(JSON.parse(calls[2].options.body).clientKey,"local-1");
+ commerce.logout();assert.equal(commerce.hasSession(),false);
+ console.log("Planet commerce client tests passed.");
+})().catch(error=>{console.error(error);process.exit(1);});

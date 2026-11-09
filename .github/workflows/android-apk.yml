@@ -21,6 +21,8 @@ on:
       - 'planet-galaxy-engine.js'
       - 'planet-world-state.js'
       - 'planet-collection-commerce.js'
+      - 'planet-commerce-client.js'
+      - 'planet-commerce-ui.js'
       - 'planet-galaxy-viewer.js'
       - 'cloudflare-commerce-worker/**'
       - 'manifest.webmanifest'
@@ -56,6 +58,8 @@ on:
       - 'planet-galaxy-engine.js'
       - 'planet-world-state.js'
       - 'planet-collection-commerce.js'
+      - 'planet-commerce-client.js'
+      - 'planet-commerce-ui.js'
       - 'planet-galaxy-viewer.js'
       - 'tests/**'
       - '.github/workflows/android-apk.yml'
@@ -96,13 +100,16 @@ jobs:
       - name: Bundle the current web simulation into the Android app
         run: |
           mkdir -p app/src/main/assets
-          cp index.html planet-localization.js evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js offline-evolution.js planet-autonomous-evolution.js planet-galaxy-engine.js planet-world-state.js planet-collection-commerce.js planet-galaxy-viewer.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
+          cp index.html planet-localization.js evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js offline-evolution.js planet-autonomous-evolution.js planet-galaxy-engine.js planet-world-state.js planet-collection-commerce.js planet-commerce-client.js planet-commerce-ui.js planet-galaxy-viewer.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
           cp genome-evidence.html app/src/main/assets/
           cp cosmology-lab.html cosmology-observations.js app/src/main/assets/
 
       - name: Validate commerce backend and contracts
         run: |
           node --check --input-type=module < cloudflare-commerce-worker/index.js
+          node --check planet-commerce-client.js
+          node --check planet-commerce-ui.js
+          node tests/planet-commerce-client.test.cjs
           node tests/planet-commerce-contract.test.cjs
 
       - name: Validate offline evolution lifecycle controller syntax

@@ -101,6 +101,7 @@ async function route(req, env, url) {
       await sendVerification(email,code,env);
     } catch(e) {
       if(String(e).includes("UNIQUE")) return response({error:"EMAIL_ALREADY_REGISTERED"},409);
+      await env.DB.prepare("DELETE FROM users WHERE id=? AND verified_at IS NULL").bind(id).run().catch(()=>{});
       return response({error:String(e).includes("EMAIL_")?String(e):"REGISTRATION_FAILED"},503);
     }
     return response({ok:true,verificationRequired:true},201);
@@ -143,6 +144,29 @@ async function route(req, env, url) {
   }
   const user=await authenticate(req,env);
   if(!user) return response({error:"UNAUTHORIZED"},401);
+  if(method==="GET"&&path==="/planets/owned"){
+    const rows=await env.DB.prepare("SELECT planet_id,price,created_at FROM planet_ownership WHERE user_id=? ORDER BY created_at DESC").bind(user.id).all();
+    const catalog=new Map(planets().map(p=>[p.id,p]));
+    return response({planets:(rows.results||[]).map(row=>({...catalog.get(row.planet_id),purchasedPrice:row.price,purchasedAt:row.created_at})).filter(Boolean)});
+  }
+  if(method==="POST"&&path==="/planets/buy"){
+    const b=await jsonBody(req),planetId=String(b?.planetId||""),planet=planets().find(p=>p.id===planetId);
+    if(!planet) return response({error:"PLANET_NOT_FOUND"},404);
+    const owned=await env.DB.prepare("SELECT planet_id FROM planet_ownership WHERE user_id=? AND planet_id=?").bind(user.id,planetId).first();
+    if(owned) return response({error:"ALREADY_OWNED"},409);
+    const tx=crypto.randomUUID();
+    const results=await env.DB.batch([
+      env.DB.prepare("INSERT OR IGNORE INTO planet_ownership(user_id,planet_id,price,created_at) SELECT ?,?,?,datetime('now') WHERE EXISTS(SELECT 1 FROM wallets WHERE user_id=? AND balance>=?) AND NOT EXISTS(SELECT 1 FROM planet_ownership WHERE user_id=? AND planet_id=?)").bind(user.id,planetId,planet.price,user.id,planet.price,user.id,planetId),
+      env.DB.prepare("UPDATE wallets SET balance=balance-? WHERE user_id=? AND balance>=? AND changes()=1").bind(planet.price,user.id,planet.price),
+      env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'planet_purchase',? WHERE changes()=1").bind(user.id,-planet.price,tx)
+    ]);
+    if(!results[0].meta.changes){
+      const already=await env.DB.prepare("SELECT planet_id FROM planet_ownership WHERE user_id=? AND planet_id=?").bind(user.id,planetId).first();
+      return response({error:already?"ALREADY_OWNED":"INSUFFICIENT_TOKENS"},already?409:402);
+    }
+    if(results.some(r=>!r.meta.changes)) return response({error:"PURCHASE_CONFLICT"},409);
+    return response({ok:true,planet,paid:planet.price,fee:0},201);
+  }
   if(method==="GET"&&path==="/wallet"){
     const w=await env.DB.prepare("SELECT balance FROM wallets WHERE user_id=?").bind(user.id).first();
     const ledger=await env.DB.prepare("SELECT delta,kind,reference,created_at FROM wallet_ledger WHERE user_id=? ORDER BY id DESC LIMIT 50").bind(user.id).all();
@@ -166,8 +190,8 @@ async function route(req, env, url) {
     return response({ok:true,tokenAmount:TOKEN_GRANT});
   }
   if(method==="GET"&&path==="/market/listings"){
-    const rows=await env.DB.prepare("SELECT l.id,l.specimen_id,l.seller_id,l.price,l.created_at,s.name,s.form,s.generation,s.fitness,s.planet_id FROM listings l JOIN specimens s ON s.id=l.specimen_id WHERE l.status='active' ORDER BY l.created_at DESC LIMIT 100").all();
-    return response({listings:(rows.results||[]).filter(x=>x.seller_id!==user.id)});
+    const rows=await env.DB.prepare("SELECT l.id,l.specimen_id,l.price,l.created_at,s.name,s.form,s.generation,s.fitness,s.planet_id FROM listings l JOIN specimens s ON s.id=l.specimen_id WHERE l.status='active' AND l.seller_id<>? ORDER BY l.created_at DESC LIMIT 100").bind(user.id).all();
+    return response({listings:rows.results||[]});
   }
   if(method==="POST"&&path==="/market/list"){
     const b=await jsonBody(req),specimenId=String(b?.specimenId||""),price=Number(b?.price);
@@ -181,6 +205,17 @@ async function route(req, env, url) {
     ]);
     if(!result[0].meta.changes||!result[1].meta.changes) return response({error:"LISTING_CONFLICT"},409);
     return response({ok:true,listingId:id},201);
+  }
+  if(method==="POST"&&path==="/market/cancel"){
+    const b=await jsonBody(req),listingId=String(b?.listingId||"");
+    const listing=await env.DB.prepare("SELECT specimen_id FROM listings WHERE id=? AND seller_id=? AND status='active'").bind(listingId,user.id).first();
+    if(!listing) return response({error:"LISTING_UNAVAILABLE"},404);
+    const results=await env.DB.batch([
+      env.DB.prepare("UPDATE listings SET status='cancelled' WHERE id=? AND seller_id=? AND status='active'").bind(listingId,user.id),
+      env.DB.prepare("UPDATE specimens SET status='owned' WHERE id=? AND owner_id=? AND status='listed' AND changes()=1").bind(listing.specimen_id,user.id)
+    ]);
+    if(results.some(r=>!r.meta.changes)) return response({error:"LISTING_CONFLICT"},409);
+    return response({ok:true,listingId});
   }
   if(method==="POST"&&path==="/market/buy"){
     const b=await jsonBody(req),listingId=String(b?.listingId||"");
@@ -201,14 +236,19 @@ async function route(req, env, url) {
     return response({ok:true,specimenId:listing.specimen_id,paid:listing.price,fee:0});
   }
   if(method==="POST"&&path==="/specimens/register"){
-    const b=await jsonBody(req),id=String(b?.id||""),planetId=String(b?.planetId||""),name=String(b?.name||"موجود دیجیتال").slice(0,100),form=String(b?.form||"").slice(0,80),dna=String(b?.dna||"").toUpperCase();
-    if(!id||!planetId||!/^[ACGT]{1,100000}$/.test(dna)) return response({error:"INVALID_SPECIMEN"},400);
-    await env.DB.prepare("INSERT INTO specimens(id,owner_id,planet_id,name,form,dna,generation,fitness,status,created_at) VALUES(?,?,?,?,?,?,?,?, 'owned',datetime('now'))")
-      .bind(id,user.id,planetId,name,form,await sha256(dna),clamp(Number(b.generation)||0,0,1e9),clamp(Number(b.fitness)||0,0,1)).run();
-    return response({ok:true,specimenId:id},201);
+    const b=await jsonBody(req),clientKey=String(b?.clientKey||"").slice(0,180),planetId=String(b?.planetId||""),name=String(b?.name||"موجود دیجیتال").slice(0,100),form=String(b?.form||"").slice(0,80),dna=String(b?.dna||"").toUpperCase();
+    if(!clientKey||!planetId||!/^[ACGT]{1,100000}$/.test(dna)) return response({error:"INVALID_SPECIMEN"},400);
+    const existing=await env.DB.prepare("SELECT id FROM specimens WHERE owner_id=? AND client_key=?").bind(user.id,clientKey).first();
+    if(existing) return response({ok:true,specimenId:existing.id,alreadyRegistered:true});
+    const id=crypto.randomUUID();
+    await env.DB.prepare("INSERT OR IGNORE INTO specimens(id,owner_id,client_key,planet_id,name,form,dna,generation,fitness,status,created_at) VALUES(?,?,?,?,?,?,?,?,?,'owned',datetime('now'))")
+      .bind(id,user.id,clientKey,planetId,name,form,dna,clamp(Number(b.generation)||0,0,1e9),clamp(Number(b.fitness)||0,0,1)).run();
+    const saved=await env.DB.prepare("SELECT id FROM specimens WHERE owner_id=? AND client_key=?").bind(user.id,clientKey).first();
+    if(!saved) return response({error:"SPECIMEN_REGISTER_FAILED"},409);
+    return response({ok:true,specimenId:saved.id,alreadyRegistered:saved.id!==id},201);
   }
   if(method==="GET"&&path==="/collection"){
-    const rows=await env.DB.prepare("SELECT id,planet_id,name,form,generation,fitness,status,created_at FROM specimens WHERE owner_id=? ORDER BY created_at DESC LIMIT 250").bind(user.id).all();
+    const rows=await env.DB.prepare("SELECT s.id,s.client_key,s.planet_id,s.name,s.form,s.dna,s.generation,s.fitness,s.status,s.created_at,l.id AS listing_id FROM specimens s LEFT JOIN listings l ON l.specimen_id=s.id AND l.status='active' WHERE s.owner_id=? ORDER BY created_at DESC LIMIT 250").bind(user.id).all();
     return response({specimens:rows.results||[]});
   }
   return response({error:"NOT_FOUND"},404);

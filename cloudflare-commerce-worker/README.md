@@ -44,3 +44,12 @@ server-issued provenance or a server-authoritative simulation.
 The current Android app is not yet wired to these endpoints. Local credits remain local prototype
 credits and are not purchased tokens. Live billing and online trading are not active until
 the app integration and Cloudflare deployment steps above are completed.
+
+
+## Android client integration (current branch)
+
+The Android asset bundle includes `planet-commerce-client.js` and `planet-commerce-ui.js`. Open the Collection and Shop screen, enter the deployed HTTPS Worker URL, and connect. Email registration requires a working Resend sender and a verified account before the wallet is available. The UI keeps prototype/local credits separate from server tokens.
+
+The client can sync local specimens using a per-account idempotency key, list owned specimens for sale, cancel an active listing, buy another player's listing with zero fee, and buy one of the 100 server-priced planets. The Worker stores the original DNA sequence and returns it only through that owner's authenticated collection endpoint; public listings do not expose DNA. D1 must be created from the updated `schema.sql` before deploying this Worker. A pre-existing D1 database needs a migration adding `specimens.client_key`, its unique owner/key constraint, and `planet_ownership` before the updated Worker can run.
+
+This does not yet make purchased planets renderable in the galaxy viewer. Google OAuth UI/native token acquisition and Cafe Bazaar's Android purchase SDK are also not yet wired; the UI does not claim those flows are live. Do not enable real purchases until Cloudflare and Bazaar verification are deployed and tested.

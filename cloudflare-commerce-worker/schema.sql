@@ -21,12 +21,18 @@ CREATE TABLE IF NOT EXISTS purchases (
   token_amount INTEGER NOT NULL, created_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS specimens (
-  id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES users(id), planet_id TEXT NOT NULL,
-  name TEXT NOT NULL, form TEXT NOT NULL, dna TEXT NOT NULL, generation INTEGER NOT NULL DEFAULT 0,
+  id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES users(id), client_key TEXT NOT NULL,
+  planet_id TEXT NOT NULL, name TEXT NOT NULL, form TEXT NOT NULL, dna TEXT NOT NULL, generation INTEGER NOT NULL DEFAULT 0,
   fitness REAL NOT NULL DEFAULT 0, status TEXT NOT NULL CHECK(status IN ('owned','listed')),
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL, UNIQUE(owner_id,client_key)
 );
 CREATE INDEX IF NOT EXISTS specimens_owner_idx ON specimens(owner_id,status);
+CREATE TABLE IF NOT EXISTS planet_ownership (
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  planet_id TEXT NOT NULL, price INTEGER NOT NULL CHECK(price > 0), created_at TEXT NOT NULL,
+  PRIMARY KEY(user_id,planet_id)
+);
+CREATE INDEX IF NOT EXISTS planet_ownership_user_idx ON planet_ownership(user_id,created_at);
 CREATE TABLE IF NOT EXISTS listings (
   id TEXT PRIMARY KEY, specimen_id TEXT NOT NULL UNIQUE REFERENCES specimens(id),
   seller_id TEXT NOT NULL REFERENCES users(id), buyer_id TEXT REFERENCES users(id),

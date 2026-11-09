@@ -3,6 +3,7 @@ const assert=require("node:assert/strict");
 const fs=require("node:fs");
 (async()=>{
  const source=fs.readFileSync(require("node:path").join(__dirname,"..","cloudflare-commerce-worker/index.js"),"utf8");
+ const schema=fs.readFileSync(require("node:path").join(__dirname,"..","cloudflare-commerce-worker/schema.sql"),"utf8");
  const encoded=Buffer.from(source).toString("base64");
  const mod=await import("data:text/javascript;base64,"+encoded);
  const catalog=mod.planets();
@@ -15,5 +16,9 @@ const fs=require("node:fs");
  assert.equal(mod.TOKEN_PRODUCT,"planet_tokens_200");
  assert.equal(mod.TOKEN_GRANT,200);
  assert.equal(mod.WELCOME_GRANT,20);
+ assert.ok(source.includes('path===" /planets/buy"'.replace(" ", "")),"server-priced planet purchase endpoint exists");
+ assert.ok(source.includes('path===" /market/cancel"'.replace(" ", "")),"seller can cancel an active listing");
+ assert.ok(schema.includes("UNIQUE(owner_id,client_key)"),"specimen sync is idempotent per account");
+ assert.ok(schema.includes("CREATE TABLE IF NOT EXISTS planet_ownership"),"purchased planet ownership persists in D1");
  console.log("Planet commerce catalog and token contract tests passed.");
 })().catch(error=>{console.error(error);process.exit(1);});

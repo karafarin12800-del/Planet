@@ -54,8 +54,8 @@ assert.ok(html.includes("منبع بافت روز زمین: Solar System Scope")
 assert.ok(workflow.includes("earth-daymap-4k.jpg"), "Android build includes the downscaled map");
 assert.ok(workflow.includes("Pillow"), "CI uses a reproducible image resize step");
 assert.ok(workflow.includes("resize((4096, 2048)"), "CI creates a 4K power-of-two texture");
-assert.ok(sw.includes("planet-pwa-v25-collection-commerce"), "PWA cache key was bumped");
-assert.ok(imageContract.includes("planet-pwa-v25-collection-commerce"), "existing image contract agrees with new cache version");
+assert.ok(sw.includes("planet-pwa-v26-online-market"), "PWA cache key was bumped");
+assert.ok(imageContract.includes("planet-pwa-v26-online-market"), "existing image contract agrees with new cache version");
 
 // Performance regressions: large timeline jumps must yield to the browser between generations.
 const catchUpStart = html.indexOf("function catchUpEvolution(targetAge)");
@@ -128,8 +128,15 @@ assert.ok(html.includes("actAgent(agent,s,env,neighbors,context,speciesBaseFitne
 assert.ok(!html.includes("agent.fitness=clamp(.25*calculateFitness(s,lifeAgeMa)"), "fitness calculation is not repeated for every individual in a species");
 assert.ok(!html.includes("ensureDinosaurLineages()"), "evolution does not call the removed dinosaur-seeding function");
 assert.ok(html.includes("Evolution step failed; orbital rendering continues"), "an ecology exception pauses evolution without killing the planet render loop");
-assert.ok(sw.includes("planet-pwa-v25-collection-commerce"), "PWA cache invalidation includes collection and commerce");
+assert.ok(sw.includes("planet-pwa-v26-online-market"), "PWA cache invalidation includes collection and commerce");
 assert.ok(html.includes("planet-collection-commerce.js"), "collection commerce module is loaded");
+assert.ok(html.includes("planet-commerce-client.js"), "online API client is loaded");
+assert.ok(html.includes("planet-commerce-ui.js"), "online commerce UI is loaded");
+assert.ok(html.includes("commerceSyncSpecimens"), "local specimens can sync to the online account");
+assert.ok(html.includes("ثبت آگهی آنلاین"), "online specimen listing action is present");
+assert.ok(html.includes("commercePlanetCatalog"), "server-priced planet catalog is rendered");
+assert.ok(sw.includes("./planet-commerce-client.js") && sw.includes("./planet-commerce-ui.js"), "online commerce modules are cached");
+assert.ok(workflow.includes("planet-commerce-client.js") && workflow.includes("planet-commerce-ui.js"), "Android bundles online commerce modules");
 assert.ok(html.includes("data-collect-species"), "living species can be added as collection specimens");
 assert.ok(html.includes("buyMarketCreature") && html.includes("closeCollectionShop"), "collection and shop controls are present");
 assert.ok(html.includes("while(evolutionAccumulator>=.75&&lifeAgeMa<4540)"), "the ecology loop stops stepping after the geological timeline reaches its endpoint");
