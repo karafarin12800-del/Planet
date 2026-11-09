@@ -74,9 +74,12 @@
       if(index<=100){planet.commercePlanetId="market-world-"+String(index).padStart(3,"0");planet.baseName=planet.baseName||planet.name;planet.name=planet.baseName+" "+String(index).padStart(3,"0");purchasable.push(planet);}
       else planet.commercePlanetId=null;
     }
+    const starterSystems=new Set();
+    const starters=new Set();
+    for(const planet of purchasable){if(!starterSystems.has(planet.systemId)){starterSystems.add(planet.systemId);starters.add(planet.commercePlanetId);planet.priceTokens=50;}}
     const score=p=>Number(p.lifePotential||0)*.72+Number(p.specialSpeciesPotential||0)*.28;
-    purchasable.slice().sort((a,b)=>score(a)-score(b)||a.commercePlanetId.localeCompare(b.commercePlanetId))
-      .forEach((planet,rank)=>{planet.priceTokens=100+Math.round(rank*900/Math.max(1,purchasable.length-1));});
+    const regular=purchasable.filter(p=>!starters.has(p.commercePlanetId)).sort((a,b)=>score(a)-score(b)||a.commercePlanetId.localeCompare(b.commercePlanetId));
+    regular.forEach((planet,rank)=>{planet.priceTokens=100+Math.round(rank*900/Math.max(1,regular.length-1));});
     return galaxy;
   }
   function findSystem(galaxy,id){return galaxy.systems.find(s=>s.id===id)||null;}

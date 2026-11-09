@@ -7,7 +7,7 @@ const JSON_HEADERS = { "content-type": "application/json; charset=utf-8", "cache
 const TOKEN_PRODUCTS = Object.freeze({planet_tokens_200:200,planet_tokens_500:500,planet_tokens_1000:1000});
 const VIP_PRODUCT = "planet_vip_60d";
 const VIP_DAILY_GRANT = 10;
-const WELCOME_GRANT = 100;
+const WELCOME_GRANT = 120;
 const STARTER_GRANT = 20;
 const GALLERY_ENTRY_GRANT = 10;
 const CREATOR_COMMISSION_RATE = 0.05;
@@ -55,9 +55,11 @@ function planets(){
     atmosphere:p.atmosphere,biomes:p.biomes,features:p.biomes});
   }
  }
+ const starterSystems=new Set(),starters=new Set();
+ for(const planet of rows){const system=planet.galaxyId.split("-p")[0];if(!starterSystems.has(system)){starterSystems.add(system);starters.add(planet.galaxyPlanetId);planet.price=50;}}
  const score=p=>Number(p.lifePotential||0)*.72+Number(p.specialSpeciesPotential||0)*.28;
- rows.slice().sort((a,b)=>score(a)-score(b)||a.galaxyPlanetId.localeCompare(b.galaxyPlanetId))
-   .forEach((planet,rank)=>{planet.price=100+Math.round(rank*900/Math.max(1,rows.length-1));});
+ const regular=rows.filter(p=>!starters.has(p.galaxyPlanetId)).sort((a,b)=>score(a)-score(b)||a.galaxyPlanetId.localeCompare(b.galaxyPlanetId));
+ regular.forEach((planet,rank)=>{planet.price=100+Math.round(rank*900/Math.max(1,regular.length-1));});
  return rows;
 }
 async function jsonBody(req) { try { return await req.json(); } catch { return null; } }
@@ -68,7 +70,7 @@ async function sendVerification(email, code, env) {
   if(!r.ok) throw new Error("EMAIL_DELIVERY_FAILED");
 }
 async function grantWelcome(db,userId) {
-  // New accounts receive 20 starter tokens plus the 100-token welcome grant.
+  // New email accounts receive 20 starter tokens plus a 120-token welcome grant (140 total).
   const results=await db.batch([
     db.prepare("UPDATE users SET welcome_granted_at=datetime('now') WHERE id=? AND welcome_granted_at IS NULL AND verified_at IS NOT NULL").bind(userId),
     db.prepare("INSERT INTO wallets(user_id,balance) SELECT ?,? WHERE changes()=1 ON CONFLICT(user_id) DO UPDATE SET balance=balance+excluded.balance").bind(userId,STARTER_GRANT),

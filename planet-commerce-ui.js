@@ -75,7 +75,7 @@ $("commerceRegister").addEventListener("click",async()=>{
  catch(error){status(error.message);}
 });
 $("commerceVerify").addEventListener("click",async()=>{
- try{const result=await client.verifyEmail($("commerceEmail").value.trim(),$("commerceVerifyCode").value.trim());authView();status("ایمیل تأیید شد؛ "+Number(result.totalTokens||result.welcomeTokens||100)+" توکن خوش‌آمدگویی اضافه شد.");await refresh();retryPendingBazaarToken();await notifyAccountReady();}
+ try{const result=await client.verifyEmail($("commerceEmail").value.trim(),$("commerceVerifyCode").value.trim());authView();status("ایمیل تأیید شد؛ "+Number(result.totalTokens||140)+" توکن خوش‌آمدگویی اضافه شد.");await refresh();retryPendingBazaarToken();await notifyAccountReady();}
  catch(error){status(error.message);}
 });
 $("commerceLogin").addEventListener("click",async()=>{

@@ -125,12 +125,17 @@
     doc.body.appendChild(intro);
     const genomeIntroStyle=doc.createElement("style");genomeIntroStyle.textContent=".pg-intro{position:fixed;inset:0;z-index:100800;display:none;align-items:center;justify-content:center;padding:16px;background:radial-gradient(ellipse at 50% 25%,#153d5b,#040b18 70%);color:#eaf7ff;font-family:Tahoma,system-ui}.pg-intro.open{display:flex}.pg-intro-card{width:min(560px,100%);border:1px solid #55c6dc66;border-radius:22px;background:linear-gradient(155deg,#102b45f5,#071321f8);padding:24px;box-shadow:0 20px 70px #000b;text-align:center}.pg-intro-emblem{font-size:48px}.pg-intro-card small{color:#82dff0}.pg-intro-card h2{font-size:23px}.pg-intro-card p{font-size:13px;line-height:2.1;color:#c4d7e9;text-align:right}.pg-intro-card button{width:100%;margin:12px 0}.pg-wallet{color:#a8f0e0;font-size:11px;border:1px solid #4fc4ae66;padding:8px;border-radius:10px;white-space:nowrap}.pg-genome-panel{border:1px solid #53b9c977;border-radius:14px;background:linear-gradient(155deg,#0d2b3d,#081a2d);padding:12px;margin-top:12px}.pg-genome-panel h4{margin:12px 0 8px;color:#d7f8ff;font-size:11px}.pg-genome-note{color:#a4bfd3;font-size:10px;line-height:1.8}.pg-genome-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.pg-genome-chip{background:#102a42;border:1px solid #51758d66;border-radius:9px;padding:8px;color:#d9edff;text-align:right}.pg-genome-chip.chosen{border-color:#63ddc7;background:#15483f}.pg-genome-chip b,.pg-genome-chip small{display:block}.pg-genome-chip small{font:9px monospace;direction:ltr;margin-top:5px}.pg-genome-controls{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin:10px 0}.pg-genome-controls select{flex:1;min-width:100px;background:#071321;color:#eff8ff;border:1px solid #35516d;border-radius:8px;padding:8px;font:10px Tahoma}.pg-genome-controls label{font-size:10px}.pg-genome-controls input{width:90px}.pg-genome-progress{height:7px;background:#20384d;border-radius:9px;overflow:hidden}.pg-genome-progress i{display:block;height:100%;width:0;background:#56d3bd}.pg-creature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:7px}.pg-creature-card{background:#0c2035;border:1px solid #42637c66;border-radius:10px;padding:7px}.pg-creature-card canvas{display:block;width:100%;height:72px;background:#0a1828;border-radius:7px}.pg-creature-card b,.pg-creature-card small{display:block;margin:5px 0;font-size:10px}.pg-creature-card small{color:#a9c1d7}.pg-creature-card button{width:100%;white-space:normal}.pg-album-list{display:grid;gap:5px}.pg-album-item{padding:7px;border-radius:8px;background:#10243a;color:#bad3e7;font-size:10px}@media(max-width:650px){.pg-head-actions{flex-wrap:wrap;justify-content:flex-end}.pg-wallet{font-size:9px}.pg-intro-card{padding:18px}}";doc.head.appendChild(genomeIntroStyle);
     $("pgGenomeIntroContinue").addEventListener("click",continueIntoGenomeGame);
-    $("pgWalletBtn").addEventListener("click",()=>openAccountSection("commerceWalletSection"));
+    $("pgWalletBtn").addEventListener("click",openWallet);
     $("pgAlbumBtn").addEventListener("click",()=>openAccountSection("commerceGallerySection"));
     $("pgMarketBtn").addEventListener("click",()=>openAccountSection("commerceMarketSection"));
     const canvas=$("pgCanvas"),ctxNote=$("pgCanvasNote");
     let mode="galaxy",selectedSystemId=galaxy.activeSystemId,selectedPlanetId=galaxy.activePlanetId,open=false,raf=0,renderer=null,lastNotice="";
     let ownedCommerceIds=new Set();
+    const GUEST_WALLET_KEY="planet-guest-wallet:v1",GUEST_PLANETS_KEY="planet-guest-owned-planets:v1";
+    function guestWallet(){let value=null;try{value=win.localStorage.getItem(GUEST_WALLET_KEY);if(value===null){value="100";win.localStorage.setItem(GUEST_WALLET_KEY,value);}}catch(e){value=value===null?"100":value;}return Math.max(0,Number(value)||0);}
+    function setGuestWallet(value){const next=Math.max(0,Math.floor(Number(value)||0));try{win.localStorage.setItem(GUEST_WALLET_KEY,String(next));}catch(e){}playerTokenBalance=next;updateWalletBadge(next);return next;}
+    function guestOwnedPlanets(){try{const value=JSON.parse(win.localStorage.getItem(GUEST_PLANETS_KEY)||"[]");return Array.isArray(value)?value:[];}catch(e){return [];}}
+    function saveGuestOwnedPlanets(){try{win.localStorage.setItem(GUEST_PLANETS_KEY,JSON.stringify(Array.from(ownedCommerceIds)));}catch(e){}}
     let camera={yaw:-0.65,pitch:0.58,distance:25,target:[0,0,0]};
     let pointerState=null,lastFrame=0;
     const activeSystem=function(){return galaxy.systems.find(s=>s.id===selectedSystemId)||galaxy.systems[0];};
@@ -148,7 +153,10 @@
       const el=$("pgWalletBadge");if(el)el.textContent="کیف پول · "+(playerTokenBalance==null?"--":playerTokenBalance.toLocaleString("fa-IR"))+" توکن";
     }
     async function refreshAccountSnapshot(){
-      const c=win.PlanetCommerceClient;if(!c||!c.hasSession())return;
+      const c=win.PlanetCommerceClient;
+      if(!c||!c.hasSession()){
+        playerProfile=null;ownedCommerceIds=new Set(guestOwnedPlanets());updateWalletBadge(guestWallet());if(open)renderUI();return;
+      }
       const r=await Promise.all([c.wallet(),c.ownedPlanets(),c.profile(),c.planets()]);
       playerTokenBalance=Number(r[0].balance||0);playerProfile=r[2]||null;
       ownedCommerceIds=new Set((r[1].planets||[]).map(x=>x.galaxyPlanetId).filter(Boolean));
@@ -163,6 +171,21 @@
     function openAccountSection(id){
       if(win.PlanetCommerceUI&&win.PlanetCommerceUI.openSection)win.PlanetCommerceUI.openSection(id);
       else $("openCollectionShop")?.click();
+    }
+    function openWallet(){
+      const c=win.PlanetCommerceClient;
+      if(c&&c.hasSession()){openAccountSection("commerceWalletSection");return;}
+      let panel=$("pgGuestWalletDialog");
+      if(!panel){
+        panel=doc.createElement("div");panel.id="pgGuestWalletDialog";
+        panel.style.cssText="position:absolute;inset:0;z-index:40;display:none;align-items:center;justify-content:center;padding:18px;background:#020a14dd";
+        panel.innerHTML='<div style="width:min(100%,360px);padding:18px;border:1px solid #5a8ba8;border-radius:16px;background:#0b2035;color:#eaf7ff;text-align:center"><h3 style="margin:0 0 10px">کیف پول مهمان</h3><p id="pgGuestWalletBalance" style="font-size:22px;font-weight:800"></p><p style="font-size:12px;line-height:1.9;color:#b7cce0">۱۰۰ توکن آزمایشی برای خرید سیاره و آزمایش بازی در این دستگاه داری. این اعتبار به حساب آنلاین منتقل نمی‌شود.</p><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="pg-btn" id="pgGuestWalletBack" type="button">بازگشت به بازی</button><button class="pg-btn primary" id="pgGuestWalletBuy" type="button">خرید توکن</button></div></div>';
+        overlay.appendChild(panel);
+        panel.querySelector("#pgGuestWalletBack").addEventListener("click",()=>panel.style.display="none");
+        panel.querySelector("#pgGuestWalletBuy").addEventListener("click",()=>{panel.style.display="none";openAccountSection("commerceWalletSection");showNotice("برای خرید توکن واقعی، ابتدا حساب ایمیلی یا Google بساز.");});
+      }
+      panel.querySelector("#pgGuestWalletBalance").textContent=guestWallet().toLocaleString("fa-IR")+" توکن";
+      panel.style.display="flex";
     }
     function gameSessionKey(p){return String(playerProfile&&playerProfile.id||"local")+":"+String(p.commercePlanetId||p.id);}
     function localDayKey(){const parts=new Intl.DateTimeFormat("en-CA",{year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const part=type=>parts.find(x=>x.type===type).value;return part("year")+"-"+part("month")+"-"+part("day");}
@@ -193,7 +216,7 @@
       const dailyDay=localDayKey(),daily=g.createDailyPool(seedInfo.seed,dailyDay,earth);
       const storageKey=key;let saved=null;try{saved=JSON.parse(win.localStorage.getItem("planet-genome-game:v1:"+storageKey)||"null");}catch(e){}
       const previousSelection=saved&&saved.dailyDay===dailyDay?Array.from(saved.selected||[]).filter(id=>daily.some(x=>x.id===id)):[];
-      const s={planet:p,seed:seedInfo.seed,daily,dailyDay,storageKey,accountId:String(playerProfile.id||"local"),
+      const s={planet:p,seed:seedInfo.seed,daily,dailyDay,storageKey,accountId:String(playerProfile&&playerProfile.id||"local"),
         selected:new Set(previousSelection.length>=2?previousSelection:daily.slice(0,2).map(x=>x.id)),state:saved&&saved.state?g.restore(saved.state):null,
         started:!!(saved&&saved.started),completed:!!(saved&&saved.completed),elapsedSeconds:Number(saved&&saved.elapsedSeconds)||0,
         simulatedYears:Number(saved&&saved.simulatedYears)||0,speed:Math.max(1,Math.min(8,Number(saved&&saved.speed)||1)),
@@ -451,10 +474,29 @@
       }
     }
     async function buyCommercePlanet(commercePlanetId){
+      const found=galaxy.systems.flatMap(system=>system.planets.map(planet=>({system,planet}))).find(x=>x.planet.commercePlanetId===commercePlanetId);
+      if(!found){showNotice("سیاره در نقشهٔ کهکشان پیدا نشد.");return;}
       const client=win.PlanetCommerceClient;
-      if(!client||!client.hasSession()){showNotice("برای خرید سیاره ابتدا وارد حساب بازیکن شو.");const account=$("openCollectionShop");if(account)account.click();return;}
-      try{const result=await client.buyPlanet("planet-"+String(commercePlanetId).slice(-3));ownedCommerceIds.add(commercePlanetId);showNotice("سیارهٔ "+result.planet.name+" خریداری شد؛ زیست‌کرهٔ اختصاصی آمادهٔ راه‌اندازی است.");await refreshAccountSnapshot();renderUI();persist();}
-      catch(error){showNotice(String(error&&error.message||error));}
+      try{
+        if(client&&client.hasSession()){
+          const result=await client.buyPlanet("planet-"+String(commercePlanetId).slice(-3));
+          ownedCommerceIds.add(commercePlanetId);
+          showNotice("سیارهٔ "+result.planet.name+" خریداری شد؛ منوی اختصاصی سیاره باز شد.");
+          await refreshAccountSnapshot();
+        }else{
+          if(ownedCommerceIds.has(commercePlanetId)){showNotice("این سیاره قبلاً در حالت مهمان خریداری شده است.");}
+          else{
+            const price=Number(found.planet.priceTokens)||50,balance=guestWallet();
+            if(balance<price){showNotice("توکن مهمان کافی نیست؛ یک سیارهٔ ارزان‌تر انتخاب کن یا حساب بساز.");return;}
+            setGuestWallet(balance-price);ownedCommerceIds.add(commercePlanetId);saveGuestOwnedPlanets();
+            showNotice("سیاره با "+price.toLocaleString("fa-IR")+" توکن آزمایشی خریداری شد؛ منوی افزودن موجود باز شد.");
+          }
+        }
+        selectedSystemId=found.system.id;selectedPlanetId=found.planet.id;
+        if(!found.planet.discovered)Engine.discoverPlanet(galaxy,found.planet.id);
+        Engine.selectPlanet(galaxy,found.planet.id);mode="system";persist();renderUI();
+        if(renderer)renderer.invalidate();
+      }catch(error){showNotice(String(error&&error.message||error));}
     }
     overlay.addEventListener("click",function(event){
       const button=event.target.closest("[data-pg-action]");if(!button)return;
@@ -473,11 +515,36 @@
     $("pgZoomOut").addEventListener("click",function(){camera.distance=clamp(camera.distance*1.22,mode==="galaxy"?10:5,55);if(renderer)renderer.invalidate();});
     overlay.addEventListener("click",function(event){if(event.target===overlay)close();});
     doc.addEventListener("keydown",function(event){if(event.key==="Escape"&&open)close();});
-    launch.addEventListener("click",showIntro);
+    async function hasAnyCollectedSpecies(){
+      const client=win.PlanetCommerceClient;
+      if(client&&client.hasSession()){
+        try{const result=await client.collection();return !!(result.specimens&&result.specimens.length);}
+        catch(e){}
+      }
+      try{
+        for(let i=0;i<win.localStorage.length;i++){
+          const key=win.localStorage.key(i);if(!key||!key.startsWith("planet-genome-game:v1:"))continue;
+          const saved=JSON.parse(win.localStorage.getItem(key)||"null");
+          if(saved&&Array.isArray(saved.specimens)&&saved.specimens.length)return true;
+        }
+      }catch(e){}
+      return false;
+    }
+    launch.addEventListener("click",async function(){
+      if(!await hasAnyCollectedSpecies()){
+        showNotice("اول باید یک گونه به دست بیاوری؛ از دکمهٔ «سیاره‌ها» وارد منظومه شو، یک سیاره بخر و از منوی آن ژنوم‌ها را وارد کن تا اولین موجودت ساخته شود.");
+        return;
+      }
+      showIntro();
+    });
+    const exploreLaunch=doc.createElement("button");
+    exploreLaunch.type="button";exploreLaunch.id="planet-galaxy-explore";exploreLaunch.className="icon-btn pg-launch";exploreLaunch.textContent="🪐 سیاره‌ها";exploreLaunch.setAttribute("aria-label","کاوش سیاره‌ها و افزودن موجود");
+    if(topActions)topActions.insertBefore(exploreLaunch,launch.nextSibling);
+    else doc.body.appendChild(exploreLaunch);
+    exploreLaunch.addEventListener("click",openExplorer);
     function openExplorer(){
       open=true;overlay.classList.add("open");renderUI();
-      const commerce=win.PlanetCommerceClient;
-      if(commerce&&commerce.hasSession())refreshAccountSnapshot().catch(error=>showNotice(error.message||"کیف پول به‌روزرسانی نشد."));
+      refreshAccountSnapshot().catch(error=>showNotice(error.message||"کیف پول به‌روزرسانی نشد."));
       if(renderer){renderer.resize();renderer.start();}
       else{
         try{renderer=createRenderer(win,canvas);renderer.setState(function(){return {mode:mode,galaxy:galaxy,system:activeSystem(),camera:camera};},function(id){if(mode==="galaxy")openSystem(id);else focusPlanet(id);});}
