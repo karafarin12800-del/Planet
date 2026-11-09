@@ -2,7 +2,7 @@ name: Build PLANET Android app
 
 on:
   push:
-    branches: [main, planet-online-market]
+    branches: [main, planet-online-market, planet-cafebazaar-release]
     paths:
       - 'index.html'
       - 'planet-localization.js'
