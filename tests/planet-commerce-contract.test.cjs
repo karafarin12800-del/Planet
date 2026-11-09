@@ -1,0 +1,19 @@
+"use strict";
+const assert=require("node:assert/strict");
+const fs=require("node:fs");
+(async()=>{
+ const source=fs.readFileSync(require("node:path").join(__dirname,"..","cloudflare-commerce-worker/index.js"),"utf8");
+ const encoded=Buffer.from(source).toString("base64");
+ const mod=await import("data:text/javascript;base64,"+encoded);
+ const catalog=mod.planets();
+ assert.equal(catalog.length,100);
+ assert.equal(new Set(catalog.map(x=>x.id)).size,100);
+ assert.equal(new Set(catalog.map(x=>x.name)).size,100);
+ assert.ok(catalog.every(x=>x.price>=150&&x.price<=1000));
+ assert.equal(catalog[0].id,"planet-001");
+ assert.equal(catalog[99].id,"planet-100");
+ assert.equal(mod.TOKEN_PRODUCT,"planet_tokens_200");
+ assert.equal(mod.TOKEN_GRANT,200);
+ assert.equal(mod.WELCOME_GRANT,20);
+ console.log("Planet commerce catalog and token contract tests passed.");
+})().catch(error=>{console.error(error);process.exit(1);});

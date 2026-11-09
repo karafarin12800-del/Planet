@@ -111,3 +111,12 @@ The autonomous biosphere now runs deterministic, per-biome resource cycles with 
 - Added a local-credit shop for optional habitat/gallery cosmetics and bounded transaction history. Collections, balances and cosmetic entitlements are per-device and per-planet in this prototype.
 - Real-money checkout, premium currency purchases, cloud ownership and player-to-player trading are not enabled. They require account identity, server-authoritative inventory, verified platform receipts, idempotent grants, restore/refund flows and fraud controls. Local storage is never proof of a real purchase.
 - No new tutorial or explanatory ecology panel is added to the simulation.
+
+
+### Phase 6 implementation milestone — Cafe Bazaar-first commerce backend foundation
+
+- Added a separate Cloudflare Worker and D1 schema for verified accounts, wallet ledger, Cafe Bazaar receipt records, specimen ownership and listings; the existing AI gateway remains separate.
+- Defined a stable 100-entry planet catalog with persistent IDs and prices bounded from 150 to 1000 tokens.
+- Server policy: a verified account receives 20 welcome tokens once; a server-verified purchase of `planet_tokens_200` grants 200 tokens. Receipt hashes are unique to prevent replay.
+- Marketplace listings use token-denominated prices and transfer the specimen to the buyer while crediting the seller the same amount (zero marketplace fee).
+- **Not live yet:** Android UI integration, Cloudflare deployment/D1 provisioning, Bazaar product configuration and production credentials. Local prototype credits are not purchased tokens. Specimen registration currently cannot prove simulation provenance against a modified client; high-value trading needs server-issued specimen provenance.
