@@ -32,7 +32,6 @@ import androidx.webkit.WebViewClientCompat;
 
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
-import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException;
 
 import org.json.JSONObject;
 
@@ -200,7 +199,7 @@ public final class MainActivity extends ComponentActivity {
                                     GoogleIdTokenCredential.createFrom(
                                             ((CustomCredential) credential).getData());
                             callJs("handleGoogleIdToken", google.getIdToken(), nonce);
-                        } catch (GoogleIdTokenParsingException error) {
+                        } catch (RuntimeException error) {
                             callJs("handleGoogleError", "خواندن پاسخ امن Google ناموفق بود.");
                         }
                     }
