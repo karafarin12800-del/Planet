@@ -84,3 +84,8 @@
 ## Current implementation boundary
 
 The galaxy engine stores catalog metadata, and the new viewer renders a navigable 3D map plus simplified orbital markers. Discovery and active-world selection persist locally. It does not yet create independent planetary terrain, connect each selected planet to a separate life simulation, simulate civilizations, synchronize cloud saves, or process payments. Those remain explicit later phases.
+
+
+### Phase 2 integration milestone — per-planet digital biospheres
+
+The selected catalog planet now emits an active-world change event consumed by the existing autonomous digital biosphere UI. Each stable planet ID receives its own saved biosphere, deterministic initialization seed, speed and live-state metadata. Switching worlds saves the current state and restores the destination state; creating/resetting a biosphere affects only the active planet. The previous single biosphere save is migrated to the original home planet only and retained as a backup. The existing Earth renderer and its separate evolutionary timeline are intentionally not silently relabeled as another planet; world-specific terrain, climate coupling and a true per-world rendering scene remain later integration work.

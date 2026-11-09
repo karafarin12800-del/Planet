@@ -1790,6 +1790,7 @@ html[lang="en"] .scene-coords{direction:ltr}
 
 <script src="./offline-evolution.js"></script>
 <script src="./planet-autonomous-evolution.js"></script>
+<script src="./planet-world-state.js"></script>
 <script id="planet-autonomous-biosphere-ui">
 (function () {
   'use strict';
@@ -1798,21 +1799,30 @@ html[lang="en"] .scene-coords{direction:ltr}
   const Model = window.PlanetAutonomousEvolution;
   if (!Model) return;
   const STORE = 'planet-autonomous-biosphere-v1';
+  const WorldState = window.PlanetWorldState;
   const $ = id => document.getElementById(id);
+  if (!WorldState) return;
+  const homeWorldId = WorldState.getHomeWorldId(localStorage, window.PlanetGalaxyEngine);
+  let activeWorldId = WorldState.getActiveWorldId(localStorage, window.PlanetGalaxyEngine);
   let state, live = false, timer = 0, saveTimer = 0, fastRunning = false, lastWall = Date.now(), liveAccumulator = 0, savedSpeed = 1;
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
-    state = saved && saved.state ? Model.restore(saved.state) : Model.createState();
-    live = saved && Object.prototype.hasOwnProperty.call(saved, 'live') ? !!saved.live : true;
-    savedSpeed = Math.max(1, Math.min(20, Number(saved && saved.speed) || 1));
-    const elapsed = saved && saved.live ? Math.max(0, Math.min(7 * 86400, (Date.now() - Number(saved.lastWall || Date.now())) / 1000)) : 0;
-    const catchupYears = Math.min(2000, Math.floor(elapsed / 10 * Math.max(1, Number(saved.speed) || 1)));
-    if (catchupYears > 0) Model.advanceYears(state, catchupYears);
-  } catch (error) {
-    console.warn('Autonomous biosphere restore failed; starting a clean local world.', error);
-    state = Model.createState();
-    live = true;
+  function restoreWorld(worldId) {
+    const saved = WorldState.load(localStorage, worldId, { homeWorldId: homeWorldId, legacyKey: STORE });
+    try {
+      state = saved && saved.state ? Model.restore(saved.state) : Model.createState(WorldState.seedFor(worldId));
+      live = saved && Object.prototype.hasOwnProperty.call(saved, 'live') ? !!saved.live : true;
+      savedSpeed = Math.max(1, Math.min(20, Number(saved && saved.speed) || 1));
+      const elapsed = saved && saved.live ? Math.max(0, Math.min(7 * 86400, (Date.now() - Number(saved.lastWall || Date.now())) / 1000)) : 0;
+      const catchupYears = Math.min(2000, Math.floor(elapsed / 10 * savedSpeed));
+      if (catchupYears > 0) Model.advanceYears(state, catchupYears);
+    } catch (error) {
+      console.warn('Autonomous biosphere restore failed for ' + worldId + '; starting an isolated local world.', error);
+      state = Model.createState(WorldState.seedFor(worldId));
+      live = true;
+      savedSpeed = 1;
+    }
+    return live;
   }
+  restoreWorld(activeWorldId);
   const style = document.createElement('style');
   style.textContent = [
     '#planet-biosphere-launch{position:fixed;z-index:860;right:12px;bottom:14px;border:1px solid #48c9c1;background:linear-gradient(135deg,#123f50,#102d46);color:#e9ffff;border-radius:13px;padding:11px 14px;font:700 13px Tahoma,system-ui;box-shadow:0 8px 24px #0008}',
@@ -1831,14 +1841,15 @@ html[lang="en"] .scene-coords{direction:ltr}
   launch.setAttribute('aria-haspopup', 'dialog');
   const overlay = document.createElement('section');
   overlay.id = 'planet-biosphere-overlay'; overlay.setAttribute('role', 'dialog'); overlay.setAttribute('aria-modal', 'true');
-  overlay.innerHTML = '<div id="planet-biosphere-panel"><div class="pb-head"><h2>🧬 تکامل خودمختار حیات دیجیتال</h2><button class="pb-close" id="pbClose">✕ بستن</button></div><div class="pb-stats"><div class="pb-stat"><b id="pbYear">۰</b><small>سال شبیه‌سازی‌شده</small></div><div class="pb-stat"><b id="pbGeneration">۰</b><small>نسل‌های مدل</small></div><div class="pb-stat"><b id="pbSpecies">۰</b><small>گونه‌های ثبت‌شده</small></div></div><div class="pb-progress"><i id="pbProgress"></i></div><div class="pb-actions"><button class="pb-btn primary" id="pbFast">⏩ شبیه‌سازی سریع ۲۰۰۰ سال</button><button class="pb-btn" id="pbLive">▶ شروع جهان زنده</button><button class="pb-btn" id="pbReset">↺ جهان تازه</button></div><div class="pb-speed"><label for="pbSpeed">سرعت جهان زنده</label><input id="pbSpeed" type="range" min="1" max="20" value="1"><b id="pbSpeedLabel">×۱</b></div><div class="pb-note" id="pbStatus">جهان آماده است. برای شروع، شبیه‌سازی سریع یا جهان زنده را انتخاب کن.</div><h3>گونه‌های پدیدآمده</h3><div class="pb-species" id="pbSpeciesGrid"></div><h3>تاریخچهٔ رویدادها</h3><div class="pb-events" id="pbEvents"></div><p class="pb-note">این زیست‌کره یک مدل حیات دیجیتال آموزشی است؛ ژنوم ۱۶۸ بازی و نگاشت ژنوتیپ به ظاهر، مصنوعی و فرضی‌اند و پیش‌بینی تکامل واقعی زمین یا زیست‌شناسی موجودات نیستند. تصاویر به‌صورت هندسی و محلی از صفات مدل رسم می‌شوند؛ تولید تصویر با مدل مولد واقعی، قابلیت جداگانه و نیازمند سرویس تصویرسازی است. وضعیت جهان روی همین دستگاه ذخیره می‌شود و همگام‌سازی بین دستگاه‌ها ندارد.</p></div>';
+  overlay.innerHTML = '<div id="planet-biosphere-panel"><div class="pb-head"><div><h2>🧬 تکامل خودمختار حیات دیجیتال</h2><small id="pbWorld" class="pb-note">سیارهٔ فعال</small></div><button class="pb-close" id="pbClose">✕ بستن</button></div><div class="pb-stats"><div class="pb-stat"><b id="pbYear">۰</b><small>سال شبیه‌سازی‌شده</small></div><div class="pb-stat"><b id="pbGeneration">۰</b><small>نسل‌های مدل</small></div><div class="pb-stat"><b id="pbSpecies">۰</b><small>گونه‌های ثبت‌شده</small></div></div><div class="pb-progress"><i id="pbProgress"></i></div><div class="pb-actions"><button class="pb-btn primary" id="pbFast">⏩ شبیه‌سازی سریع ۲۰۰۰ سال</button><button class="pb-btn" id="pbLive">▶ شروع جهان زنده</button><button class="pb-btn" id="pbReset">↺ جهان تازه</button></div><div class="pb-speed"><label for="pbSpeed">سرعت جهان زنده</label><input id="pbSpeed" type="range" min="1" max="20" value="1"><b id="pbSpeedLabel">×۱</b></div><div class="pb-note" id="pbStatus">جهان آماده است. برای شروع، شبیه‌سازی سریع یا جهان زنده را انتخاب کن.</div><h3>گونه‌های پدیدآمده</h3><div class="pb-species" id="pbSpeciesGrid"></div><h3>تاریخچهٔ رویدادها</h3><div class="pb-events" id="pbEvents"></div><p class="pb-note">این زیست‌کره یک مدل حیات دیجیتال آموزشی است؛ ژنوم ۱۶۸ بازی و نگاشت ژنوتیپ به ظاهر، مصنوعی و فرضی‌اند و پیش‌بینی تکامل واقعی زمین یا زیست‌شناسی موجودات نیستند. تصاویر به‌صورت هندسی و محلی از صفات مدل رسم می‌شوند؛ تولید تصویر با مدل مولد واقعی، قابلیت جداگانه و نیازمند سرویس تصویرسازی است. وضعیت جهان روی همین دستگاه ذخیره می‌شود و همگام‌سازی بین دستگاه‌ها ندارد.</p></div>';
   document.body.appendChild(launch); document.body.appendChild(overlay);
   $('pbSpeed').value = String(savedSpeed); $('pbSpeedLabel').textContent = '×' + savedSpeed;
   function save() {
-    try { localStorage.setItem(STORE, JSON.stringify({ state: Model.serialize(state), live, speed: Number($('pbSpeed').value) || 1, lastWall: Date.now() })); }
-    catch (e) { $('pbStatus').textContent = 'ذخیره‌سازی محلی با محدودیت حافظه روبه‌رو شد: ' + e.message; }
+    const ok = WorldState.save(localStorage, activeWorldId, { state: Model.serialize(state), live, speed: Number($('pbSpeed').value) || 1, lastWall: Date.now() });
+    if (!ok) $('pbStatus').textContent = 'ذخیره‌سازی محلی این سیاره در دسترس نیست؛ فضای ذخیره‌سازی مرورگر را بررسی کن.';
   }
   function render() {
+    $('pbWorld').textContent = 'سیارهٔ فعال: ' + activeWorldId;
     $('pbYear').textContent = state.year.toLocaleString('fa-IR');
     $('pbGeneration').textContent = state.generation.toLocaleString('fa-IR');
     $('pbSpecies').textContent = state.species.length.toLocaleString('fa-IR');
@@ -1912,8 +1923,22 @@ html[lang="en"] .scene-coords{direction:ltr}
   $('pbLive').addEventListener('click', startLive);
   $('pbSpeed').addEventListener('input', function () { $('pbSpeedLabel').textContent = '×' + this.value; save(); });
   $('pbReset').addEventListener('click', function () {
-    if (!window.confirm('تمام تاریخچهٔ این جهان محلی پاک و یک زیست‌کرهٔ تازه ساخته شود؟')) return;
-    stopLive(); state = Model.createState(); render(); save(); setStatus('جهان تازه با چهار تبار بنیان‌گذار ساخته شد.');
+    if (!window.confirm('تمام تاریخچهٔ زیست‌کرهٔ همین سیاره پاک و یک جهان تازه ساخته شود؟')) return;
+    stopLive(); state = Model.createState(WorldState.seedFor(activeWorldId)); render(); save(); setStatus('زیست‌کرهٔ تازه فقط برای همین سیاره ساخته شد.');
+  });
+  window.addEventListener('planet:active-world-changed', function (event) {
+    const nextWorldId = event && event.detail && event.detail.planetId;
+    if (!nextWorldId || nextWorldId === activeWorldId) return;
+    if (fastRunning) { setStatus('پس از پایان شبیه‌سازی سریع می‌توان جهان فعال را عوض کرد.'); return; }
+    if (live) stopLive(); else save();
+    activeWorldId = nextWorldId;
+    const shouldResume = restoreWorld(activeWorldId);
+    $('pbSpeed').value = String(savedSpeed);
+    $('pbSpeedLabel').textContent = '×' + savedSpeed;
+    live = false;
+    render();
+    setStatus('زیست‌کرهٔ مستقل سیارهٔ ' + activeWorldId + ' بارگذاری شد؛ ذخیرهٔ سیاره‌های دیگر جداگانه حفظ می‌شود.');
+    if (shouldResume) startLive();
   });
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden') { save(); }

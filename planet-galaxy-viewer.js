@@ -225,7 +225,8 @@
       const found=findPlanet(id);if(!found||!found.planet.discovered)return;
       if(Engine.selectPlanet(galaxy,id)){
         selectedSystemId=found.system.id;selectedPlanetId=id;persist();
-        showNotice("جهان فعال در موتور داده‌ای کهکشان انتخاب شد. اتصال به رندر و شبیه‌سازی مستقل سیاره در مرحلهٔ بعد انجام می‌شود.");
+        win.dispatchEvent(new win.CustomEvent("planet:active-world-changed",{detail:{planetId:id,planet:Engine.getPlanet(galaxy,id)}}));
+        showNotice("جهان فعال انتخاب شد؛ زیست‌کرهٔ دیجیتال مستقل این سیاره بارگذاری یا ساخته می‌شود و ذخیرهٔ جهان‌های دیگر دست‌نخورده می‌ماند.");
         renderUI();if(renderer)renderer.invalidate();
       }
     }
