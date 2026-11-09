@@ -25,7 +25,7 @@ async function refresh(){
  try{
   const [wallet,collection,market,catalog,owned,profile]=await Promise.all([client.wallet(),client.collection(),client.listings(),client.planets(),client.ownedPlanets(),client.profile()]);
   $("commerceDisplayName").value=profile.displayName||"";
-  $("commerceProfileHint").textContent=profile.displayName?"نام عمومی حساب تو ثبت شده است؛ می‌توانی آن را تغییر بدهی.":"برای نمایش نامت به‌عنوان مالک سیاره، یک نام نمایشی انتخاب و ذخیره کن.";
+  $("commerceProfileHint").textContent=profile.displayName?"نام عمومی حساب تو ثبت شده است؛ می‌توانی آن را تغییر بدهی.":"برای پروفایل و شناسایی حساب در بازار موجودات، یک نام نمایشی انتخاب و ذخیره کن.";
   $("commerceTokenBalance").textContent=Number(wallet.balance||0).toLocaleString("fa-IR");
   const ownedIds=new Set((owned.planets||[]).map(x=>x.id)),catalogBox=$("commercePlanetCatalog");catalogBox.textContent="";
   (catalog.planets||[]).forEach(planet=>{
@@ -78,7 +78,7 @@ $("commerceLogin").addEventListener("click",async()=>{
 });
 $("commerceLogout").addEventListener("click",()=>{client.logout();authView();$("commerceTokenBalance").textContent="۰";status("از حساب آنلاین خارج شدی.");});
 $("commerceSaveDisplayName").addEventListener("click",async()=>{
- try{const result=await client.setDisplayName($("commerceDisplayName").value);$("commerceDisplayName").value=result.displayName;$("commerceProfileHint").textContent="نام نمایشی ذخیره شد و برای نمایش عمومی مالکیت سیاره استفاده می‌شود.";status("نام نمایشی حساب ذخیره شد.");}
+ try{const result=await client.setDisplayName($("commerceDisplayName").value);$("commerceDisplayName").value=result.displayName;$("commerceProfileHint").textContent="نام نمایشی حساب ذخیره شد؛ نام مالک کنار سیاره‌ها نمایش داده نمی‌شود.";status("نام نمایشی حساب ذخیره شد.");}
  catch(error){$("commerceProfileHint").textContent=error.message;status(error.message);}
 });
 $("commerceRefresh").addEventListener("click",refresh);

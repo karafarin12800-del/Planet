@@ -4,6 +4,8 @@ const fs=require("node:fs");
 (async()=>{
  const source=fs.readFileSync(require("node:path").join(__dirname,"..","cloudflare-commerce-worker/index.js"),"utf8");
  const schema=fs.readFileSync(require("node:path").join(__dirname,"..","cloudflare-commerce-worker/schema.sql"),"utf8");
+ const ui=fs.readFileSync(require("node:path").join(__dirname,"..","planet-commerce-ui.js"),"utf8");
+ const html=fs.readFileSync(require("node:path").join(__dirname,"..","index.html"),"utf8");
  const encoded=Buffer.from(source).toString("base64");
  const mod=await import("data:text/javascript;base64,"+encoded);
  const catalog=mod.planets();
@@ -23,6 +25,8 @@ const fs=require("node:fs");
  assert.ok(source.includes('path==="/profile"'),"players can read and choose a public display name");
  assert.ok(source.includes('path==="/planets/owners"'),"planet ownership has a public display-name lookup");
  assert.ok(source.includes("DISPLAY_NAME_TAKEN"),"public display names are unique");
+ assert.ok(html.includes("نام نمایشی حساب تو برای پروفایل و بازار موجودات"),"profile name is not described as a planet-side label");
+ assert.ok(ui.includes("نام مالک کنار سیاره‌ها نمایش داده نمی‌شود"),"planet owner names are not shown beside planets");
  assert.ok(source.includes("claims.nonce!==nonce"),"Google nonce must match the signed ID token");
  assert.ok(source.includes("BAZAAR_RECEIPT_ALREADY_USED"),"a receipt cannot be replayed into another account");
  assert.ok(source.includes("pardakht.cafebazaar.ir/devapi/v2/auth/token/"),"Bazaar access tokens are refreshed server-side");

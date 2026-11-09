@@ -106,4 +106,4 @@ token. Create the consumable product `planet_tokens_200` before testing.
 Never put a Bazaar client secret, refresh token, `AUTH_SECRET` or Resend key in the APK or Git.
 Poolakey requires Cafe Bazaar installed on the Android test device. Do not enable production
 purchases until the deployed Worker validates test receipts and an end-to-end test succeeds.
-Player-selected display names are stored on the account and exposed as public owner labels by planet ID. Purchased commerce-catalog planets still need a catalog-to-galaxy identity mapping before their owner labels can appear on the 3D galaxy viewer.
+Player-selected display names remain part of the account profile for player identity in the specimen marketplace. Planet owner names are not displayed beside planets in the galaxy viewer; planet ownership is tracked independently of the account display name.
