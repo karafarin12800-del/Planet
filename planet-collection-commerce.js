@@ -8,7 +8,8 @@
   if(root)root.PlanetCollectionCommerce=api;
 })(typeof globalThis!=="undefined"?globalThis:this,function(){
   "use strict";
-  const VERSION=1, PREFIX="planet-collection-commerce-v1:", MAX_RECORDS=250, MAX_LEDGER=100;
+  const VERSION=2, PREFIX="planet-collection-commerce-v1:", MAX_RECORDS=250, MAX_LEDGER=100;
+  const EARTH_MIN_MARKET_SIZE_CM=45, ALIEN_MIN_MARKET_SIZE_CM=5;
   const SHOP_ITEMS=[
     {id:"habitat-reef",name:"زیستگاه مرجانی",description:"پوستهٔ نمایشی برای مجموعهٔ زیستگاه‌ها",price:120,category:"cosmetic"},
     {id:"habitat-crystal",name:"زیستگاه بلورین",description:"پوستهٔ نمایشی بلورین",price:180,category:"cosmetic"},
@@ -28,6 +29,8 @@
         id:cleanText(x.id,180),worldId:cleanText(x.worldId,120),speciesId:finite(x.speciesId,0,0,1e9),
         name:cleanText(x.name,100)||"موجود دیجیتال",dna:cleanText(x.dna,100000),form:cleanText(x.form,80),
         generation:finite(x.generation,0,0,1e9),fitness:finite(x.fitness,.5,0,1),habitat:cleanText(x.habitat,30),
+        bodyLengthCm:finite(x.bodyLengthCm,0,0,6000),special:x.special===true,rarityScore:finite(x.rarityScore,0,0,100),
+        originWorldType:x.originWorldType==="earth"?"earth":"alien",marketEligible:x.marketEligible===true,
         acquiredAt:finite(x.acquiredAt,0,0,1e15),source:cleanText(x.source,24)||"evolution",parentId:x.parentId==null?null:finite(x.parentId,0,0,1e9)
       })):[],
       ownedItems:Array.isArray(data.ownedItems)?Array.from(new Set(data.ownedItems.filter(x=>SHOP_ITEMS.some(i=>i.id===x)))):[],
@@ -42,6 +45,11 @@
     if(!storage||!validWorld(worldId))return false;
     try{storage.setItem(key(worldId),JSON.stringify(normalize(state)));return true;}catch(e){return false;}
   }
+  function isMarketEligible(specimen){
+    if(!specimen||specimen.special!==true)return false;
+    const size=finite(specimen.bodyLengthCm,specimen.traits&&specimen.traits.estimatedBodyLengthCm||0,0,6000);
+    return specimen.originWorldType==="earth"?size>=EARTH_MIN_MARKET_SIZE_CM:size>ALIEN_MIN_MARKET_SIZE_CM;
+  }
   function specimenFrom(state,species,worldId,source){
     if(!species||!Number.isFinite(Number(species.id)))throw new Error("گونهٔ معتبر انتخاب نشده است.");
     const dna=String(species.dna||species.lineageDNA||"").toUpperCase();
@@ -52,8 +60,10 @@
       name:cleanText(species.nameFa||species.nameEn||species.name||("گونهٔ "+species.id),100),
       dna,form:cleanText(species.form||species.habitat||"نامشخص",80),
       generation:finite(species.generation,0,0,1e9),fitness:finite(species.fitness,.5,0,1),
-      habitat:cleanText(species.habitat,30),acquiredAt:Date.now(),source:source||"evolution",
-      parentId:species.parentId==null?null:finite(species.parentId,0,0,1e9)};
+      habitat:cleanText(species.habitat,30),bodyLengthCm:finite(species.bodyLengthCm,species.traits&&species.traits.estimatedBodyLengthCm||0,0,6000),
+      special:species.special===true,rarityScore:finite(species.rarityScore,0,0,100),
+      originWorldType:species.originWorldType==="earth"||worldId==="earth"||worldId==="system-01-p1"?"earth":"alien",
+      acquiredAt:Date.now(),source:source||"evolution",parentId:species.parentId==null?null:finite(species.parentId,0,0,1e9)};
   }
   function acquire(state,species,worldId){
     if(!validWorld(worldId))throw new Error("شناسهٔ سیاره معتبر نیست.");
@@ -62,13 +72,16 @@
     state.specimens.push(specimen);return specimen;
   }
   function specimenValue(specimen){
-    const rarity=Math.min(180,Math.round((specimen.generation||0)*1.5+(specimen.fitness||0)*65+(specimen.dna.length/3)));
+    if(!isMarketEligible(specimen))return 0;
+    const rarity=Math.min(180,Math.round((specimen.generation||0)*1.5+(specimen.fitness||0)*65+(specimen.dna.length/3)+(specimen.rarityScore||0)*1.4));
     return Math.max(15,Math.min(500,35+rarity));
   }
   function sell(state,specimenId){
     const index=state.specimens.findIndex(x=>x.id===specimenId);
     if(index<0)throw new Error("این نمونه دیگر در کلکسیون نیست.");
-    const specimen=state.specimens[index],price=specimenValue(specimen);
+    const specimen=state.specimens[index];
+    if(!isMarketEligible(specimen))throw new Error("این موجود پایه یا کوچک است و اجازهٔ فروش ندارد؛ فقط گونهٔ خاص با اندازهٔ مجاز قابل‌فروش است.");
+    const price=specimenValue(specimen);
     state.specimens.splice(index,1);
     state.credits=finite(state.credits+price,0,0,1e9);
     state.sales.push({id:specimen.id,name:specimen.name,price,at:Date.now()});
@@ -80,6 +93,7 @@
     if(state.credits<cost)throw new Error("اعتبار کافی برای خرید این موجود وجود ندارد.");
     if(!validWorld(worldId))throw new Error("شناسهٔ سیاره معتبر نیست.");
     const specimen=specimenFrom(state,species,worldId,"market");
+    if(!isMarketEligible(specimen))throw new Error("این گونه هنوز شرایط بازار را ندارد؛ گونهٔ خاص خارج از زمین باید بزرگ‌تر از ۵ سانتی‌متر و گونهٔ زمین باید دست‌کم ۴۵ سانتی‌متر باشد.");
     if(state.specimens.some(x=>x.id===specimen.id))throw new Error("شناسهٔ نمونه تکراری است.");
     state.credits-=cost;state.specimens.push(specimen);
     state.purchases.push({id:specimen.id,type:"creature",price:cost,at:Date.now()});
@@ -97,5 +111,5 @@
     return {item,credits:state.credits};
   }
   function listItems(){return SHOP_ITEMS.map(x=>({...x}));}
-  return {VERSION,PREFIX,MAX_RECORDS,SHOP_ITEMS:listItems,emptyState,normalize,key,load,save,acquire,sell,buyCreature,buyItem,specimenValue};
+  return {VERSION,PREFIX,MAX_RECORDS,EARTH_MIN_MARKET_SIZE_CM,ALIEN_MIN_MARKET_SIZE_CM,SHOP_ITEMS:listItems,emptyState,normalize,key,load,save,acquire,sell,buyCreature,buyItem,specimenValue,isMarketEligible};
 });

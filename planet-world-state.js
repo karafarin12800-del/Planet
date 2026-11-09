@@ -75,11 +75,20 @@
     const value={state:snapshot.state,live:!!snapshot.live,speed:Math.max(1,Math.min(20,Number(snapshot.speed)||1)),lastWall:Math.max(0,Number(snapshot.lastWall)||Date.now())};
     try{storage.setItem(storageKey(worldId),JSON.stringify(value));return true;}catch(error){return false;}
   }
+  function getGenomePool(storage,worldId){
+    if(!storage||!validId(worldId))return [];
+    const snapshot=load(storage,worldId,{homeWorldId:worldId,legacyKey:LEGACY_KEY});
+    if(!snapshot||!snapshot.state)return [];
+    try{
+      const parsed=JSON.parse(snapshot.state);
+      return Array.isArray(parsed.species)?parsed.species.map(s=>s&&s.dna).filter(dna=>typeof dna==="string"&&dna.length===168).slice(0,100):[];
+    }catch(error){return [];}
+  }
   function seedFor(worldId){
     const s=String(worldId||"planet"),input=s+"|planet-biosphere";
     let hash=2166136261;
     for(let i=0;i<input.length;i++){hash^=input.charCodeAt(i);hash=Math.imul(hash,16777619);}
     return hash>>>0||0x504c414e;
   }
-  return {galaxyKey:GALAXY_KEY,legacyKey:LEGACY_KEY,prefix:PREFIX,storageKey,getHomeWorldId,getActiveWorldId,getPlanet,getActivePlanet,load,save,seedFor};
+  return {galaxyKey:GALAXY_KEY,legacyKey:LEGACY_KEY,prefix:PREFIX,storageKey,getHomeWorldId,getActiveWorldId,getPlanet,getActivePlanet,load,save,getGenomePool,seedFor};
 });
