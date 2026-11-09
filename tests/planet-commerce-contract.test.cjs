@@ -41,6 +41,7 @@ const fs=require("node:fs");
  assert.ok(welcomeMigration.includes("balance=balance+80"),"existing 20-token accounts receive a one-time +80 adjustment");
  assert.ok(welcomeMigration.includes("welcome-adjustment-v100:"),"welcome adjustment is idempotent");
  assert.ok(source.includes("seller_vip"),"market listings expose the VIP seller badge state");
+ assert.ok(ui.includes("Number(x.seller_vip)===1"),"VIP badge is shown beside seller names in the market");
  assert.ok(source.includes('path===" /planets/buy"'.replace(" ", "")),"server-priced planet purchase endpoint exists");
  assert.ok(source.includes('path===" /market/cancel"'.replace(" ", "")),"seller can cancel an active listing");
  assert.ok(schema.includes("UNIQUE(owner_id,client_key)"),"specimen sync is idempotent per account");
