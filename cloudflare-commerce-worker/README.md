@@ -14,9 +14,7 @@ Cafe Bazaar receipt verification and a player-to-player specimen marketplace.
 5. Configure Worker secrets: \`AUTH_SECRET\` (random 32+ bytes), \`RESEND_API_KEY\`,
    \`BAZAAR_CLIENT_ID, BAZAAR_CLIENT_SECRET, BAZAAR_REFRESH_TOKEN\`. Configure variables: \`BAZAAR_PACKAGE_NAME\`,
    \`VERIFY_FROM_EMAIL\`, \`GOOGLE_CLIENT_ID\`, and \`ALLOWED_ORIGINS\`.
-6. In Cafe Bazaar developer console create in-app product \`planet_tokens_200\`.
-   The actual cash price is defined in Bazaar, not guessed in this repository.
-7. Test verification and refunds using Bazaar test accounts before production.
+6. In Cafe Bazaar create consumables `planet_tokens_200`, `planet_tokens_500`, `planet_tokens_1000` and subscription `planet_vip_60d` with an exact 60-day period. Set all cash prices in the Bazaar console; they are not hard-coded here.\n7. Test token receipts, subscription expiry and refunds using Bazaar test accounts before production.
 
 Never put these credentials in Git, the Android package, or chat. Do not enable token purchases
 until the Worker has been deployed, D1 is migrated, the Bazaar product exists, and a real
@@ -31,8 +29,7 @@ server-verified receipt has been tested.
 - Authenticated: \`POST /specimens/register\`, \`GET /collection\`
 - Authenticated: \`GET /market/listings\`, \`POST /market/list\`, \`POST /market/buy\`
 
-The server grants 20 welcome tokens once per verified account and 200 tokens only after
-Cafe Bazaar reports a successful purchase of \`planet_tokens_200\`. Receipt hashes are unique.
+The server grants 100 welcome tokens once per verified account; migration 0006 adds the missing 80 to existing accounts that previously received 20. It credits 200, 500 or 1,000 tokens only after server-side Cafe Bazaar validation of the matching product. Receipt hashes are unique. VIP (`planet_vip_60d`) is a server-verified 60-day subscription with a VIP badge, profile frame, 10 daily claimable tokens, 10% planet discounts and priority marketplace placement. The Worker enforces expiry and one daily claim per server date.
 Marketplace transfers debit the buyer and credit the seller at the same token price; fee is zero.
 
 ## Important trust boundary
