@@ -94,7 +94,7 @@ let activeBazaarToken="";
 function updateNativeButtons(){
  const bridge=window.AndroidCommerceBridge;
  const google=$("commerceGoogleLogin"),buy=$("commerceBuyTokens");
- if(google)google.hidden=!(bridge&&bridge.isGoogleConfigured&&bridge.isGoogleConfigured());
+ if(google)google.hidden=!(bridge&&bridge.startGoogleSignIn);
  if(buy)buy.hidden=!(bridge&&bridge.isBazaarConfigured&&bridge.isBazaarConfigured());
 }
 async function verifyPendingBazaarToken(token){
