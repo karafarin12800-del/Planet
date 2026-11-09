@@ -5,12 +5,15 @@ const galaxyEngine=require("../planet-galaxy-engine.js");
 const a=galaxyEngine.createGalaxy(12345);
 const b=galaxyEngine.createGalaxy(12345);
 assert.equal(galaxyEngine.serialize(a),galaxyEngine.serialize(b),"same seed creates the same galaxy");
-assert.equal(a.systems.length,3);
+assert.equal(a.systems.length,12);
 assert.equal(a.activePlanetId,a.systems[0].planets[0].id);
 assert.equal(galaxyEngine.getSummary(a).discovered,1,"only the home planet starts discovered");
 assert.equal(galaxyEngine.getActivePlanet(a).home,true);
 assert.ok(a.systems.every(s=>s.planets.length<=galaxyEngine.maxPlanetsPerSystem));
 assert.ok(a.systems.flatMap(s=>s.planets).every(p=>Number.isInteger(p.seed)&&p.biomes.length>0));
+assert.equal(a.systems[0].planets.length,8);
+assert.ok(a.systems.slice(1).every(s=>s.planets.length>=6&&s.planets.length<=8));
+assert.ok(a.systems.flatMap(s=>s.planets).every(p=>p.lifePotential>=0&&p.lifePotential<=100&&p.specialSpeciesPotential>=0&&p.creatureCapacity===2&&p.priceTokens>=150&&p.priceTokens<=1000));
 
 const next=a.systems[0].planets[1];
 assert.equal(galaxyEngine.selectPlanet(a,next.id),false,"undiscovered planets cannot become active");

@@ -25,25 +25,32 @@
   function random(seed){let s=seed>>>0;return function(){s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};}
   function pick(rng,list){return list[Math.floor(rng()*list.length)];}
   function range(rng,pair){return pair[0]+rng()*(pair[1]-pair[0]);}
+  function planetEconomy(planet){
+    const temp=Number(planet.meanTemperatureC)||0,water=clamp(planet.waterCoverage,0,1),gravity=clamp(planet.gravity||1,.05,10);
+    const thermal=clamp(1-Math.max(0,Math.abs(temp-18)-18)/260,.08,1);
+    const waterFit=clamp(1-Math.abs(water-.52)*1.15,.12,1);
+    const gravityFit=clamp(1-Math.abs(Math.log2(gravity))*.24,.18,1);
+    const atmosphere={"nitrogen-oxygen":1,"nitrogen-rich":.94,"thin-carbon-dioxide":.82,"dense-carbon-dioxide":.64,"hydrogen-helium":.52,"trace-atmosphere":.45}[planet.atmosphere]||.62;
+    const surface=planet.type==="gas-giant"?.42:planet.type==="volcanic"?.58:planet.type==="ice"?.76:planet.type==="desert"?.72:1;
+    const life=clamp(Math.round((thermal*.28+waterFit*.24+gravityFit*.16+atmosphere*.18+surface*.14)*100),5,100);
+    const extreme=clamp(Math.abs(temp-18)/180,0,1),diversity=clamp((planet.biomes||[]).length/5,0,1);
+    const special=clamp(Math.round(25+life*.36+extreme*18+diversity*18+(planet.type==="volcanic"||planet.type==="gas-giant"?12:0)),10,100);
+    planet.lifePotential=life;planet.specialSpeciesPotential=special;planet.priceTokens=clamp(150+Math.round(850*(life*.72+special*.28)/100),150,1000);planet.creatureCapacity=2;
+    return planet;
+  }
   function makePlanet(systemId,index,rng,home){
-    const type=home?PLANET_TYPES[0]:pick(rng,PLANET_TYPES);
-    const id=systemId+"-p"+(index+1);
-    const water=home?0.71:range(rng,type.water);
-    const temperature=home?15:range(rng,type.temp);
-    return {
-      id,name:home?"زمین":pick(rng,PLANET_NAMES),systemId,seed:hash32(id+"|"+Math.floor(rng()*4294967295)),
-      type:type.id,typeLabel:type.label,radiusKm:Math.round(range(rng,type.radius)),
-      gravity:Math.round((home?1:range(rng,[0.25,2.4]))*100)/100,
+    const type=home?PLANET_TYPES[0]:pick(rng,PLANET_TYPES),id=systemId+"-p"+(index+1);
+    const water=home?0.71:range(rng,type.water),temperature=home?15:range(rng,type.temp);
+    return planetEconomy({id,name:home?"زمین":pick(rng,PLANET_NAMES),systemId,seed:hash32(id+"|"+Math.floor(rng()*4294967295)),
+      type:type.id,typeLabel:type.label,radiusKm:Math.round(range(rng,type.radius)),gravity:Math.round((home?1:range(rng,[0.25,2.4]))*100)/100,
       meanTemperatureC:Math.round(temperature),waterCoverage:Math.round(water*1000)/1000,
       atmosphere:home?"nitrogen-oxygen":pick(rng,["thin-carbon-dioxide","dense-carbon-dioxide","nitrogen-rich","hydrogen-helium","trace-atmosphere"]),
-      biomes:home?["اقیانوس","جنگل","دشت","بیابان","کوهستان"]:type.biomes.slice(),
-      discovered:!!home,visited:!!home,home:!!home,worldStatus:home?"active":"uninitialized"
-    };
+      biomes:home?["اقیانوس","جنگل","دشت","بیابان","کوهستان"]:type.biomes.slice(),discovered:!!home,visited:!!home,home:!!home,worldStatus:home?"active":"uninitialized"});
   }
   function makeSystem(index,seed,isHome){
     const rng=random(hash32(seed+"|system|"+index));
     const id="system-"+String(index+1).padStart(2,"0");
-    const count=isHome?3:2+Math.floor(rng()*3);
+    const count=isHome?8:6+Math.floor(rng()*3);
     const planets=[];
     for(let i=0;i<count;i++) planets.push(makePlanet(id,i,rng,isHome&&i===0));
     return {id,name:isHome?"منظومهٔ آغاز":pick(rng,SYSTEM_NAMES),seed:hash32(seed+"|"+id),
@@ -53,7 +60,7 @@
   function createGalaxy(seed){
     const normalized=Number(seed)>>>0||0x504c414e;
     const systems=[];
-    for(let i=0;i<3;i++) systems.push(makeSystem(i,normalized,i===0));
+    for(let i=0;i<12;i++) systems.push(makeSystem(i,normalized,i===0));
     const home=systems[0].planets[0];
     return {version:VERSION,seed:normalized,year:0,activeSystemId:systems[0].id,activePlanetId:home.id,
       systems,events:[{year:0,kind:"origin",systemId:systems[0].id,planetId:home.id,detail:"آغاز جهان در سیارهٔ خانه"}]};
@@ -96,8 +103,10 @@
     if(planetCount>MAX_SYSTEMS*MAX_PLANETS_PER_SYSTEM||!activeFound||!findSystem(data,data.activeSystemId))throw new Error("Planet galaxy save has an invalid active world.");
     data.events=Array.isArray(data.events)?data.events.slice(0,MAX_EVENTS):[];
     data.year=Math.max(0,Math.floor(clamp(data.year,0,Number.MAX_SAFE_INTEGER)));
+    for(const system of data.systems)for(const planet of system.planets)planetEconomy(planet);
+    for(let i=data.systems.length;i<12&&i<MAX_SYSTEMS;i++)data.systems.push(makeSystem(i,Number(data.seed)>>>0||0x504c414e,false));
     return data;
   }
   return {version:VERSION,maxSystems:MAX_SYSTEMS,maxPlanetsPerSystem:MAX_PLANETS_PER_SYSTEM,
-    createGalaxy,discoverPlanet,selectPlanet,setYear,getPlanet,getActivePlanet,getSummary,serialize,restore};
+    createGalaxy,discoverPlanet,selectPlanet,setYear,getPlanet,getActivePlanet,getSummary,serialize,restore,planetEconomy};
 });
