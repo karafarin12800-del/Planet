@@ -8,6 +8,7 @@ const TOKEN_PRODUCTS = Object.freeze({planet_tokens_200:200,planet_tokens_500:50
 const VIP_PRODUCT = "planet_vip_60d";
 const VIP_DAILY_GRANT = 10;
 const WELCOME_GRANT = 100;
+const STARTER_GRANT = 20;
 const GALLERY_ENTRY_GRANT = 10;
 const CREATOR_COMMISSION_RATE = 0.05;
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
@@ -54,6 +55,9 @@ function planets(){
     atmosphere:p.atmosphere,biomes:p.biomes,features:p.biomes});
   }
  }
+ const score=p=>Number(p.lifePotential||0)*.72+Number(p.specialSpeciesPotential||0)*.28;
+ rows.slice().sort((a,b)=>score(a)-score(b)||a.galaxyPlanetId.localeCompare(b.galaxyPlanetId))
+   .forEach((planet,rank)=>{planet.price=100+Math.round(rank*900/Math.max(1,rows.length-1));});
  return rows;
 }
 async function jsonBody(req) { try { return await req.json(); } catch { return null; } }
@@ -64,9 +68,12 @@ async function sendVerification(email, code, env) {
   if(!r.ok) throw new Error("EMAIL_DELIVERY_FAILED");
 }
 async function grantWelcome(db,userId) {
+  // New accounts receive 20 starter tokens plus the 100-token welcome grant.
   const results=await db.batch([
     db.prepare("UPDATE users SET welcome_granted_at=datetime('now') WHERE id=? AND welcome_granted_at IS NULL AND verified_at IS NOT NULL").bind(userId),
-    db.prepare("INSERT INTO wallets(user_id,balance) SELECT ?,? WHERE changes()=1").bind(userId,WELCOME_GRANT),
+    db.prepare("INSERT INTO wallets(user_id,balance) SELECT ?,? WHERE changes()=1 ON CONFLICT(user_id) DO UPDATE SET balance=balance+excluded.balance").bind(userId,STARTER_GRANT),
+    db.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'starter',? WHERE changes()=1").bind(userId,STARTER_GRANT,"starter:"+userId),
+    db.prepare("UPDATE wallets SET balance=balance+? WHERE user_id=? AND changes()=1").bind(WELCOME_GRANT,userId),
     db.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'welcome',? WHERE changes()=1").bind(userId,WELCOME_GRANT,"welcome:"+userId)
   ]);
   return !!results[0].meta.changes;
@@ -137,6 +144,19 @@ async function route(req, env, url) {
   }
   const user=await authenticate(req,env);
   if(!user) return response({error:"UNAUTHORIZED"},401);
+  if(method==="GET"&&path==="/world-seed"){
+    const planetId=String(url.searchParams.get("planetId")||""),planet=planets().find(p=>p.id===planetId);
+    if(!planet)return response({error:"PLANET_NOT_FOUND"},404);
+    const owned=await env.DB.prepare("SELECT 1 AS owned FROM planet_ownership WHERE user_id=? AND galaxy_planet_id=?").bind(user.id,planet.galaxyPlanetId).first();
+    if(!owned)return response({error:"PLANET_NOT_OWNED"},403);
+    let row=await env.DB.prepare("SELECT seed FROM planet_world_seeds WHERE user_id=? AND galaxy_planet_id=?").bind(user.id,planet.galaxyPlanetId).first();
+    if(!row){
+      const seed=b64url(crypto.getRandomValues(new Uint8Array(32)));
+      await env.DB.prepare("INSERT OR IGNORE INTO planet_world_seeds(user_id,galaxy_planet_id,seed,created_at) VALUES(?,?,?,datetime('now'))").bind(user.id,planet.galaxyPlanetId,seed).run();
+      row=await env.DB.prepare("SELECT seed FROM planet_world_seeds WHERE user_id=? AND galaxy_planet_id=?").bind(user.id,planet.galaxyPlanetId).first();
+    }
+    return response({planetId:planet.id,galaxyPlanetId:planet.galaxyPlanetId,seed:row.seed});
+  }
   if(method==="GET"&&path==="/profile"){
     const vip=await env.DB.prepare("SELECT expires_at,last_daily_claim_date=date('now') AS daily_claimed_today FROM vip_entitlements WHERE user_id=?").bind(user.id).first();
     const vipActive=!!vip&&Date.parse(String(vip.expires_at).replace(" ","T")+"Z")>Date.now();
@@ -354,4 +374,4 @@ export default { async fetch(req,env) {
   try { return await route(req,env,new URL(req.url)).then(r=>{const h=new Headers(r.headers);for(const [k,v] of Object.entries(cors))if(v)h.set(k,v);return new Response(r.body,{status:r.status,headers:h});}); }
   catch(e) { return response({error:"INTERNAL_ERROR"},500,cors); }
 }};
-export { planets, TOKEN_PRODUCTS, VIP_PRODUCT, WELCOME_GRANT };
+export { planets, TOKEN_PRODUCTS, VIP_PRODUCT, WELCOME_GRANT, STARTER_GRANT };

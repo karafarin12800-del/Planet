@@ -50,3 +50,11 @@ CREATE INDEX IF NOT EXISTS vip_subscriptions_user_idx ON vip_subscriptions(user_
 CREATE TABLE IF NOT EXISTS vip_entitlements (
   user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, expires_at TEXT NOT NULL, last_daily_claim_date TEXT
 );
+
+CREATE TABLE IF NOT EXISTS planet_world_seeds (
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  galaxy_planet_id TEXT NOT NULL,
+  seed TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY(user_id,galaxy_planet_id)
+);

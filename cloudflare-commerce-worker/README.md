@@ -8,7 +8,7 @@ Cafe Bazaar receipt verification and a player-to-player specimen marketplace.
 
 1. Create a Cloudflare D1 database named \`planet-commerce\`.
 2. Run \`npx wrangler d1 execute planet-commerce --file=schema.sql\`.
-3. Apply migrations in order: `npx wrangler d1 execute planet-commerce --file=migrations/0002_profile_display_name.sql`, then `0003_specimen_market_eligibility.sql`, then `0004_galaxy_planet_identity.sql`, then `0005_vip_subscriptions.sql`, then `0006_welcome_grant_adjustment.sql`, then `0007_marketplace_commission_and_price_floor.sql`.
+3. Apply migrations in order: `npx wrangler d1 execute planet-commerce --file=migrations/0002_profile_display_name.sql`, then `0003_specimen_market_eligibility.sql`, then `0004_galaxy_planet_identity.sql`, then `0005_vip_subscriptions.sql`, then `0006_welcome_grant_adjustment.sql`, then `0007_marketplace_commission_and_price_floor.sql`, then `0008_starter_tokens_and_world_seeds.sql`.
 3. Put the resulting D1 database ID in \`wrangler.toml\`.
 4. Deploy from this directory with Wrangler.
 5. Configure Worker secrets: \`AUTH_SECRET\` (random 32+ bytes), \`RESEND_API_KEY\`,
@@ -29,8 +29,8 @@ server-verified receipt has been tested.
 - Authenticated: \`POST /specimens/register\`, \`GET /collection\`
 - Authenticated: \`GET /market/listings\`, \`POST /market/list\`, \`POST /market/buy\`
 
-The server grants 100 welcome tokens once per verified account; migration 0006 adds the missing 80 to existing accounts that previously received 20. It credits 200, 500 or 1,000 tokens only after server-side Cafe Bazaar validation of the matching product. Receipt hashes are unique. VIP (`planet_vip_60d`) is a server-verified 60-day subscription with a VIP badge, profile frame, 10 daily claimable tokens, 10% planet discounts and priority marketplace placement. The Worker enforces expiry and one daily claim per server date.
-Marketplace transfers debit the buyer and credit the seller at the same token price; fee is zero.
+The server grants 20 starter tokens plus 100 welcome tokens (120 total) once per verified account. Migration 0006 adjusts legacy 20-token accounts to 100; migration 0008 adds the separate 20-token starter grant to existing verified accounts exactly once. It credits 200, 500 or 1,000 tokens only after server-side Cafe Bazaar validation of the matching product. Receipt hashes are unique. VIP (`planet_vip_60d`) is a server-verified 60-day subscription with a VIP badge, profile frame, 10 daily claimable tokens, 10% planet discounts and priority marketplace placement. The Worker enforces expiry and one daily claim per server date.
+Marketplace sales debit the buyer, credit 95% to the seller and 5% to the creator. Planets are permanently account-bound and cannot be listed, sold or transferred. Each purchased account+planet pair receives one persistent random world seed from `/world-seed`.
 
 ## Important trust boundary
 
@@ -72,12 +72,12 @@ purchases until the deployed Worker validates test receipts and an end-to-end te
 ## Android client and native billing
 
 The Android asset bundle includes `planet-commerce-client.js` and `planet-commerce-ui.js`.
-Open the Collection and Shop screen, enter the deployed HTTPS Worker URL, and connect.
+Player builds do not expose server configuration; maintainers set the deployed HTTPS Worker URL once in source.
 Email registration requires a working Resend sender and verified email. Prototype credits
 remain local and are never transferred to the online wallet.
 
 The client can sync local specimens using a per-account idempotency key, publish and cancel
-listings, buy another player's specimen with zero fee, and buy one of the 100 server-priced
+listings, buy another player's specimen with a 5% creator commission, and buy one of the 100 server-priced
 planets. The Worker stores specimen DNA privately and does not return it in public listings.
 A pre-existing D1 database requires a migration adding `specimens.client_key`, its unique
 owner/key constraint, and the `planet_ownership` table before this version of the Worker runs.

@@ -5,7 +5,7 @@
   if (root) root.PlanetAutonomousEvolution = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function (engine) {
   "use strict";
-  const VERSION = 6, MAX_SPECIES = 100, EARTH_SPECIES_COUNT = 100, OFFWORLD_SPECIES_COUNT = 2, MIN_VISIBLE_BODY_LENGTH_CM = 2, EARTH_MIN_MARKET_SIZE_CM = 45, ALIEN_MIN_MARKET_SIZE_CM = 5, MAX_EVENTS = 80, MAX_YEAR_BATCH = 10000;
+  const VERSION = 6, MAX_SPECIES = 100, EARTH_SPECIES_COUNT = 100, OFFWORLD_SPECIES_COUNT = 2, OFFWORLD_SPECIES_LIMIT = 24, MIN_VISIBLE_BODY_LENGTH_CM = 2, EARTH_MIN_MARKET_SIZE_CM = 45, ALIEN_MIN_MARKET_SIZE_CM = 5, MAX_EVENTS = 80, MAX_YEAR_BATCH = 10000;
   const HABITATS = ["ocean", "shore", "land", "sky"];
   const DEFAULT_ENVIRONMENT = { planetId:"earth", name:"زمین", type:"terrestrial", temperatureC:15, waterCoverage:0.71, gravity:1, atmosphere:"nitrogen-oxygen" };
   const ATMOSPHERE_FIT = {"nitrogen-oxygen":1,"nitrogen-rich":0.94,"thin-carbon-dioxide":0.82,"dense-carbon-dioxide":0.64,"hydrogen-helium":0.72,"trace-atmosphere":0.58};
@@ -154,7 +154,7 @@
   function visibleSpecies(state){
     return (state&&Array.isArray(state.species)?state.species:[]).filter(s=>Number(s.bodyLengthCm||s.traits&&s.traits.estimatedBodyLengthCm)>MIN_VISIBLE_BODY_LENGTH_CM);
   }
-  function speciesLimit(state){return state&&state.planetEnvironment&&state.planetEnvironment.home?EARTH_SPECIES_COUNT:OFFWORLD_SPECIES_COUNT;}
+  function speciesLimit(state){return state&&state.planetEnvironment&&state.planetEnvironment.home?EARTH_SPECIES_COUNT:OFFWORLD_SPECIES_LIMIT;}
   function fitnessFor(s,cycle,planetEnvironment){
     const t=s.traits;
     const habitatBias=s.habitat==="ocean"?t.waterNeed:s.habitat==="shore"?(1-Math.abs(t.waterNeed-0.5)):s.habitat==="sky"?(0.5+t.sensing*0.5):(1-t.waterNeed);
@@ -353,7 +353,7 @@
     const alienFoundersNonMarketable=alien.species.every(s=>!s.special&&!isMarketEligible(s));
     advanceYears(a,40);advanceYears(alien,40);
     const b=restore(serialize(a)),c=restore(serialize(alien));
-    return {ok:initial===EARTH_SPECIES_COUNT&&b.year===40&&b.species.length===EARTH_SPECIES_COUNT&&c.species.length===OFFWORLD_SPECIES_COUNT&&
+    return {ok:initial===EARTH_SPECIES_COUNT&&b.year===40&&b.species.length===EARTH_SPECIES_COUNT&&c.species.length>=OFFWORLD_SPECIES_COUNT&&c.species.length<=OFFWORLD_SPECIES_LIMIT&&
       b.species.concat(c.species).every(s=>engine.normalizeSyntheticGenome(s.dna)&&s.traits&&s.form&&s.bodyLengthCm>2)&&
       a.species.every(s=>!s.marketEligible||(s.special&&s.bodyLengthCm>=EARTH_MIN_MARKET_SIZE_CM))&&
       alienFoundersNonMarketable&&c.species.some(s=>s.special&&isMarketEligible(s))&&!!b.planetEnvironment,
@@ -361,5 +361,5 @@
   }
   return {version:VERSION,createState,createEarthGenomePool,advanceYears,advanceOneYear,serialize,restore,selfTest,visibleSpecies,isMarketEligible,
     environmentFromPlanet,planetHabitability,environmentSuitability,fitnessFor,setEnvironment,roleForSpecies,ensureEcology,TROPHIC_ROLES,ROLE_LABELS,
-    EARTH_SPECIES_COUNT,OFFWORLD_SPECIES_COUNT,MIN_VISIBLE_BODY_LENGTH_CM,EARTH_MIN_MARKET_SIZE_CM,ALIEN_MIN_MARKET_SIZE_CM};
+    EARTH_SPECIES_COUNT,OFFWORLD_SPECIES_COUNT,OFFWORLD_SPECIES_LIMIT,MIN_VISIBLE_BODY_LENGTH_CM,EARTH_MIN_MARKET_SIZE_CM,ALIEN_MIN_MARKET_SIZE_CM};
 });

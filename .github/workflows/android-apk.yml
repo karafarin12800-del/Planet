@@ -24,6 +24,7 @@ on:
       - 'planet-commerce-client.js'
       - 'planet-commerce-ui.js'
       - 'planet-galaxy-viewer.js'
+      - 'planet-genome-game.js'
       - 'cloudflare-commerce-worker/**'
       - 'manifest.webmanifest'
       - 'sw.js'
@@ -100,7 +101,7 @@ jobs:
       - name: Bundle the current web simulation into the Android app
         run: |
           mkdir -p app/src/main/assets
-          cp index.html planet-localization.js evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js offline-evolution.js planet-autonomous-evolution.js planet-galaxy-engine.js planet-world-state.js planet-collection-commerce.js planet-commerce-client.js planet-commerce-ui.js planet-galaxy-viewer.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
+          cp index.html planet-localization.js evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js offline-evolution.js planet-autonomous-evolution.js planet-galaxy-engine.js planet-world-state.js planet-collection-commerce.js planet-commerce-client.js planet-commerce-ui.js planet-galaxy-viewer.js planet-genome-game.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
           cp genome-evidence.html app/src/main/assets/
           cp cosmology-lab.html cosmology-observations.js app/src/main/assets/
 

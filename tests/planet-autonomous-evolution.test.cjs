@@ -55,5 +55,5 @@ assert.equal(alien.species.length,2);
 assert.ok(alien.species.every(s=>!s.special&&!s.marketEligible),"initial off-world founders are not marketable");
 life.advanceYears(alien,80);
 assert.ok(alien.species.some(s=>s.special&&s.bodyLengthCm>5&&s.marketEligible),"special aliens become marketable only after evolution");
-life.advanceYears(alien,500);assert.equal(alien.species.length,2,"off-world capacity is two");
+life.advanceYears(alien,500);assert.ok(alien.species.length>=2&&alien.species.length<=life.OFFWORLD_SPECIES_LIMIT,"off-world species capacity is 24");
 assert.equal(life.visibleSpecies({species:[{bodyLengthCm:2},{bodyLengthCm:2.01}]}).length,1);
