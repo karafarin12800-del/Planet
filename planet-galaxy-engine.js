@@ -76,7 +76,7 @@
     }
     const starterSystems=new Set();
     const starters=new Set();
-    for(const planet of purchasable){if(!starterSystems.has(planet.systemId)){starterSystems.add(planet.systemId);starters.add(planet.commercePlanetId);planet.priceTokens=50;}}
+    for(const planet of purchasable){if(!starterSystems.has(planet.systemId)){starterSystems.add(planet.systemId);starters.add(planet.commercePlanetId);planet.priceTokens=50;planet.starterTier="trial";planet.creatureCapacity=1;planet.features=(planet.biomes||[]).slice(0,1);}}
     const score=p=>Number(p.lifePotential||0)*.72+Number(p.specialSpeciesPotential||0)*.28;
     const regular=purchasable.filter(p=>!starters.has(p.commercePlanetId)).sort((a,b)=>score(a)-score(b)||a.commercePlanetId.localeCompare(b.commercePlanetId));
     regular.forEach((planet,rank)=>{planet.priceTokens=100+Math.round(rank*900/Math.max(1,regular.length-1));});

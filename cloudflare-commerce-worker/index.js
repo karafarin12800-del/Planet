@@ -51,12 +51,12 @@ function planets(){
    const n=rows.length+1;
    rows.push({id:"planet-"+String(n).padStart(3,"0"),galaxyPlanetId:"market-world-"+String(n).padStart(3,"0"),galaxyId:p.id,
     name:p.name+" "+String(n).padStart(3,"0"),type:p.typeLabel,typeId:p.type,price:p.priceTokens,lifePotential:p.lifePotential,specialSpeciesPotential:p.specialSpeciesPotential,
-    creatureCapacity:2,radiusKm:p.radiusKm,gravity:p.gravity,meanTemperatureC:p.meanTemperatureC,waterCoverage:p.waterCoverage,
+    creatureCapacity:p.creatureCapacity,radiusKm:p.radiusKm,gravity:p.gravity,meanTemperatureC:p.meanTemperatureC,waterCoverage:p.waterCoverage,
     atmosphere:p.atmosphere,biomes:p.biomes,features:p.biomes});
   }
  }
  const starterSystems=new Set(),starters=new Set();
- for(const planet of rows){const system=planet.galaxyId.split("-p")[0];if(!starterSystems.has(system)){starterSystems.add(system);starters.add(planet.galaxyPlanetId);planet.price=50;}}
+ for(const planet of rows){const system=planet.galaxyId.split("-p")[0];if(!starterSystems.has(system)){starterSystems.add(system);starters.add(planet.galaxyPlanetId);planet.price=50;planet.creatureCapacity=1;planet.features=(planet.biomes||[]).slice(0,1);planet.starterTier="trial";}}
  const score=p=>Number(p.lifePotential||0)*.72+Number(p.specialSpeciesPotential||0)*.28;
  const regular=rows.filter(p=>!starters.has(p.galaxyPlanetId)).sort((a,b)=>score(a)-score(b)||a.galaxyPlanetId.localeCompare(b.galaxyPlanetId));
  regular.forEach((planet,rank)=>{planet.price=100+Math.round(rank*900/Math.max(1,regular.length-1));});

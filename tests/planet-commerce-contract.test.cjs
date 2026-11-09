@@ -26,6 +26,7 @@ const fs=require("node:fs");
  assert.equal(Math.min(...catalog.map(x=>x.price)),50,"starter planet in every system costs 50 tokens");
  const systems=new Map();for(const planet of catalog){const system=planet.galaxyId.split("-p")[0];systems.set(system,Math.min(systems.get(system)??Infinity,planet.price));}
  assert.ok(Array.from(systems.values()).every(price=>price===50),"every star system offers at least one 50-token starter planet");
+ assert.ok(catalog.filter(x=>x.price===50).every(x=>x.creatureCapacity===1&&x.features.length===1),"starter planets have reduced capacity and fewer features");
  assert.equal(Math.max(...catalog.map(x=>x.price)),1000,"catalog spans up to 1,000 tokens");
  assert.equal(catalog[0].id,"planet-001");
  assert.equal(catalog[99].id,"planet-100");
