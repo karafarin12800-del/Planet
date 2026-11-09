@@ -29,7 +29,7 @@ assert.ok(workflow.includes("cp index.html planet-localization.js evolution-engi
 assert.ok(workflow.includes("node --check planet-image-generation.js"), "CI validates image client syntax");
 assert.ok(workflow.includes("node tests/image-generation-contract.test.cjs"), "CI runs this integration contract test");
 assert.ok(sw.includes("planet-image-generation.js"), "PWA app-shell cache contains the runtime client");
-assert.ok(sw.includes("planet-pwa-v26-online-market"), "service-worker cache version is bumped for UI and Earth texture changes");
+assert.ok(sw.includes("planet-pwa-v27-genome-image-cache"), "service-worker cache version is bumped for persistent genome image caching");
 assert.ok(sw.includes("./genome-evidence.html"), "PWA app-shell cache contains the genome evidence report");
 assert.ok(threeD.includes("implicit tissue field + marching tetrahedra; no taxon-specific mesh template selected"),
   "3D model generation uses runtime procedural geometry without taxon-specific templates");
@@ -42,7 +42,7 @@ assert.ok(client.includes("fixed-genome-"), "one genome always uses the same ima
 assert.ok(worker.includes("env.ORGANISM_IMAGES.get(cacheKey)") && worker.includes("env.ORGANISM_IMAGES.put(cacheKey"), "R2 keeps one global image per genome");
 assert.ok(worker.includes("const genome = typeof body.genome"), "server cache key is derived from the submitted genome");
 assert.ok(client.includes("An original image was generated locally"), "the UI honestly identifies offline procedural output");
-assert.ok(client.includes("generateOffline();"), "the online failure path falls back to local generation");
+assert.ok(client.includes("generateOffline(hash)"), "the online failure path falls back to a stable genome-keyed local image");
 assert.ok(client.includes("generateOfflineSVG:id=>"), "the generated SVG path is exposed for direct testing");
 
 console.log("PLANET image-generation contract passed: online API safety, offline genome-driven generation, Android packaging, PWA cache and syntax wiring.");

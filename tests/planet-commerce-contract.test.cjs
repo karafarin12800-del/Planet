@@ -4,6 +4,7 @@ const fs=require("node:fs");
 (async()=>{
  const source=fs.readFileSync(require("node:path").join(__dirname,"..","cloudflare-commerce-worker/index.js"),"utf8");
  const schema=fs.readFileSync(require("node:path").join(__dirname,"..","cloudflare-commerce-worker/schema.sql"),"utf8");
+ const galaxy=require("../planet-galaxy-engine.js");
  const ui=fs.readFileSync(require("node:path").join(__dirname,"..","planet-commerce-ui.js"),"utf8");
  const html=fs.readFileSync(require("node:path").join(__dirname,"..","index.html"),"utf8");
  const encoded=Buffer.from(source).toString("base64");
@@ -18,6 +19,10 @@ const fs=require("node:fs");
  assert.ok(catalog.every(x=>x.price>=150&&x.price<=1000));
  assert.equal(catalog[0].id,"planet-001");
  assert.equal(catalog[99].id,"planet-100");
+ const worlds=galaxy.createGalaxy(0x504c414e).systems.flatMap(x=>x.planets).filter(x=>x.commercePlanetId);
+ assert.equal(worlds.length,100);
+ assert.ok(catalog.every((x,i)=>x.galaxyPlanetId===worlds[i].commercePlanetId&&x.name===worlds[i].name&&x.price===worlds[i].priceTokens),"server catalog must match the exact 3D galaxy planet, name and price");
+ assert.ok(source.includes("PLANET_ALREADY_OWNED"),"one planet can only have one global owner");
  assert.equal(mod.TOKEN_PRODUCT,"planet_tokens_200");
  assert.equal(mod.TOKEN_GRANT,200);
  assert.equal(mod.WELCOME_GRANT,20);
