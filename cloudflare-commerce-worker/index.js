@@ -79,13 +79,12 @@ async function sendVerification(email, code, env) {
   if(!r.ok) throw new Error("EMAIL_DELIVERY_FAILED");
 }
 async function grantWelcome(db,userId) {
-  const r=await db.prepare("UPDATE users SET welcome_granted_at=datetime('now') WHERE id=? AND welcome_granted_at IS NULL AND verified_at IS NOT NULL").bind(userId).run();
-  if(!r.meta.changes) return false;
-  await db.batch([
-    db.prepare("INSERT INTO wallets(user_id,balance) VALUES(?,?) ON CONFLICT(user_id) DO NOTHING").bind(userId,WELCOME_GRANT),
-    db.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) VALUES(?,?,?,?)").bind(userId,WELCOME_GRANT,"welcome","welcome:"+userId)
+  const results=await db.batch([
+    db.prepare("UPDATE users SET welcome_granted_at=datetime('now') WHERE id=? AND welcome_granted_at IS NULL AND verified_at IS NOT NULL").bind(userId),
+    db.prepare("INSERT INTO wallets(user_id,balance) SELECT ?,? WHERE changes()=1").bind(userId,WELCOME_GRANT),
+    db.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'welcome',? WHERE changes()=1").bind(userId,WELCOME_GRANT,"welcome:"+userId)
   ]);
-  return true;
+  return !!results[0].meta.changes;
 }
 async function route(req, env, url) {
   if(!env.DB) return response({error:"DATABASE_NOT_CONFIGURED"},503);
@@ -158,13 +157,12 @@ async function route(req, env, url) {
     const receipt=await check.json().catch(()=>({}));
     if(!check.ok||Number(receipt.purchaseState)!==0||receipt.productId!==TOKEN_PRODUCT) return response({error:"BAZAAR_RECEIPT_INVALID"},402);
     const tokenHash=await sha256(purchaseToken);
-    const inserted=await env.DB.prepare("INSERT OR IGNORE INTO purchases(user_id,provider,product_id,receipt_hash,token_amount,created_at) VALUES(?,?,?,?,?,datetime('now'))")
-      .bind(user.id,"cafebazaar",TOKEN_PRODUCT,tokenHash,TOKEN_GRANT).run();
-    if(!inserted.meta.changes) return response({ok:true,alreadyCredited:true,tokenAmount:TOKEN_GRANT});
-    await env.DB.batch([
-      env.DB.prepare("INSERT INTO wallets(user_id,balance) VALUES(?,?) ON CONFLICT(user_id) DO UPDATE SET balance=balance+excluded.balance").bind(user.id,TOKEN_GRANT),
-      env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) VALUES(?,?,?,?)").bind(user.id,TOKEN_GRANT,"bazaar_purchase",tokenHash)
+    const grant=await env.DB.batch([
+      env.DB.prepare("INSERT OR IGNORE INTO purchases(user_id,provider,product_id,receipt_hash,token_amount,created_at) VALUES(?,?,?,?,?,datetime('now'))").bind(user.id,"cafebazaar",TOKEN_PRODUCT,tokenHash,TOKEN_GRANT),
+      env.DB.prepare("INSERT INTO wallets(user_id,balance) SELECT ?,? WHERE changes()=1 ON CONFLICT(user_id) DO UPDATE SET balance=balance+excluded.balance").bind(user.id,TOKEN_GRANT),
+      env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'bazaar_purchase',? WHERE changes()=1").bind(user.id,TOKEN_GRANT,tokenHash)
     ]);
+    if(!grant[0].meta.changes) return response({ok:true,alreadyCredited:true,tokenAmount:TOKEN_GRANT});
     return response({ok:true,tokenAmount:TOKEN_GRANT});
   }
   if(method==="GET"&&path==="/market/listings"){
@@ -192,14 +190,14 @@ async function route(req, env, url) {
     if((balance?.balance||0)<listing.price) return response({error:"INSUFFICIENT_TOKENS"},402);
     const tx=crypto.randomUUID();
     const results=await env.DB.batch([
-      env.DB.prepare("UPDATE listings SET status='sold',buyer_id=?,sold_at=datetime('now') WHERE id=? AND status='active'").bind(user.id,listingId),
+      env.DB.prepare("UPDATE listings SET status='sold',buyer_id=?,sold_at=datetime('now') WHERE id=? AND status='active' AND EXISTS(SELECT 1 FROM wallets WHERE user_id=? AND balance>=?) AND EXISTS(SELECT 1 FROM wallets WHERE user_id=?) AND EXISTS(SELECT 1 FROM specimens WHERE id=? AND owner_id=? AND status='listed')").bind(user.id,listingId,user.id,listing.price,listing.seller_id,listing.specimen_id,listing.seller_id),
       env.DB.prepare("UPDATE wallets SET balance=balance-? WHERE user_id=? AND balance>=? AND changes()=1").bind(listing.price,user.id,listing.price),
       env.DB.prepare("UPDATE wallets SET balance=balance+? WHERE user_id=? AND changes()=1").bind(listing.price,listing.seller_id),
       env.DB.prepare("UPDATE specimens SET owner_id=?,status='owned' WHERE id=? AND owner_id=? AND status='listed' AND changes()=1").bind(user.id,listing.specimen_id,listing.seller_id),
       env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'market_buy',? WHERE changes()=1").bind(user.id,-listing.price,tx),
       env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'market_sale',? WHERE changes()=1").bind(listing.seller_id,listing.price,tx)
     ]);
-    if(results.some((r,i)=>i<4&&!r.meta.changes)) return response({error:"PURCHASE_CONFLICT"},409);
+    if(results.some(r=>!r.meta.changes)) return response({error:"PURCHASE_CONFLICT"},409);
     return response({ok:true,specimenId:listing.specimen_id,paid:listing.price,fee:0});
   }
   if(method==="POST"&&path==="/specimens/register"){
