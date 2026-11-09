@@ -281,7 +281,7 @@
       const clientKey="genome:"+s.seed+":"+x.id;
       if((s.specimens||[]).some(y=>y.client_key===clientKey)){showNotice("این موجود قبلاً در آلبوم ثبت شده است.");return;}
       try{
-        const result=await win.PlanetCommerceClient.registerSpecimen({clientKey,planetId:"planet-"+String(s.planet.commercePlanetId).slice(-3),
+        const result=await win.PlanetCommerceClient.registerSpecimen({clientKey,planetId:s.planet.id,
           name:x.name,form:x.form,dna:x.dna,generation:x.generation,fitness:x.fitness,bodyLengthCm:x.bodyLengthCm,special:x.special,rarityScore:x.rarityScore});
         const [collection,wallet]=await Promise.all([win.PlanetCommerceClient.collection(),win.PlanetCommerceClient.wallet()]);
         s.specimens=collection.specimens||[];updateWalletBadge(wallet.balance);
