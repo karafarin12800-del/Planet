@@ -7,69 +7,50 @@ const JSON_HEADERS = { "content-type": "application/json; charset=utf-8", "cache
 const TOKEN_PRODUCT = "planet_tokens_200";
 const TOKEN_GRANT = 200;
 const WELCOME_GRANT = 20;
-const CATALOG = [
-  ["آوید","سنگی",180],["رایا","اقیانوسی",320],["هیراد","یخی",260],["مانا","جنگلی",240],
-  ["ویرا","آتشفشانی",520],["آترین","بیابانی",210],["دانا","سنگی",190],["آریو","اقیانوسی",390],
-  ["نیوا","یخی",280],["هانا","جنگلی",300],["آرکا","غول گازی",850],["سایا","سنگی",220],
-  ["مهرآسا","اقیانوسی",450],["تابان","آتشفشانی",720],["پگاه","یخی",340],["سپهر","غول گازی",1000],
-  ["باران","جنگلی",360],["کیهان","بیابانی",250],["روشنا","سنگی",170],["نیلوفر","اقیانوسی",410]
-];
-const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
-function response(data, status=200, cors={}) {
-  return new Response(JSON.stringify(data), { status, headers: { ...JSON_HEADERS, ...cors } });
+const PLANET_TYPES=[
+{id:"terrestrial",label:"سنگی",biomes:["دشت","کوهستان","بیابان","جنگل"],radius:[4200,8200],water:[0.05,0.65],temp:[-25,42]},
+{id:"ocean",label:"اقیانوسی",biomes:["اقیانوس","جزیره","آب‌های کم‌عمق"],radius:[5000,10500],water:[0.72,0.99],temp:[-5,35]},
+{id:"ice",label:"یخی",biomes:["یخزار","اقیانوس زیرسطحی","شکاف یخی"],radius:[2500,7800],water:[0.35,0.95],temp:[-150,-5]},
+{id:"desert",label:"بیابانی",biomes:["تپه‌های شنی","درهٔ سنگی","دشت نمکی"],radius:[3000,9000],water:[0,0.12],temp:[15,95]},
+{id:"volcanic",label:"آتشفشانی",biomes:["دشت گدازه","کوه آتشفشانی","غار معدنی"],radius:[3500,9500],water:[0,0.18],temp:[80,450]},
+{id:"gas-giant",label:"غول گازی",biomes:["ابرهای فوقانی","کمربندهای طوفانی"],radius:[30000,85000],water:[0,0.03],temp:[-180,30]}];
+const PLANET_NAMES=["آوید","رایا","هیراد","مانا","ویرا","آترین","دانا","آریو","نیوا","هانا","آرکا","سایا"];
+const hash32=v=>{let h=2166136261;const s=String(v);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;};
+const random=seed=>{let s=seed>>>0;return()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;}};
+const pick=(r,a)=>a[Math.floor(r()*a.length)],range=(r,p)=>p[0]+r()*(p[1]-p[0]);
+function planetEconomy(p){
+ const temp=Number(p.meanTemperatureC)||0,water=clamp(p.waterCoverage,0,1),gravity=clamp(p.gravity||1,.05,10);
+ const thermal=clamp(1-Math.max(0,Math.abs(temp-18)-18)/260,.08,1),waterFit=clamp(1-Math.abs(water-.52)*1.15,.12,1),gravityFit=clamp(1-Math.abs(Math.log2(gravity))*.24,.18,1);
+ const atmosphere=({"nitrogen-oxygen":1,"nitrogen-rich":.94,"thin-carbon-dioxide":.82,"dense-carbon-dioxide":.64,"hydrogen-helium":.52,"trace-atmosphere":.45}[p.atmosphere]||.62);
+ const surface=p.type==="gas-giant"?.42:p.type==="volcanic"?.58:p.type==="ice"?.76:p.type==="desert"?.72:1;
+ const life=clamp(Math.round((thermal*.28+waterFit*.24+gravityFit*.16+atmosphere*.18+surface*.14)*100),5,100);
+ const extreme=clamp(Math.abs(temp-18)/180,0,1),diversity=clamp((p.biomes||[]).length/5,0,1);
+ const special=clamp(Math.round(25+life*.36+extreme*18+diversity*18+(p.type==="volcanic"||p.type==="gas-giant"?12:0)),10,100);
+ p.lifePotential=life;p.specialSpeciesPotential=special;p.priceTokens=clamp(150+Math.round(850*(life*.72+special*.28)/100),150,1000);p.creatureCapacity=2;return p;
 }
-function corsFor(req, env) {
-  const origin = req.headers.get("Origin") || "";
-  const allowed = String(env.ALLOWED_ORIGINS || "https://karafarin12800-del.github.io,https://appassets.androidplatform.net")
-    .split(",").map(x=>x.trim()).filter(Boolean);
-  const ok = allowed.includes("*") || allowed.includes(origin);
-  return { "access-control-allow-origin": ok ? (allowed.includes("*") ? "*" : origin) : "",
-    "access-control-allow-methods":"GET,POST,OPTIONS",
-    "access-control-allow-headers":"Content-Type,Authorization",
-    "vary":"Origin" };
+function makePlanet(systemId,index,rng,home){
+ const type=home?PLANET_TYPES[0]:pick(rng,PLANET_TYPES),id=systemId+"-p"+(index+1);
+ const water=home?0.71:range(rng,type.water),temperature=home?15:range(rng,type.temp);
+ return planetEconomy({id,name:home?"زمین":pick(rng,PLANET_NAMES),systemId,seed:hash32(id+"|"+Math.floor(rng()*4294967295)),
+ type:type.id,typeLabel:type.label,radiusKm:Math.round(range(rng,type.radius)),gravity:Math.round((home?1:range(rng,[.25,2.4]))*100)/100,
+ meanTemperatureC:Math.round(temperature),waterCoverage:Math.round(water*1000)/1000,
+ atmosphere:home?"nitrogen-oxygen":pick(rng,["thin-carbon-dioxide","dense-carbon-dioxide","nitrogen-rich","hydrogen-helium","trace-atmosphere"]),
+ biomes:home?["اقیانوس","جنگل","دشت","بیابان","کوهستان"]:type.biomes.slice(),home:!!home});
 }
-async function sha256(value) {
-  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return [...new Uint8Array(bytes)].map(x=>x.toString(16).padStart(2,"0")).join("");
-}
-function b64url(bytes) {
-  let s=""; for(const b of new Uint8Array(bytes)) s+=String.fromCharCode(b);
-  return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
-}
-async function passwordHash(password, salt) {
-  const material = await crypto.subtle.importKey("raw",new TextEncoder().encode(password),"PBKDF2",false,["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({name:"PBKDF2",salt:new TextEncoder().encode(salt),iterations:120000,hash:"SHA-256"},material,256);
-  return b64url(bits);
-}
-async function signToken(user, env) {
-  const head=b64url(new TextEncoder().encode(JSON.stringify({alg:"HS256",typ:"JWT"})));
-  const body=b64url(new TextEncoder().encode(JSON.stringify({sub:user.id,email:user.email,exp:Math.floor(Date.now()/1000)+604800})));
-  const input=head+"."+body;
-  const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(env.AUTH_SECRET),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
-  const sig=await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(input));
-  return input+"."+b64url(sig);
-}
-async function authenticate(req, env) {
-  const token=(req.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
-  const parts=token.split(".");
-  if(parts.length!==3||!env.AUTH_SECRET) return null;
-  try {
-    const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(env.AUTH_SECRET),{name:"HMAC",hash:"SHA-256"},false,["verify"]);
-    const sig=Uint8Array.from(atob(parts[2].replace(/-/g,"+").replace(/_/g,"/")+"===".slice((parts[2].length+3)%4)),c=>c.charCodeAt(0));
-    if(!await crypto.subtle.verify("HMAC",key,sig,new TextEncoder().encode(parts[0]+"."+parts[1]))) return null;
-    const payload=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(parts[1].replace(/-/g,"+").replace(/_/g,"/")+"===".slice((parts[1].length+3)%4)),c=>c.charCodeAt(0))));
-    if(!payload.sub||payload.exp<Date.now()/1000) return null;
-    return await env.DB.prepare("SELECT id,email,verified_at FROM users WHERE id=? AND verified_at IS NOT NULL").bind(payload.sub).first();
-  } catch { return null; }
-}
-function planets() {
-  const rows=[];
-  for(let i=0;i<100;i++){
-    const base=CATALOG[i%CATALOG.length], tier=Math.floor(i/CATALOG.length);
-    const price=clamp(base[2]+tier*17+(i%7)*9,150,1000);
-    rows.push({id:"planet-"+String(i+1).padStart(3,"0"),name:base[0]+(tier?(" "+(tier+1)):""),type:base[1],price,features:["زیست‌بوم مستقل","قابل کاوش","ذخیرهٔ پایدار"],catalogVersion:1});
+function planets(){
+ const rows=[],seed=0x504c414e;
+ for(let si=0;si<17&&rows.length<100;si++){
+  const rng=random(hash32(seed+"|system|"+si)),systemId="system-"+String(si+1).padStart(2,"0"),count=si===0?8:6+Math.floor(rng()*3);
+  for(let i=0;i<count&&rows.length<100;i++){
+   const p=makePlanet(systemId,i,rng,si===0&&i===0);if(p.home)continue;
+   const n=rows.length+1;
+   rows.push({id:"planet-"+String(n).padStart(3,"0"),galaxyPlanetId:"market-world-"+String(n).padStart(3,"0"),
+    name:p.name,type:p.typeLabel,typeId:p.type,price:p.priceTokens,lifePotential:p.lifePotential,specialSpeciesPotential:p.specialSpeciesPotential,
+    creatureCapacity:2,radiusKm:p.radiusKm,gravity:p.gravity,meanTemperatureC:p.meanTemperatureC,waterCoverage:p.waterCoverage,
+    atmosphere:p.atmosphere,biomes:p.biomes,features:p.biomes});
   }
-  return rows;
+ }
+ return rows;
 }
 async function jsonBody(req) { try { return await req.json(); } catch { return null; } }
 async function sendVerification(email, code, env) {
@@ -95,8 +76,8 @@ async function route(req, env, url) {
     const ids=String(url.searchParams.get("ids")||"").split(",").filter(x=>/^[a-zA-Z0-9_-]{1,80}$/.test(x)).slice(0,100);
     if(!ids.length) return response({owners:{}});
     const marks=ids.map(()=>"?").join(",");
-    const rows=await env.DB.prepare("SELECT o.planet_id,u.display_name FROM planet_ownership o JOIN users u ON u.id=o.user_id WHERE o.planet_id IN ("+marks+") AND u.display_name IS NOT NULL").bind(...ids).all();
-    const owners={};for(const row of rows.results||[])owners[row.planet_id]=row.display_name;
+    const rows=await env.DB.prepare("SELECT o.galaxy_planet_id,u.display_name FROM planet_ownership o JOIN users u ON u.id=o.user_id WHERE o.galaxy_planet_id IN ("+marks+") AND u.display_name IS NOT NULL").bind(...ids).all();
+    const owners={};for(const row of rows.results||[])owners[row.galaxy_planet_id]=row.display_name;
     return response({owners});
   }
   if(method==="POST"&&path==="/auth/register"){
@@ -164,24 +145,24 @@ async function route(req, env, url) {
     return response({ok:true,displayName});
   }
   if(method==="GET"&&path==="/planets/owned"){
-    const rows=await env.DB.prepare("SELECT planet_id,price,created_at FROM planet_ownership WHERE user_id=? ORDER BY created_at DESC").bind(user.id).all();
+    const rows=await env.DB.prepare("SELECT planet_id,galaxy_planet_id,price,created_at FROM planet_ownership WHERE user_id=? ORDER BY created_at DESC").bind(user.id).all();
     const catalog=new Map(planets().map(p=>[p.id,p]));
-    return response({planets:(rows.results||[]).map(row=>({...catalog.get(row.planet_id),purchasedPrice:row.price,purchasedAt:row.created_at})).filter(Boolean)});
+    return response({planets:(rows.results||[]).map(row=>({...catalog.get(row.planet_id),galaxyPlanetId:row.galaxy_planet_id,purchasedPrice:row.price,purchasedAt:row.created_at})).filter(Boolean)});
   }
   if(method==="POST"&&path==="/planets/buy"){
     const b=await jsonBody(req),planetId=String(b?.planetId||""),planet=planets().find(p=>p.id===planetId);
     if(!planet) return response({error:"PLANET_NOT_FOUND"},404);
-    const owned=await env.DB.prepare("SELECT planet_id FROM planet_ownership WHERE user_id=? AND planet_id=?").bind(user.id,planetId).first();
-    if(owned) return response({error:"ALREADY_OWNED"},409);
+    const owned=await env.DB.prepare("SELECT planet_id FROM planet_ownership WHERE planet_id=?").bind(planetId).first();
+    if(owned) return response({error:"PLANET_ALREADY_OWNED"},409);
     const tx=crypto.randomUUID();
     const results=await env.DB.batch([
-      env.DB.prepare("INSERT OR IGNORE INTO planet_ownership(user_id,planet_id,price,created_at) SELECT ?,?,?,datetime('now') WHERE EXISTS(SELECT 1 FROM wallets WHERE user_id=? AND balance>=?) AND NOT EXISTS(SELECT 1 FROM planet_ownership WHERE user_id=? AND planet_id=?)").bind(user.id,planetId,planet.price,user.id,planet.price,user.id,planetId),
+      env.DB.prepare("INSERT OR IGNORE INTO planet_ownership(user_id,planet_id,galaxy_planet_id,price,created_at) SELECT ?,?,?,?,datetime('now') WHERE EXISTS(SELECT 1 FROM wallets WHERE user_id=? AND balance>=?) AND NOT EXISTS(SELECT 1 FROM planet_ownership WHERE user_id=? AND planet_id=?)").bind(user.id,planetId,planet.galaxyPlanetId,planet.price,user.id,planet.price,user.id,planetId),
       env.DB.prepare("UPDATE wallets SET balance=balance-? WHERE user_id=? AND balance>=? AND changes()=1").bind(planet.price,user.id,planet.price),
       env.DB.prepare("INSERT INTO wallet_ledger(user_id,delta,kind,reference) SELECT ?,?,'planet_purchase',? WHERE changes()=1").bind(user.id,-planet.price,tx)
     ]);
     if(!results[0].meta.changes){
-      const already=await env.DB.prepare("SELECT planet_id FROM planet_ownership WHERE user_id=? AND planet_id=?").bind(user.id,planetId).first();
-      return response({error:already?"ALREADY_OWNED":"INSUFFICIENT_TOKENS"},already?409:402);
+      const already=await env.DB.prepare("SELECT planet_id FROM planet_ownership WHERE planet_id=?").bind(planetId).first();
+      return response({error:already?"PLANET_ALREADY_OWNED":"INSUFFICIENT_TOKENS"},already?409:402);
     }
     if(results.some(r=>!r.meta.changes)) return response({error:"PURCHASE_CONFLICT"},409);
     return response({ok:true,planet,paid:planet.price,fee:0},201);
