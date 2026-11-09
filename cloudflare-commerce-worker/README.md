@@ -8,6 +8,7 @@ Cafe Bazaar receipt verification and a player-to-player specimen marketplace.
 
 1. Create a Cloudflare D1 database named \`planet-commerce\`.
 2. Run \`npx wrangler d1 execute planet-commerce --file=schema.sql\`.
+3. Apply migrations in order: \`npx wrangler d1 execute planet-commerce --file=migrations/0002_profile_display_name.sql\` and \`npx wrangler d1 execute planet-commerce --file=migrations/0003_specimen_market_eligibility.sql\`.
 3. Put the resulting D1 database ID in \`wrangler.toml\`.
 4. Deploy from this directory with Wrangler.
 5. Configure Worker secrets: \`AUTH_SECRET\` (random 32+ bytes), \`RESEND_API_KEY\`,
@@ -35,6 +36,8 @@ Cafe Bazaar reports a successful purchase of \`planet_tokens_200\`. Receipt hash
 Marketplace transfers debit the buyer and credit the seller at the same token price; fee is zero.
 
 ## Important trust boundary
+
+Only special creatures pass the server-side market gate: alien creatures must be strictly larger than 5 cm; Earth creatures must be at least 45 cm and marked special. Existing specimens remain non-tradable until re-registered with valid metadata; no legacy common Earth species are automatically promoted.
 
 The first \`/specimens/register\` endpoint binds an app-submitted specimen to an account, but
 cannot prove that a modified client did not fabricate its genome. Do not market this as

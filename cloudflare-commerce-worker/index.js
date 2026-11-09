@@ -233,14 +233,15 @@ async function route(req, env, url) {
     return response({ok:true,tokenAmount:TOKEN_GRANT});
   }
   if(method==="GET"&&path==="/market/listings"){
-    const rows=await env.DB.prepare("SELECT l.id,l.specimen_id,l.price,l.created_at,s.name,s.form,s.generation,s.fitness,s.planet_id FROM listings l JOIN specimens s ON s.id=l.specimen_id WHERE l.status='active' AND l.seller_id<>? ORDER BY l.created_at DESC LIMIT 100").bind(user.id).all();
+    const rows=await env.DB.prepare("SELECT l.id,l.specimen_id,l.price,l.created_at,s.name,s.form,s.generation,s.fitness,s.planet_id,s.body_length_cm,s.rarity_score,u.display_name AS seller_name FROM listings l JOIN specimens s ON s.id=l.specimen_id JOIN users u ON u.id=l.seller_id WHERE l.status='active' AND s.market_eligible=1 AND l.seller_id<>? ORDER BY l.created_at DESC LIMIT 100").bind(user.id).all();
     return response({listings:rows.results||[]});
   }
   if(method==="POST"&&path==="/market/list"){
     const b=await jsonBody(req),specimenId=String(b?.specimenId||""),price=Number(b?.price);
     if(!specimenId||!Number.isSafeInteger(price)||price<1||price>1000000) return response({error:"INVALID_LISTING"},400);
-    const owned=await env.DB.prepare("SELECT id FROM specimens WHERE id=? AND owner_id=? AND status='owned'").bind(specimenId,user.id).first();
+    const owned=await env.DB.prepare("SELECT id,market_eligible FROM specimens WHERE id=? AND owner_id=? AND status='owned'").bind(specimenId,user.id).first();
     if(!owned) return response({error:"SPECIMEN_NOT_OWNED"},404);
+    if(Number(owned.market_eligible)!==1) return response({error:"SPECIMEN_NOT_MARKET_ELIGIBLE"},403);
     const id=crypto.randomUUID();
     const result=await env.DB.batch([
       env.DB.prepare("UPDATE specimens SET status='listed' WHERE id=? AND owner_id=? AND status='owned'").bind(specimenId,user.id),
@@ -262,7 +263,7 @@ async function route(req, env, url) {
   }
   if(method==="POST"&&path==="/market/buy"){
     const b=await jsonBody(req),listingId=String(b?.listingId||"");
-    const listing=await env.DB.prepare("SELECT id,specimen_id,seller_id,price FROM listings WHERE id=? AND status='active'").bind(listingId).first();
+    const listing=await env.DB.prepare("SELECT l.id,l.specimen_id,l.seller_id,l.price FROM listings l JOIN specimens s ON s.id=l.specimen_id WHERE l.id=? AND l.status='active' AND s.market_eligible=1").bind(listingId).first();
     if(!listing||listing.seller_id===user.id) return response({error:"LISTING_UNAVAILABLE"},404);
     const balance=await env.DB.prepare("SELECT balance FROM wallets WHERE user_id=?").bind(user.id).first();
     if((balance?.balance||0)<listing.price) return response({error:"INSUFFICIENT_TOKENS"},402);
@@ -280,18 +281,20 @@ async function route(req, env, url) {
   }
   if(method==="POST"&&path==="/specimens/register"){
     const b=await jsonBody(req),clientKey=String(b?.clientKey||"").slice(0,180),planetId=String(b?.planetId||""),name=String(b?.name||"موجود دیجیتال").slice(0,100),form=String(b?.form||"").slice(0,80),dna=String(b?.dna||"").toUpperCase();
-    if(!clientKey||!planetId||!/^[ACGT]{1,100000}$/.test(dna)) return response({error:"INVALID_SPECIMEN"},400);
+    const bodyLengthCm=clamp(Number(b?.bodyLengthCm)||0,0,6000),special=b?.special===true,originWorldType=b?.originWorldType==="earth"?"earth":"alien",rarityScore=clamp(Number(b?.rarityScore)||0,0,100);
+    const marketEligible=special&&(originWorldType==="earth"?bodyLengthCm>=45:bodyLengthCm>5);
+    if(!clientKey||!planetId||!/^[ACGT]{1,100000}$/.test(dna)||!Number.isFinite(Number(b?.bodyLengthCm))) return response({error:"INVALID_SPECIMEN"},400);
     const existing=await env.DB.prepare("SELECT id FROM specimens WHERE owner_id=? AND client_key=?").bind(user.id,clientKey).first();
     if(existing) return response({ok:true,specimenId:existing.id,alreadyRegistered:true});
     const id=crypto.randomUUID();
-    await env.DB.prepare("INSERT OR IGNORE INTO specimens(id,owner_id,client_key,planet_id,name,form,dna,generation,fitness,status,created_at) VALUES(?,?,?,?,?,?,?,?,?,'owned',datetime('now'))")
-      .bind(id,user.id,clientKey,planetId,name,form,dna,clamp(Number(b.generation)||0,0,1e9),clamp(Number(b.fitness)||0,0,1)).run();
+    await env.DB.prepare("INSERT OR IGNORE INTO specimens(id,owner_id,client_key,planet_id,name,form,dna,generation,fitness,body_length_cm,is_special,origin_world_type,rarity_score,market_eligible,status,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,'owned',datetime('now'))")
+      .bind(id,user.id,clientKey,planetId,name,form,dna,clamp(Number(b.generation)||0,0,1e9),clamp(Number(b.fitness)||0,0,1),bodyLengthCm,special?1:0,originWorldType,rarityScore,marketEligible?1:0).run();
     const saved=await env.DB.prepare("SELECT id FROM specimens WHERE owner_id=? AND client_key=?").bind(user.id,clientKey).first();
     if(!saved) return response({error:"SPECIMEN_REGISTER_FAILED"},409);
     return response({ok:true,specimenId:saved.id,alreadyRegistered:saved.id!==id},201);
   }
   if(method==="GET"&&path==="/collection"){
-    const rows=await env.DB.prepare("SELECT s.id,s.client_key,s.planet_id,s.name,s.form,s.dna,s.generation,s.fitness,s.status,s.created_at,l.id AS listing_id FROM specimens s LEFT JOIN listings l ON l.specimen_id=s.id AND l.status='active' WHERE s.owner_id=? ORDER BY created_at DESC LIMIT 250").bind(user.id).all();
+    const rows=await env.DB.prepare("SELECT s.id,s.client_key,s.planet_id,s.name,s.form,s.dna,s.generation,s.fitness,s.body_length_cm,s.is_special,s.origin_world_type,s.rarity_score,s.market_eligible,s.status,s.created_at,l.id AS listing_id FROM specimens s LEFT JOIN listings l ON l.specimen_id=s.id AND l.status='active' WHERE s.owner_id=? ORDER BY created_at DESC LIMIT 250").bind(user.id).all();
     return response({specimens:rows.results||[]});
   }
   return response({error:"NOT_FOUND"},404);

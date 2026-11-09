@@ -36,12 +36,12 @@ async function refresh(){
    });
    if(ownedIds.has(planet.id))catalogBox.lastElementChild.querySelector("button").disabled=true;
   });
-  const specimens=collection.specimens||[],own=specimens.filter(x=>x.status==="owned"),myBox=$("commerceMySpecimens");myBox.textContent="";fillOwnSelect(own);
-  specimens.filter(x=>x.status==="listed").forEach(x=>row(myBox,x.name,x.form+" · آگهی فعال","لغو آگهی",async()=>{
+  const specimens=collection.specimens||[],own=specimens.filter(x=>x.status==="owned"&&Number(x.market_eligible)===1),myBox=$("commerceMySpecimens");myBox.textContent="";fillOwnSelect(own);
+  specimens.filter(x=>x.status==="listed").forEach(x=>row(myBox,x.name,x.form+" · "+Number(x.body_length_cm||0)+" cm · آگهی فعال","لغو آگهی",async()=>{
    try{await client.cancelListing(x.listing_id);status("آگهی لغو شد و نمونه به کلکسیون برگشت.");await refresh();}catch(error){status(error.message);}
   }));
   const marketBox=$("commerceMarketListings");marketBox.textContent="";
-  (market.listings||[]).forEach(x=>row(marketBox,x.name,x.form+" · نسل "+x.generation+" · "+x.price+" توکن","خرید",async()=>{
+  (market.listings||[]).forEach(x=>row(marketBox,x.name,x.form+" · "+Number(x.body_length_cm||0)+" cm · فروشنده: "+(x.seller_name||"بازیکن")+" · نسل "+x.generation+" · "+x.price+" توکن","خرید",async()=>{
    if(!confirm("این نمونه با قیمت "+x.price+" توکن خریداری شود؟"))return;
    try{const result=await client.buyListing(x.id);status("خرید انجام شد؛ "+result.paid+" توکن پرداخت شد، کارمزد صفر.");await refresh();}catch(error){status(error.message);}
   }));
@@ -54,7 +54,7 @@ async function syncSpecimens(){
   const context=window.PlanetCommerceContext;if(!context)throw new Error("اتصال کلکسیون محلی آماده نیست.");
   const state=context.getCollection();let count=0;
   for(const specimen of state.specimens){if(specimen.source==="online")continue;
-   await client.registerSpecimen({clientKey:specimen.id,planetId:specimen.worldId||context.getWorldId(),name:specimen.name,form:specimen.form,dna:specimen.dna,generation:specimen.generation,fitness:specimen.fitness});count++;
+   await client.registerSpecimen({clientKey:specimen.id,planetId:specimen.worldId||context.getWorldId(),name:specimen.name,form:specimen.form,dna:specimen.dna,generation:specimen.generation,fitness:specimen.fitness,bodyLengthCm:specimen.bodyLengthCm,special:specimen.special,rarityScore:specimen.rarityScore,originWorldType:specimen.originWorldType});count++;
   }
   await refresh();status(count+" نمونه با شناسهٔ ثابت همگام شد؛ تکرار عملیات نمونهٔ تکراری نمی‌سازد.");
  }catch(error){status(error.message);}
