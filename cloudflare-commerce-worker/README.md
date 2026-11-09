@@ -116,3 +116,8 @@ Off-world specimen registration is accepted only when the authenticated account 
 
 
 Set the Worker variable CREATOR_USER_ID to the game creator’s Planet account ID (available from the authenticated profile response). Marketplace purchases fail closed until this account exists and has a wallet. Each first-time specimen registration in a player’s personal collection grants 10 tokens once. Listings have a 50-token minimum and no application-level maximum (safe integer only). After a confirmed sale, 5% rounded to the nearest whole token goes to the creator and the remaining 95% to the seller; buyer debit, both credits, ownership transfer and ledger records run in one D1 batch.
+
+
+## One-time app endpoint configuration (maintainers only)
+
+Players must never be asked to enter a Worker URL. After deploying this Worker, set its HTTPS URL once in the app source at `CONFIGURED_API_BASE` in the root `planet-commerce-client.js`, then build and publish the app update. Leave this value empty until the real deployed URL is known; the app will show a friendly service-not-ready message and keep account actions unavailable. Never ask players to configure Cloudflare, D1, Worker bindings, or server URLs.
