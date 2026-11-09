@@ -8,7 +8,7 @@ Cafe Bazaar receipt verification and a player-to-player specimen marketplace.
 
 1. Create a Cloudflare D1 database named \`planet-commerce\`.
 2. Run \`npx wrangler d1 execute planet-commerce --file=schema.sql\`.
-3. Apply migrations in order: `npx wrangler d1 execute planet-commerce --file=migrations/0002_profile_display_name.sql`, then `0003_specimen_market_eligibility.sql`, then `0004_galaxy_planet_identity.sql`, then `0005_vip_subscriptions.sql`.
+3. Apply migrations in order: `npx wrangler d1 execute planet-commerce --file=migrations/0002_profile_display_name.sql`, then `0003_specimen_market_eligibility.sql`, then `0004_galaxy_planet_identity.sql`, then `0005_vip_subscriptions.sql`, then `0006_welcome_grant_adjustment.sql`.
 3. Put the resulting D1 database ID in \`wrangler.toml\`.
 4. Deploy from this directory with Wrangler.
 5. Configure Worker secrets: \`AUTH_SECRET\` (random 32+ bytes), \`RESEND_API_KEY\`,
@@ -104,7 +104,7 @@ The Worker also requires D1, `AUTH_SECRET`, `RESEND_API_KEY`, `VERIFY_FROM_EMAIL
 `GOOGLE_CLIENT_ID`, `BAZAAR_CLIENT_ID`, `BAZAAR_CLIENT_SECRET`,
 `BAZAAR_REFRESH_TOKEN`, `BAZAAR_PACKAGE_NAME` and `ALLOWED_ORIGINS`.
 Complete Cafe Bazaar Developer API OAuth authorization to obtain its client values and refresh
-token. Create the consumable product `planet_tokens_200` before testing.
+token. Create the three consumables and the 60-day subscription `planet_vip_60d` before testing.
 
 Never put a Bazaar client secret, refresh token, `AUTH_SECRET` or Resend key in the APK or Git.
 Poolakey requires Cafe Bazaar installed on the Android test device. Do not enable production
