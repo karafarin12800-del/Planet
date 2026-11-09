@@ -531,6 +531,25 @@
           if(saved&&Array.isArray(saved.specimens)&&saved.specimens.length)return true;
         }
       }catch(e){}
+      // Existing species from the original Planet biosphere also unlock Genome Game.
+      try{
+        const worlds=win.PlanetWorldState,home=worlds&&worlds.getHomeWorldId(win.localStorage,win.PlanetGalaxyEngine);
+        if(worlds&&typeof worlds.load==="function"){
+          for(const system of galaxy.systems||[])for(const planet of system.planets||[]){
+            const snapshot=worlds.load(win.localStorage,planet.id,{homeWorldId:home,galaxyEngine:win.PlanetGalaxyEngine});
+            if(snapshot&&snapshot.state){const state=JSON.parse(snapshot.state);if(Array.isArray(state.species)&&state.species.some(x=>x&&!x.extinct))return true;}
+          }
+        }
+      }catch(e){}
+      try{
+        const collection=win.PlanetCollectionCommerce;
+        if(collection&&typeof collection.load==="function"){
+          for(const system of galaxy.systems||[])for(const planet of system.planets||[]){
+            const saved=collection.load(win.localStorage,planet.id);
+            if(saved&&Array.isArray(saved.specimens)&&saved.specimens.length)return true;
+          }
+        }
+      }catch(e){}
       return false;
     }
     launch.addEventListener("click",async function(){

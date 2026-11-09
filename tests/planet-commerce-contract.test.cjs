@@ -45,6 +45,7 @@ const fs=require("node:fs");
  assert.ok(viewer.includes("GUEST_WALLET_KEY")&&viewer.includes("setGuestWallet")&&viewer.includes("guestOwnedPlanets"),"guest wallet and local planet ownership persist on device");
  assert.ok(viewer.includes("pgGuestWalletBack")&&viewer.includes("pgGuestWalletBuy"),"guest wallet provides back and token-purchase entry points");
  assert.ok(viewer.includes("اول باید یک گونه به دست بیاوری")&&viewer.includes("planet-galaxy-explore"),"Genome Game is gated until a species exists while planet exploration stays available");
+ assert.ok(viewer.includes("PlanetWorldState")&&viewer.includes("PlanetCollectionCommerce"),"existing biosphere and personal-collection species also unlock Genome Game");
  assert.ok(viewer.includes('selectedSystemId=found.system.id;selectedPlanetId=id;mode="planet"'),"selecting a planet opens its dedicated menu");
  assert.ok(viewer.includes('Engine.selectPlanet(galaxy,found.planet.id);mode="planet"'),"buying a planet opens the owned planet and genome menu");
  assert.ok(html.includes("commerceWalletBack")&&html.includes("commerceBuyTokens200"),"signed-in wallet has a back action and token purchase options");
