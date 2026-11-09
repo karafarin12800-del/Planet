@@ -5,7 +5,7 @@
   if (root) root.PlanetAutonomousEvolution = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function (engine) {
   "use strict";
-  const VERSION = 5, MAX_SPECIES = 100, EARTH_SPECIES_COUNT = 100, OFFWORLD_SPECIES_COUNT = 2, MIN_VISIBLE_BODY_LENGTH_CM = 2, EARTH_MIN_MARKET_SIZE_CM = 45, ALIEN_MIN_MARKET_SIZE_CM = 5, MAX_EVENTS = 80, MAX_YEAR_BATCH = 10000;
+  const VERSION = 6, MAX_SPECIES = 100, EARTH_SPECIES_COUNT = 100, OFFWORLD_SPECIES_COUNT = 2, MIN_VISIBLE_BODY_LENGTH_CM = 2, EARTH_MIN_MARKET_SIZE_CM = 45, ALIEN_MIN_MARKET_SIZE_CM = 5, MAX_EVENTS = 80, MAX_YEAR_BATCH = 10000;
   const HABITATS = ["ocean", "shore", "land", "sky"];
   const DEFAULT_ENVIRONMENT = { planetId:"earth", name:"زمین", type:"terrestrial", temperatureC:15, waterCoverage:0.71, gravity:1, atmosphere:"nitrogen-oxygen" };
   const ATMOSPHERE_FIT = {"nitrogen-oxygen":1,"nitrogen-rich":0.94,"thin-carbon-dioxide":0.82,"dense-carbon-dioxide":0.64,"hydrogen-helium":0.72,"trace-atmosphere":0.58};
@@ -100,7 +100,7 @@
   function createSpecies(state,dna,habitat,parentId,population,name,trophicRole,metadata){
     const id=++state.serial,p=phenotype(dna,habitat),meta=metadata||{};
     const originWorldType=meta.originWorldType||(state.planetEnvironment.home?"earth":"alien");
-    const special=meta.special===true,minimumSize=special?(originWorldType==="earth"?EARTH_MIN_MARKET_SIZE_CM+0.01:ALIEN_MIN_MARKET_SIZE_CM+0.01):MIN_VISIBLE_BODY_LENGTH_CM+0.01;
+    const special=meta.special===true,minimumSize=MIN_VISIBLE_BODY_LENGTH_CM+0.01;
     const s={id,parentId:parentId||null,name:name||("گونهٔ دیجیتال "+id),dna,lineageDNA:dna,habitat,
       population:Math.max(2,Math.round(population||80)),generation:0,age:0,fitness:0.5,births:0,deaths:0,
       speciationCooldown:0,traits:p.traits,form:p.form,bodyLengthCm:Math.max(minimumSize,Number(p.traits.estimatedBodyLengthCm)||minimumSize),
@@ -145,7 +145,7 @@
         const dna=crossGenome(state,genomes[aIndex],genomes[bIndex]);
         const habitat=env.type==="gas-giant"?"sky":(i===0?"shore":"land");
         const s=createSpecies(state,dna,habitat,null,45+Math.floor(randomFor(state)*65),
-          "گونهٔ ویژهٔ سیاره "+(i+1),i===0?"grazer":"predator",{special:true,rarityScore:82+Math.floor(randomFor(state)*18),originWorldType:"alien"});
+          "گونهٔ بنیان‌گذار سیاره "+(i+1),i===0?"grazer":"predator",{special:false,rarityScore:0,originWorldType:"alien"});
         event(state,"origin",s,"گونهٔ ترکیبی ویژه از ژنوم‌های زمین، سازگارشده با محیط این سیاره");
       }
     }
@@ -168,10 +168,18 @@
     return state.planetEnvironment;
   }
   function mutate(s,state){
-    const rate=0.010+(1-s.fitness)*0.010,dna=engine.mutateSyntheticGenome(s.dna,rate,()=>randomFor(state));
+    const rate=0.022+(1-s.fitness)*0.014,dna=engine.mutateSyntheticGenome(s.dna,rate,()=>randomFor(state));
     s.dna=dna;s.traits=engine.phenotypeFromDNA(dna,{ageMa:4300});s.form=engine.inferForm(s.traits,4300,s.habitat);
-    const minimumSize=s.special?(s.originWorldType==="earth"?EARTH_MIN_MARKET_SIZE_CM+0.01:ALIEN_MIN_MARKET_SIZE_CM+0.01):MIN_VISIBLE_BODY_LENGTH_CM+0.01;
-    s.bodyLengthCm=Math.max(minimumSize,Number(s.traits.estimatedBodyLengthCm)||minimumSize);s.marketEligible=isMarketEligible(s);
+    const minimumSize=MIN_VISIBLE_BODY_LENGTH_CM+0.01;
+    s.bodyLengthCm=Math.max(minimumSize,Number(s.traits.estimatedBodyLengthCm)||minimumSize);
+    const earth=!!state.planetEnvironment.home,divergence=distance(s.dna,s.lineageDNA||s.dna);
+    const requiredDivergence=earth?22:8,requiredGeneration=earth?18:6,requiredSize=earth?EARTH_MIN_MARKET_SIZE_CM:ALIEN_MIN_MARKET_SIZE_CM;
+    const sizeReady=earth?s.bodyLengthCm>=requiredSize:s.bodyLengthCm>requiredSize;
+    if(!s.special&&divergence>=requiredDivergence&&s.generation>=requiredGeneration&&sizeReady){
+      s.special=true;s.rarityScore=clamp(68+divergence*0.8+s.fitness*22+(state.planetEnvironment.specialSpeciesPotential||0)*0.12,0,100);
+      event(state,"speciation",s,"این تبار پس از جهش‌های پی‌درپی و سازگاری محیطی به گونهٔ ویژه تبدیل شد.");
+    }
+    s.marketEligible=isMarketEligible(s);
   }
 
   function advanceOneYear(state){
@@ -260,7 +268,7 @@
         s.population=Math.min(250000,s.population+offspring);s.births+=offspring;mutate(s,state);
         if(s.speciationCooldown>0)s.speciationCooldown--;
         const divergence=distance(s.dna,s.lineageDNA);
-        if(divergence>=5&&s.speciationCooldown===0&&state.species.length<speciesLimit(state)){
+        if(divergence>=5&&s.speciationCooldown===0&&state.species.filter(x=>!x.extinct).length<speciesLimit(state)){
           const roleChange=randomFor(state)<0.035;
           const inheritedRole=roleChange?TROPHIC_ROLES[Math.floor(randomFor(state)*TROPHIC_ROLES.length)]:s.trophicRole;
           const childSize=engine.estimatedBodyLengthCmFromDNA(s.dna)||0;
@@ -308,7 +316,7 @@
   }
   function restore(raw){
     const data=typeof raw==="string"?JSON.parse(raw):raw;
-    if(!data||![1,2,3,4,VERSION].includes(data.version)||!Array.isArray(data.species))throw new Error("Saved biosphere data is invalid.");
+    if(!data||![1,2,3,4,5,VERSION].includes(data.version)||!Array.isArray(data.species))throw new Error("Saved biosphere data is invalid.");
     const state={version:VERSION,year:Math.max(0,Number(data.year)||0),generation:Math.max(0,Number(data.generation)||0),
       serial:Math.max(0,Number(data.serial)||0),rng:Number(data.rng)>>>0,environment:Number(data.environment)||0,
       planetEnvironment:environmentFromPlanet(data.planetEnvironment||DEFAULT_ENVIRONMENT),
@@ -326,10 +334,15 @@
       }
     }else{
       state.species=state.species.slice(0,OFFWORLD_SPECIES_COUNT);
-      state.species.forEach((s,index)=>{s.originWorldType="alien";s.special=true;s.rarityScore=Math.max(80,Number(s.rarityScore)||80+index*5);});
+      state.species.forEach(s=>{
+        s.originWorldType="alien";
+        const divergence=distance(s.dna,s.lineageDNA||s.dna);
+        s.special=Number(s.generation)>=6&&divergence>=8;
+        s.rarityScore=s.special?Math.max(68,Number(s.rarityScore)||68):0;
+      });
     }
     state.species.forEach(s=>{
-      const minimumSize=s.special?(s.originWorldType==="earth"?EARTH_MIN_MARKET_SIZE_CM+0.01:ALIEN_MIN_MARKET_SIZE_CM+0.01):MIN_VISIBLE_BODY_LENGTH_CM+0.01;
+      const minimumSize=MIN_VISIBLE_BODY_LENGTH_CM+0.01;
       s.bodyLengthCm=Math.max(minimumSize,Number(s.traits&&s.traits.estimatedBodyLengthCm)||minimumSize);s.marketEligible=isMarketEligible(s);
     });
     ensureEcology(state);
@@ -341,8 +354,9 @@
     const b=restore(serialize(a)),c=restore(serialize(alien));
     return {ok:initial===EARTH_SPECIES_COUNT&&b.year===40&&b.species.length===EARTH_SPECIES_COUNT&&c.species.length===OFFWORLD_SPECIES_COUNT&&
       b.species.concat(c.species).every(s=>engine.normalizeSyntheticGenome(s.dna)&&s.traits&&s.form&&s.bodyLengthCm>2)&&
-      a.species.every(s=>!s.special&&!isMarketEligible(s))&&c.species.every(s=>s.special&&isMarketEligible(s))&&!!b.planetEnvironment,
-      years:b.year,species:b.species.length,offworldSpecies:c.species.length,engine:"PlanetAutonomousEvolution-v5"};
+      a.species.every(s=>!s.marketEligible||(s.special&&s.bodyLengthCm>=EARTH_MIN_MARKET_SIZE_CM))&&
+      alien.species.every(s=>!s.special&&!isMarketEligible(s))&&c.species.some(s=>s.special&&isMarketEligible(s))&&!!b.planetEnvironment,
+      years:b.year,species:b.species.length,offworldSpecies:c.species.length,engine:"PlanetAutonomousEvolution-v6"};
   }
   return {version:VERSION,createState,createEarthGenomePool,advanceYears,advanceOneYear,serialize,restore,selfTest,visibleSpecies,isMarketEligible,
     environmentFromPlanet,planetHabitability,environmentSuitability,fitnessFor,setEnvironment,roleForSpecies,ensureEcology,TROPHIC_ROLES,ROLE_LABELS,

@@ -7,6 +7,12 @@ const microbe={id:6,nameFa:"ریزاندام",dna:"ATGCGTAA",form:"digital-filam
 let state=commerce.load(storage,world);
 assert.throws(()=>commerce.acquire(state,microbe,world),/میکروسکوپی|۲ سانتی‌متر/);
 const baseSpecies={id:8,nameFa:"گونهٔ پایه",dna:"ATGCGTAA",form:"چهاراندام",generation:1,fitness:.5,habitat:"shore",bodyLengthCm:65,special:false,originWorldType:"earth"};
+const base={id:8,nameFa:"گونهٔ پایه",dna:"ATGCGTAA",form:"چهاراندام",generation:1,fitness:.5,habitat:"shore",bodyLengthCm:65,special:false,originWorldType:"earth"};
+assert.throws(()=>commerce.acquire(state,base,world),/گونه‌های پایه/);
+const tinyAlien={id:9,nameFa:"ویژهٔ کوچک",dna:"ATGCGTAA",form:"چهاراندام",generation:12,fitness:.8,bodyLengthCm:5,special:true,rarityScore:90,originWorldType:"alien"};
+assert.throws(()=>commerce.acquire(state,tinyAlien,"system-02-p1"),/اندازه/);
+const tinyEarth={...tinyAlien,id:10,bodyLengthCm:44,originWorldType:"earth"};
+assert.throws(()=>commerce.acquire(state,tinyEarth,world),/اندازه/);
 const species={id:7,nameFa:"شکارچی آبی",dna:"ATGCGTAA",form:"چهاراندام",generation:12,fitness:.8,habitat:"shore",parentId:3,bodyLengthCm:65,special:true,rarityScore:90,originWorldType:"earth"};
 assert.equal(state.credits,250);
 const first=commerce.acquire(state,species,world);

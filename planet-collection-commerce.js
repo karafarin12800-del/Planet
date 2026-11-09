@@ -56,6 +56,10 @@
     if(!dna||!/^[ACGT]+$/.test(dna))throw new Error("ژنوم موجود معتبر نیست.");
     const sourceSize=finite(species.bodyLengthCm,species.traits&&species.traits.estimatedBodyLengthCm||((species.traits&&species.traits.estimatedBodyLengthMm||0)/10),0,6000);
     if(sourceSize<=2)throw new Error("موجودات میکروسکوپی و موجودات ۲ سانتی‌متر یا کوچک‌تر وارد کلکسیون نمی‌شوند.");
+    if(species.special!==true)throw new Error("گونه‌های پایه و مشترک برای همهٔ بازیکنان قابل‌فروش نیستند؛ فقط گونهٔ ویژه پس از تکامل مجاز است.");
+    const originWorldType=species.originWorldType==="earth"||worldId==="earth"||worldId==="system-01-p1"?"earth":"alien";
+    const requiredSize=originWorldType==="earth"?EARTH_MIN_MARKET_SIZE_CM:ALIEN_MIN_MARKET_SIZE_CM;
+    if(originWorldType==="earth"?sourceSize<requiredSize:sourceSize<=requiredSize)throw new Error("اندازهٔ این موجود هنوز به حداقل اندازهٔ فروش نرسیده است.");
     if(state.specimens.length>=MAX_RECORDS)throw new Error("ظرفیت کلکسیون این سیاره پر شده است.");
     const serial=++state.serial;
     return {id:"specimen-"+encodeURIComponent(worldId)+"-"+serial,worldId,speciesId:Number(species.id),
@@ -64,12 +68,13 @@
       generation:finite(species.generation,0,0,1e9),fitness:finite(species.fitness,.5,0,1),
       habitat:cleanText(species.habitat,30),bodyLengthCm:sourceSize,
       special:species.special===true,rarityScore:finite(species.rarityScore,0,0,100),
-      originWorldType:species.originWorldType==="earth"||worldId==="earth"||worldId==="system-01-p1"?"earth":"alien",
+      originWorldType,
       acquiredAt:Date.now(),source:source||"evolution",parentId:species.parentId==null?null:finite(species.parentId,0,0,1e9)};
   }
   function acquire(state,species,worldId){
     if(!validWorld(worldId))throw new Error("شناسهٔ سیاره معتبر نیست.");
     const specimen=specimenFrom(state,species,worldId,"evolution");
+    if(!isMarketEligible(specimen))throw new Error("این گونه هنوز شرایط فروش را ندارد؛ موجودات پایه و مشترک قابل معامله نیستند.");
     if(state.specimens.some(x=>x.id===specimen.id))throw new Error("شناسهٔ نمونه تکراری است.");
     state.specimens.push(specimen);return specimen;
   }
@@ -92,6 +97,7 @@
   }
   function buyCreature(state,species,worldId,price){
     const cost=finite(price,100,1,100000);
+    if(!isMarketEligible(species))throw new Error("فقط موجود ویژه با اندازهٔ مجاز قابل خرید از بازار است.");
     if(state.credits<cost)throw new Error("اعتبار کافی برای خرید این موجود وجود ندارد.");
     if(!validWorld(worldId))throw new Error("شناسهٔ سیاره معتبر نیست.");
     const specimen=specimenFrom(state,species,worldId,"market");
