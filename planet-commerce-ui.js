@@ -84,9 +84,63 @@ $("commerceListSpecimen").addEventListener("click",async()=>{
   await client.listSpecimen(id,price);status("آگهی ثبت شد؛ فروشنده دقیقاً مبلغ آگهی را می‌گیرد و کارمزد صفر است.");await refresh();
  }catch(error){status(error.message);}
 });
-window.PlanetCommerceUI={open:function(){
- $("commerceApiBase").value=client.getApiBase();authView();
- if(!client.getApiBase())status("ابتدا Worker را مستقر کن و نشانی HTTPS آن را وارد کن.");
- else if(client.hasSession())refresh();
-}};
+let activeBazaarToken="";
+function updateNativeButtons(){
+ const bridge=window.AndroidCommerceBridge;
+ const google=$("commerceGoogleLogin"),buy=$("commerceBuyTokens");
+ if(google)google.hidden=!(bridge&&bridge.isGoogleConfigured&&bridge.isGoogleConfigured());
+ if(buy)buy.hidden=!(bridge&&bridge.isBazaarConfigured&&bridge.isBazaarConfigured());
+}
+async function verifyPendingBazaarToken(token){
+ if(!token||!client.hasSession()||activeBazaarToken===token)return;
+ activeBazaarToken=token;
+ try{
+  status("در حال تأیید رسید ۲۰۰ توکن در سرور…");
+  const result=await client.verifyBazaarReceipt("planet_tokens_200",token);
+  if(!result.ok)throw new Error("تأیید رسید کافه‌بازار ناموفق بود.");
+  const bridge=window.AndroidCommerceBridge;
+  if(!bridge||!bridge.consumeBazaarPurchase)throw new Error("برای نهایی‌سازی خرید، نسخهٔ اندروید Planet را باز کن.");
+  status("رسید در سرور تأیید شد؛ در حال نهایی‌سازی پرداخت…");
+  bridge.consumeBazaarPurchase(token);
+ }catch(error){activeBazaarToken="";status(error.message);}
+}
+function retryPendingBazaarToken(){
+ const bridge=window.AndroidCommerceBridge;
+ if(!bridge||!bridge.getPendingBazaarPurchaseToken||!client.hasSession())return;
+ const token=bridge.getPendingBazaarPurchaseToken();
+ if(token)verifyPendingBazaarToken(token);
+}
+window.PlanetCommerceUI={
+ open:function(){
+  $("commerceApiBase").value=client.getApiBase();authView();updateNativeButtons();
+  if(!client.getApiBase())status("ابتدا Worker را مستقر کن و نشانی HTTPS آن را وارد کن.");
+  else if(client.hasSession()){refresh();retryPendingBazaarToken();}
+ },
+ handleGoogleIdToken:async function(token,nonce){
+  try{await client.googleLogin(token,nonce);authView();status("ورود با Google موفق بود.");await refresh();retryPendingBazaarToken();}
+  catch(error){status(error.message);}
+ },
+ handleGoogleError:function(message){status(message||"ورود Google انجام نشد.");},
+ handleBazaarPurchaseToken:function(token){
+  if(!client.hasSession()){status("رسید خرید محفوظ ماند؛ ابتدا وارد حساب Planet شو تا خرید تأیید شود.");return;}
+  verifyPendingBazaarToken(token);
+ },
+ handleBazaarNativeError:function(message){activeBazaarToken="";status(message||"پرداخت کافه‌بازار کامل نشد.");},
+ handleBazaarStatus:function(message){status(message||"");},
+ onBazaarConsumed:async function(){
+  activeBazaarToken="";status("۲۰۰ توکن به کیف پول آنلاین اضافه شد و رسید نهایی شد.");await refresh();
+ },
+ onBazaarReady:function(){updateNativeButtons();retryPendingBazaarToken();}
+};
+$("commerceGoogleLogin").addEventListener("click",()=>{
+ const bridge=window.AndroidCommerceBridge;
+ if(bridge&&bridge.startGoogleSignIn)bridge.startGoogleSignIn();
+ else status("ورود Google فقط در نسخهٔ اندروید فعال است.");
+});
+$("commerceBuyTokens").addEventListener("click",()=>{
+ const bridge=window.AndroidCommerceBridge;
+ if(bridge&&bridge.startBazaarPurchase)bridge.startBazaarPurchase();
+ else status("پرداخت کافه‌بازار فقط در نسخهٔ اندروید فعال است.");
+});
+updateNativeButtons();
 })();
