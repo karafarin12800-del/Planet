@@ -5,7 +5,7 @@ const galaxyEngine=require("../planet-galaxy-engine.js");
 const a=galaxyEngine.createGalaxy(12345);
 const b=galaxyEngine.createGalaxy(12345);
 assert.equal(galaxyEngine.serialize(a),galaxyEngine.serialize(b),"same seed creates the same galaxy");
-assert.equal(a.systems.length,12);
+assert.equal(a.systems.length,17);
 assert.equal(a.activePlanetId,a.systems[0].planets[0].id);
 assert.equal(galaxyEngine.getSummary(a).discovered,1,"only the home planet starts discovered");
 assert.equal(galaxyEngine.getActivePlanet(a).home,true);
@@ -13,6 +13,12 @@ assert.ok(a.systems.every(s=>s.planets.length<=galaxyEngine.maxPlanetsPerSystem)
 assert.ok(a.systems.flatMap(s=>s.planets).every(p=>Number.isInteger(p.seed)&&p.biomes.length>0));
 assert.equal(a.systems[0].planets.length,8);
 assert.ok(a.systems.slice(1).every(s=>s.planets.length>=6&&s.planets.length<=8));
+const purchasable=a.systems.flatMap(s=>s.planets).filter(p=>p.commercePlanetId);
+assert.equal(purchasable.length,100);
+assert.equal(purchasable[0].commercePlanetId,"market-world-001");
+assert.equal(purchasable[99].commercePlanetId,"market-world-100");
+assert.equal(a.systems[0].planets[0].commercePlanetId,null);
+assert.equal(new Set(purchasable.map(p=>p.name)).size,100);
 assert.ok(a.systems.flatMap(s=>s.planets).every(p=>p.lifePotential>=0&&p.lifePotential<=100&&p.specialSpeciesPotential>=0&&p.creatureCapacity===2&&p.priceTokens>=150&&p.priceTokens<=1000));
 
 const next=a.systems[0].planets[1];
@@ -27,6 +33,9 @@ assert.equal(galaxyEngine.selectPlanet(a,"missing-planet"),false);
 galaxyEngine.setYear(a,2000);
 const restored=galaxyEngine.restore(galaxyEngine.serialize(a));
 assert.equal(restored.year,2000);
+assert.equal(restored.version,2);
+assert.equal(restored.systems.flatMap(s=>s.planets).filter(p=>p.commercePlanetId).length,100);
+const legacy=JSON.parse(galaxyEngine.serialize(a));legacy.version=1;const migrated=galaxyEngine.restore(legacy);assert.equal(migrated.version,2);assert.equal(migrated.systems.flatMap(s=>s.planets).filter(p=>p.commercePlanetId).length,100);
 assert.equal(restored.activePlanetId,next.id);
 assert.deepEqual(galaxyEngine.getSummary(restored),galaxyEngine.getSummary(a));
 

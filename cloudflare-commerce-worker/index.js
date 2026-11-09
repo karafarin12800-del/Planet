@@ -45,7 +45,7 @@ function planets(){
    const p=makePlanet(systemId,i,rng,si===0&&i===0);if(p.home)continue;
    const n=rows.length+1;
    rows.push({id:"planet-"+String(n).padStart(3,"0"),galaxyPlanetId:"market-world-"+String(n).padStart(3,"0"),
-    name:p.name,type:p.typeLabel,typeId:p.type,price:p.priceTokens,lifePotential:p.lifePotential,specialSpeciesPotential:p.specialSpeciesPotential,
+    name:p.name+" "+String(n).padStart(3,"0"),type:p.typeLabel,typeId:p.type,price:p.priceTokens,lifePotential:p.lifePotential,specialSpeciesPotential:p.specialSpeciesPotential,
     creatureCapacity:2,radiusKm:p.radiusKm,gravity:p.gravity,meanTemperatureC:p.meanTemperatureC,waterCoverage:p.waterCoverage,
     atmosphere:p.atmosphere,biomes:p.biomes,features:p.biomes});
   }

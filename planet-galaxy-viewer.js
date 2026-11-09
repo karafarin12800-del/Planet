@@ -238,7 +238,7 @@
       try{const result=await client.buyPlanet("planet-"+String(commercePlanetId).slice(-3));ownedCommerceIds.add(commercePlanetId);showNotice("سیارهٔ "+result.planet.name+" خریداری شد و به حساب تو متصل شد.");renderUI();persist();}
       catch(error){showNotice(String(error&&error.message||error));}
     }
-    $("pgList").addEventListener("click",function(event){
+    overlay.addEventListener("click",function(event){
       const button=event.target.closest("[data-pg-action]");if(!button)return;
       const action=button.getAttribute("data-pg-action"),id=button.getAttribute("data-pg-id");
       if(action==="open-system")openSystem(id);

@@ -66,7 +66,7 @@
     return {version:VERSION,seed:normalized,year:0,activeSystemId:systems[0].id,activePlanetId:home.id,
       systems,events:[{year:0,kind:"origin",systemId:systems[0].id,planetId:home.id,detail:"آغاز جهان در سیارهٔ خانه"}]};
   }
-  function assignCommercePlanetIds(galaxy){let index=0;for(const system of galaxy.systems||[])for(const planet of system.planets||[]){if(planet.home){planet.commercePlanetId=null;continue;}index++;planet.commercePlanetId=index<=100?"market-world-"+String(index).padStart(3,"0"):null;}return galaxy;}
+  function assignCommercePlanetIds(galaxy){let index=0;for(const system of galaxy.systems||[])for(const planet of system.planets||[]){if(planet.home){planet.commercePlanetId=null;continue;}index++;if(index<=100){planet.commercePlanetId="market-world-"+String(index).padStart(3,"0");planet.baseName=planet.baseName||planet.name;planet.name=planet.baseName+" "+String(index).padStart(3,"0");}else planet.commercePlanetId=null;}return galaxy;}
   function findSystem(galaxy,id){return galaxy.systems.find(s=>s.id===id)||null;}
   function findPlanet(galaxy,id){for(const s of galaxy.systems){const p=s.planets.find(x=>x.id===id);if(p)return {system:s,planet:p};}return null;}
   function record(galaxy,kind,system,planet,detail){galaxy.events.unshift({year:galaxy.year,kind,systemId:system.id,planetId:planet?planet.id:null,detail:String(detail||"")});galaxy.events=galaxy.events.slice(0,MAX_EVENTS);}
