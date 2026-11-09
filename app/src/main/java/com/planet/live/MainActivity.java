@@ -43,6 +43,7 @@ import ir.cafebazaar.poolakey.Payment;
 import ir.cafebazaar.poolakey.config.PaymentConfiguration;
 import ir.cafebazaar.poolakey.config.SecurityCheck;
 import ir.cafebazaar.poolakey.request.PurchaseRequest;
+import ir.cafebazaar.poolakey.entity.PurchaseInfo;
 import kotlin.Unit;
 
 public final class MainActivity extends ComponentActivity {
@@ -145,6 +146,7 @@ public final class MainActivity extends ComponentActivity {
                 callback.connectionSucceed(() -> {
                     bazaarConnected = true;
                     callJs("onBazaarReady", "");
+                    restoreVipSubscription();
                     return Unit.INSTANCE;
                 });
                 callback.connectionFailed(error -> {
@@ -163,6 +165,30 @@ public final class MainActivity extends ComponentActivity {
             bazaarConnected = false;
             callJs("handleBazaarNativeError", "راه‌اندازی پرداخت کافه‌بازار انجام نشد.");
         }
+    }
+
+    private void restoreVipSubscription() {
+        if (payment == null || !bazaarConnected) return;
+        payment.getSubscribedProducts(callback -> {
+            callback.querySucceed(purchases -> {
+                for (PurchaseInfo purchase : purchases) {
+                    if (VIP_PRODUCT_ID.equals(purchase.getProductId())
+                            && purchase.getPurchaseToken() != null
+                            && !purchase.getPurchaseToken().trim().isEmpty()) {
+                        String token = purchase.getPurchaseToken();
+                        billingPrefs().edit().putString(PENDING_VIP_TOKEN_KEY, token).apply();
+                        callJs("handleBazaarVipPurchaseToken", token);
+                        break;
+                    }
+                }
+                return Unit.INSTANCE;
+            });
+            callback.queryFailed(error -> {
+                callJs("handleBazaarStatus", "بازیابی وضعیت اشتراک VIP از کافه‌بازار انجام نشد؛ بعداً دوباره تلاش کن.");
+                return Unit.INSTANCE;
+            });
+            return Unit.INSTANCE;
+        });
     }
 
     private void startGoogleSignIn() {
