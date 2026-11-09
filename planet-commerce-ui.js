@@ -27,6 +27,8 @@ async function refresh(){
   $("commerceDisplayName").value=profile.displayName||"";
   $("commerceProfileHint").textContent=profile.displayName?"نام عمومی حساب تو ثبت شده است؛ می‌توانی آن را تغییر بدهی.":"برای پروفایل و شناسایی حساب در بازار موجودات، یک نام نمایشی انتخاب و ذخیره کن.";
   $("commerceVipBadge").style.display=profile.vipActive?"inline-block":"none";
+  $("commerceProfileCard").style.borderColor=profile.vipActive?"#e6bd68":"#365b77";
+  $("commerceProfileCard").style.boxShadow=profile.vipActive?"0 0 0 1px #e6bd6844,0 0 22px #d5a84422":"none";
   $("commerceVipStatus").textContent=profile.vipActive?"VIP فعال تا "+String(profile.vipExpiresAt||"").slice(0,10):"اشتراک VIP فعال نیست.";
   $("commerceVipDaily").disabled=!profile.vipActive||profile.vipDailyClaimedToday;
   $("commerceVipDaily").textContent=profile.vipDailyClaimedToday?"پاداش امروز دریافت شده":"دریافت ۱۰ توکن روزانه";
