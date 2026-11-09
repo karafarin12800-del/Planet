@@ -173,10 +173,19 @@
     }
     async function ensureGenomeSession(p){
       const c=win.PlanetCommerceClient,g=win.PlanetGenomeGame;
-      if(!c||!c.hasSession()||!g)throw new Error("برای ساخت زیست‌کره ابتدا وارد حساب شو.");
-      playerProfile=playerProfile||await c.profile();
+      if(!g)throw new Error("موتور بازی ژنوم بارگذاری نشده است.");
+      const signed=!!(c&&c.hasSession());
+      if(signed)playerProfile=playerProfile||await c.profile();
       const key=gameSessionKey(p);if(genomeSessions.has(key))return genomeSessions.get(key);
-      const [seedInfo,collection]=await Promise.all([c.worldSeed("planet-"+String(p.commercePlanetId).slice(-3)),c.collection()]);
+      let seedInfo,collection={specimens:[]};
+      if(signed){[seedInfo,collection]=await Promise.all([c.worldSeed("planet-"+String(p.commercePlanetId).slice(-3)),c.collection()]);}
+      else{
+        const seedKey="planet-genome-guest-seed:v1:"+String(p.id);
+        let seed="";try{seed=win.localStorage.getItem(seedKey)||"";}catch(e){}
+        if(!seed){const bytes=new Uint8Array(24);try{win.crypto.getRandomValues(bytes);seed=Array.from(bytes,x=>x.toString(16).padStart(2,"0")).join("");}catch(e){seed=String(Date.now())+"-"+String(Math.random()).slice(2);}
+          try{win.localStorage.setItem(seedKey,seed);}catch(e){}}
+        seedInfo={seed:"guest-"+seed};
+      }
       let earth=[];try{
         const home=win.PlanetWorldState&&win.PlanetWorldState.getHomeWorldId(win.localStorage,win.PlanetGalaxyEngine);
         if(home)earth=win.PlanetWorldState.getGenomePool(win.localStorage,home)||[];
@@ -188,7 +197,7 @@
         selected:new Set(previousSelection.length>=2?previousSelection:daily.slice(0,2).map(x=>x.id)),state:saved&&saved.state?g.restore(saved.state):null,
         started:!!(saved&&saved.started),completed:!!(saved&&saved.completed),elapsedSeconds:Number(saved&&saved.elapsedSeconds)||0,
         simulatedYears:Number(saved&&saved.simulatedYears)||0,speed:Math.max(1,Math.min(8,Number(saved&&saved.speed)||1)),
-        lastWall:Date.now(),specimens:collection.specimens||[]};
+        lastWall:Date.now(),specimens:signed?(collection.specimens||[]):(saved&&saved.specimens||[])};
       if(s.started&&!s.completed&&saved&&saved.lastWall){
         s.elapsedSeconds=Math.min(180,s.elapsedSeconds+Math.max(0,(Date.now()-Number(saved.lastWall))/1000));
         const target=Math.floor(s.elapsedSeconds*s.speed*4);
@@ -290,9 +299,16 @@
       const clientKey="genome:"+s.seed+":"+x.id;
       if((s.specimens||[]).some(y=>y.client_key===clientKey)){showNotice("این موجود قبلاً در آلبوم ثبت شده است.");return;}
       try{
-        const result=await win.PlanetCommerceClient.registerSpecimen({clientKey,planetId:"planet-"+String(s.planet.commercePlanetId).slice(-3),
+        const client=win.PlanetCommerceClient;
+        if(!client||!client.hasSession()){
+          s.specimens=s.specimens||[];
+          s.specimens.push({id:"guest-"+String(x.id),client_key:clientKey,name:x.name,form:x.form,dna:x.dna,generation:x.generation,fitness:x.fitness,body_length_cm:x.bodyLengthCm,special:x.special,rarity_score:x.rarityScore,status:"owned",localOnly:true});
+          showNotice("موجود در آلبوم آزمایشی این دستگاه ذخیره شد. برای نگهداری آنلاین، دریافت ۱۰ توکن و فروش، بعداً وارد حساب شو.");
+          saveGenomeSession(s);renderGenomePanel(s);return;
+        }
+        const result=await client.registerSpecimen({clientKey,planetId:"planet-"+String(s.planet.commercePlanetId).slice(-3),
           name:x.name,form:x.form,dna:x.dna,generation:x.generation,fitness:x.fitness,bodyLengthCm:x.bodyLengthCm,special:x.special,rarityScore:x.rarityScore});
-        const [collection,wallet]=await Promise.all([win.PlanetCommerceClient.collection(),win.PlanetCommerceClient.wallet()]);
+        const [collection,wallet]=await Promise.all([client.collection(),client.wallet()]);
         s.specimens=collection.specimens||[];updateWalletBadge(wallet.balance);
         showNotice(result.rewardTokens?("موجود به آلبوم افزوده شد؛ "+result.rewardTokens+" توکن گرفتی."):"موجود قبلاً در آلبوم ثبت شده است.");
         saveGenomeSession(s);renderGenomePanel(s);
@@ -325,8 +341,9 @@
     function showIntro(){const el=$("pgGenomeIntro");if(el)el.classList.add("open");}
     function continueIntoGenomeGame(){
       const intro=$("pgGenomeIntro");if(intro)intro.classList.remove("open");
-      const c=win.PlanetCommerceClient;if(c&&c.hasSession()){openExplorer();return;}
-      $("openCollectionShop")?.click();
+      openExplorer();
+      const c=win.PlanetCommerceClient;
+      if(!c||!c.hasSession())showNotice("حالت آزمایشی فعال است؛ می‌توانی بازی ژنوم را ببینی و موجود بسازی. برای خرید سیاره و ذخیرهٔ آنلاین، هر زمان خواستی حساب بساز.");
     }
     win.addEventListener("planet:account-ready",async function(){
       try{await refreshAccountSnapshot();const modal=$("collectionOverlay");if(modal)modal.classList.remove("open");openExplorer();}
