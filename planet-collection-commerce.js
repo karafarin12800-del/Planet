@@ -58,6 +58,7 @@
   function acquire(state,species,worldId){
     if(!validWorld(worldId))throw new Error("شناسهٔ سیاره معتبر نیست.");
     const specimen=specimenFrom(state,species,worldId,"evolution");
+    if(state.specimens.some(x=>x.id===specimen.id))throw new Error("شناسهٔ نمونه تکراری است.");
     state.specimens.push(specimen);return specimen;
   }
   function specimenValue(specimen){
@@ -79,6 +80,7 @@
     if(state.credits<cost)throw new Error("اعتبار کافی برای خرید این موجود وجود ندارد.");
     if(!validWorld(worldId))throw new Error("شناسهٔ سیاره معتبر نیست.");
     const specimen=specimenFrom(state,species,worldId,"market");
+    if(state.specimens.some(x=>x.id===specimen.id))throw new Error("شناسهٔ نمونه تکراری است.");
     state.credits-=cost;state.specimens.push(specimen);
     state.purchases.push({id:specimen.id,type:"creature",price:cost,at:Date.now()});
     state.purchases=state.purchases.slice(-MAX_LEDGER);
