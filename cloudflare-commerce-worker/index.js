@@ -7,6 +7,7 @@ const JSON_HEADERS = { "content-type": "application/json; charset=utf-8", "cache
 const TOKEN_PRODUCT = "planet_tokens_200";
 const TOKEN_GRANT = 200;
 const WELCOME_GRANT = 20;
+const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 const PLANET_TYPES=[
 {id:"terrestrial",label:"سنگی",biomes:["دشت","کوهستان","بیابان","جنگل"],radius:[4200,8200],water:[0.05,0.65],temp:[-25,42]},
 {id:"ocean",label:"اقیانوسی",biomes:["اقیانوس","جزیره","آب‌های کم‌عمق"],radius:[5000,10500],water:[0.72,0.99],temp:[-5,35]},
