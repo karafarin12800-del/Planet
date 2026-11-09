@@ -217,8 +217,8 @@
         reason: "The 168-bp genome is synthetic and has no validated genotype-to-cell-size calibration. Real cell size depends on taxon, growth phase and environment; it cannot be inferred exactly from this model DNA.",
         displayScale: "illustrative-only"
       },
-      estimatedBodyLengthCm: Number((2 * Math.pow(3500, signals[3])).toFixed(2)),
-      estimatedBodyLengthMm: Number((20 * Math.pow(3500, signals[3])).toFixed(1)),
+      estimatedBodyLengthCm: Number((2.1 * Math.pow(3500, signals[3])).toFixed(2)),
+      estimatedBodyLengthMm: Number((21 * Math.pow(3500, signals[3])).toFixed(1)),
       photosynthetic: metabolism === "photosynthetic",
       swims: motility > 0.48,
       model: {
@@ -236,7 +236,7 @@
     const home = habitat || "ocean";
     // Time is a model coordinate, not a lookup table for real taxa.
     // Body-plan labels are generic; no horse/dog/dinosaur/human is inferred.
-    if (home === "ocean") return p.motility > 0.54 ? "aquatic" : "microbe";
+    if (home === "ocean") return p.motility > 0.54 ? "aquatic" : "digital-filament";
     if (p.photosynthetic) return "digital-photosynthetic-colony";
     if (home === "shore") return p.motility > 0.52 ? "digital-motile-form" : "digital-filament";
     return p.motility > 0.55 && p.protection > 0.50 ? "digital-multicellular" : "digital-filament";
@@ -245,7 +245,7 @@
     const seq = normalizeSyntheticGenome(dna);
     if (!seq) return null;
     const signals = signalsFromProteins(translateGenome(seq));
-    return Number((2 * Math.pow(3500, signals[3])).toFixed(2));
+    return Number((2.1 * Math.pow(3500, signals[3])).toFixed(2));
   }
   function mutateSyntheticGenome(dna, rate, random) {
     const seq = normalizeSyntheticGenome(dna);

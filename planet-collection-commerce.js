@@ -8,7 +8,7 @@
   if(root)root.PlanetCollectionCommerce=api;
 })(typeof globalThis!=="undefined"?globalThis:this,function(){
   "use strict";
-  const VERSION=2, PREFIX="planet-collection-commerce-v1:", MAX_RECORDS=250, MAX_LEDGER=100;
+  const VERSION=3, PREFIX="planet-collection-commerce-v1:", MAX_RECORDS=250, MAX_LEDGER=100;
   const EARTH_MIN_MARKET_SIZE_CM=45, ALIEN_MIN_MARKET_SIZE_CM=5;
   const SHOP_ITEMS=[
     {id:"habitat-reef",name:"زیستگاه مرجانی",description:"پوستهٔ نمایشی برای مجموعهٔ زیستگاه‌ها",price:120,category:"cosmetic"},
@@ -47,20 +47,22 @@
   }
   function isMarketEligible(specimen){
     if(!specimen||specimen.special!==true)return false;
-    const size=finite(specimen.bodyLengthCm,specimen.traits&&specimen.traits.estimatedBodyLengthCm||0,0,6000);
+    const size=finite(specimen.bodyLengthCm,0,0,6000);
     return specimen.originWorldType==="earth"?size>=EARTH_MIN_MARKET_SIZE_CM:size>ALIEN_MIN_MARKET_SIZE_CM;
   }
   function specimenFrom(state,species,worldId,source){
     if(!species||!Number.isFinite(Number(species.id)))throw new Error("گونهٔ معتبر انتخاب نشده است.");
     const dna=String(species.dna||species.lineageDNA||"").toUpperCase();
     if(!dna||!/^[ACGT]+$/.test(dna))throw new Error("ژنوم موجود معتبر نیست.");
+    const sourceSize=finite(species.bodyLengthCm,species.traits&&species.traits.estimatedBodyLengthCm||((species.traits&&species.traits.estimatedBodyLengthMm||0)/10),0,6000);
+    if(sourceSize<=2)throw new Error("موجودات میکروسکوپی و موجودات ۲ سانتی‌متر یا کوچک‌تر وارد کلکسیون نمی‌شوند.");
     if(state.specimens.length>=MAX_RECORDS)throw new Error("ظرفیت کلکسیون این سیاره پر شده است.");
     const serial=++state.serial;
     return {id:"specimen-"+encodeURIComponent(worldId)+"-"+serial,worldId,speciesId:Number(species.id),
       name:cleanText(species.nameFa||species.nameEn||species.name||("گونهٔ "+species.id),100),
       dna,form:cleanText(species.form||species.habitat||"نامشخص",80),
       generation:finite(species.generation,0,0,1e9),fitness:finite(species.fitness,.5,0,1),
-      habitat:cleanText(species.habitat,30),bodyLengthCm:finite(species.bodyLengthCm,species.traits&&species.traits.estimatedBodyLengthCm||0,0,6000),
+      habitat:cleanText(species.habitat,30),bodyLengthCm:sourceSize,
       special:species.special===true,rarityScore:finite(species.rarityScore,0,0,100),
       originWorldType:species.originWorldType==="earth"||worldId==="earth"||worldId==="system-01-p1"?"earth":"alien",
       acquiredAt:Date.now(),source:source||"evolution",parentId:species.parentId==null?null:finite(species.parentId,0,0,1e9)};
