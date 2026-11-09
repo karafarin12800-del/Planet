@@ -32,6 +32,7 @@
     if(!Genome||!Life||!state)throw new Error("جهان ژنومی فعال نیست.");
     const a=validDNA(parentA&&parentA.dna),b=validDNA(parentB&&parentB.dna);
     if(!a||!b)throw new Error("ژنوم هر دو والد باید معتبر باشد.");
+    if(parentA&&parentB&&parentA.id!=null&&parentB.id!=null&&String(parentA.id)===String(parentB.id))throw new Error("برای ساخت نسل تازه، دو موجود متفاوت را انتخاب کن.");
     let replacedSpecies=null;
     if(state.species.length>=MAX_CREATURES){
       // Keep the ecosystem capped at 24 while allowing players to continue selective breeding.

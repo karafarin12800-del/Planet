@@ -24,6 +24,9 @@ const parents=worldA.species.slice(0,2),child=Game.breed(worldA,parents[0],paren
 assert.ok(Game.validDNA(child.dna));
 assert.equal(child.generation,Math.max(parents[0].generation,parents[1].generation)+1);
 assert.ok(child.bodyLengthCm>=Game.MIN_SIZE_CM&&child.bodyLengthCm<=Game.MAX_SIZE_CM);
+assert.ok(child.replacedSpeciesId!=null,"breeding at capacity replaces the weakest non-parent lineage");
+assert.equal(worldA.species.length,24,"ecosystem stays within its 24-species capacity");
+assert.notEqual(String(child.parentId),String(child.secondParentId),"the hybrid records two different parents");
 assert.ok(["موش‌مانند","گربه‌مانند","سگ‌مانند","اسب‌مانند","فیل‌مانند"].includes(child.sizeLabel));
 const restored=Game.restore(Game.save(worldA));
 assert.equal(restored.year,worldA.year);assert.ok(restored.species.length<=24);

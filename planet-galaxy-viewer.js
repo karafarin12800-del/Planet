@@ -165,8 +165,9 @@
       else $("openCollectionShop")?.click();
     }
     function gameSessionKey(p){return String(playerProfile&&playerProfile.id||"local")+":"+String(p.commercePlanetId||p.id);}
+    function localDayKey(){const parts=new Intl.DateTimeFormat("en-CA",{year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const part=type=>parts.find(x=>x.type===type).value;return part("year")+"-"+part("month")+"-"+part("day");}
     function saveGenomeSession(s){
-      try{win.localStorage.setItem("planet-genome-game:v1:"+s.storageKey,JSON.stringify({state:s.state?win.PlanetGenomeGame.save(s.state):null,seed:s.seed,daily:s.daily,
+      try{win.localStorage.setItem("planet-genome-game:v1:"+s.storageKey,JSON.stringify({state:s.state?win.PlanetGenomeGame.save(s.state):null,seed:s.seed,daily:s.daily,dailyDay:s.dailyDay,
         selected:Array.from(s.selected),started:s.started,completed:s.completed,elapsedSeconds:s.elapsedSeconds,simulatedYears:s.simulatedYears,
         speed:s.speed,lastWall:Date.now(),specimens:s.specimens||[]}));}catch(e){}
     }
@@ -180,10 +181,11 @@
         const home=win.PlanetWorldState&&win.PlanetWorldState.getHomeWorldId(win.localStorage,win.PlanetGalaxyEngine);
         if(home)earth=win.PlanetWorldState.getGenomePool(win.localStorage,home)||[];
       }catch(e){}
-      const daily=g.createDailyPool(seedInfo.seed,new Date().toISOString().slice(0,10),earth);
+      const dailyDay=localDayKey(),daily=g.createDailyPool(seedInfo.seed,dailyDay,earth);
       const storageKey=key;let saved=null;try{saved=JSON.parse(win.localStorage.getItem("planet-genome-game:v1:"+storageKey)||"null");}catch(e){}
-      const s={planet:p,seed:seedInfo.seed,daily,storageKey,accountId:String(playerProfile.id||"local"),
-        selected:new Set(saved&&saved.selected||daily.slice(0,2).map(x=>x.id)),state:saved&&saved.state?g.restore(saved.state):null,
+      const previousSelection=saved&&saved.dailyDay===dailyDay?Array.from(saved.selected||[]).filter(id=>daily.some(x=>x.id===id)):[];
+      const s={planet:p,seed:seedInfo.seed,daily,dailyDay,storageKey,accountId:String(playerProfile.id||"local"),
+        selected:new Set(previousSelection.length>=2?previousSelection:daily.slice(0,2).map(x=>x.id)),state:saved&&saved.state?g.restore(saved.state):null,
         started:!!(saved&&saved.started),completed:!!(saved&&saved.completed),elapsedSeconds:Number(saved&&saved.elapsedSeconds)||0,
         simulatedYears:Number(saved&&saved.simulatedYears)||0,speed:Math.max(1,Math.min(8,Number(saved&&saved.speed)||1)),
         lastWall:Date.now(),specimens:collection.specimens||[]};
@@ -227,6 +229,7 @@
         const opts=s.state.species.filter(x=>x.dna).map(x=>({id:"world:"+x.id,label:x.name+" · نسل "+x.generation}));
         (s.specimens||[]).filter(x=>x.dna).forEach(x=>opts.push({id:"online:"+x.id,label:x.name+" · "+x.form}));
         [a,b].forEach(sel=>{const old=sel.value;sel.innerHTML=opts.map(x=>'<option value="'+escapeHtml(x.id)+'">'+escapeHtml(x.label)+'</option>').join("");if(opts.some(x=>x.id===old))sel.value=old;});
+        if(!b.value&&opts.length>1)b.selectedIndex=1;
       }
       const album=$("pgGenomeAlbum");if(album){
         album.textContent="";(s.specimens||[]).slice(0,12).forEach(x=>{const el=doc.createElement("div");el.className="pg-album-item";el.textContent=x.name+" · "+x.form+" · نسل "+x.generation;album.append(el);});
