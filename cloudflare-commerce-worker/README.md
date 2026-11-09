@@ -8,7 +8,7 @@ Cafe Bazaar receipt verification and a player-to-player specimen marketplace.
 
 1. Create a Cloudflare D1 database named \`planet-commerce\`.
 2. Run \`npx wrangler d1 execute planet-commerce --file=schema.sql\`.
-3. Apply migrations in order: `npx wrangler d1 execute planet-commerce --file=migrations/0002_profile_display_name.sql`, then `0003_specimen_market_eligibility.sql`, then `0004_galaxy_planet_identity.sql`, then `0005_vip_subscriptions.sql`, then `0006_welcome_grant_adjustment.sql`, then `0007_marketplace_commission_and_price_floor.sql`, then `0008_starter_tokens_and_world_seeds.sql`.
+3. Apply migrations in order: `npx wrangler d1 execute planet-commerce --file=migrations/0002_profile_display_name.sql`, then `0003_specimen_market_eligibility.sql`, then `0004_galaxy_planet_identity.sql`, then `0005_vip_subscriptions.sql`, then `0006_welcome_grant_adjustment.sql`, then `0007_marketplace_commission_and_price_floor.sql`, then `0008_starter_tokens_and_world_seeds.sql`, then `0009_welcome_grant_v140.sql`.
 3. Put the resulting D1 database ID in \`wrangler.toml\`.
 4. Deploy from this directory with Wrangler.
 5. Configure Worker secrets: \`AUTH_SECRET\` (random 32+ bytes), \`RESEND_API_KEY\`,
@@ -29,7 +29,7 @@ server-verified receipt has been tested.
 - Authenticated: \`POST /specimens/register\`, \`GET /collection\`
 - Authenticated: \`GET /market/listings\`, \`POST /market/list\`, \`POST /market/buy\`
 
-The server grants 20 starter tokens plus 100 welcome tokens (120 total) once per verified account. Migration 0006 adjusts legacy 20-token accounts to 100; migration 0008 adds the separate 20-token starter grant to existing verified accounts exactly once. It credits 200, 500 or 1,000 tokens only after server-side Cafe Bazaar validation of the matching product. Receipt hashes are unique. VIP (`planet_vip_60d`) is a server-verified 60-day subscription with a VIP badge, profile frame, 10 daily claimable tokens, 10% planet discounts and priority marketplace placement. The Worker enforces expiry and one daily claim per server date.
+The server grants 20 starter tokens plus 120 welcome tokens (140 total) once per verified email/Google account. Migration 0006 adjusts legacy 20-token accounts, migration 0008 adds the separate 20-token starter grant, and migration 0009 tops up existing verified accounts to the same 140-token lifetime grant exactly once. Guest players receive 100 local-only trial tokens on each device; guest credits and planet purchases are not server-backed and are not transferable to an online account. Each star system exposes at least one 50-token starter planet; the remaining planets are priced from 100 to 1,000 tokens. It credits 200, 500 or 1,000 tokens only after server-side Cafe Bazaar validation of the matching product. Receipt hashes are unique. VIP (`planet_vip_60d`) is a server-verified 60-day subscription with a VIP badge, profile frame, 10 daily claimable tokens, 10% planet discounts and priority marketplace placement. The Worker enforces expiry and one daily claim per server date.
 Marketplace sales debit the buyer, credit 95% to the seller and 5% to the creator. Planets are permanently account-bound and cannot be listed, sold or transferred. Each purchased account+planet pair receives one persistent random world seed from `/world-seed`.
 
 ## Important trust boundary
@@ -109,7 +109,7 @@ purchases until the deployed Worker validates test receipts and an end-to-end te
 Player-selected display names remain part of the account profile for player identity in the specimen marketplace. Planet owner names are not displayed beside planets in the galaxy viewer; planet ownership is tracked independently of the account display name.
 
 
-The online catalog reproduces the deterministic 3D galaxy seed. The shared Earth home world is not sold; the first 100 non-Earth planets receive stable `market-world-NNN` IDs, and each purchased planet has one global owner. Prices come from that same planet's life potential and special-species potential.
+The online catalog reproduces the deterministic 3D galaxy seed. The shared Earth home world is not sold; the first 100 non-Earth planets receive stable `market-world-NNN` IDs, and each purchased planet has one global owner. Prices come from that same planet's life potential and special-species potential, with one 50-token starter planet reserved in each star system.
 
 
 Off-world specimen registration is accepted only when the authenticated account owns the corresponding stable galaxy-world ID. Earth remains a shared starter biosphere. The server determines Earth/off-world origin from the registered planet ID rather than trusting the client-supplied origin flag.
