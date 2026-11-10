@@ -188,7 +188,16 @@ window.PlanetCommerceUI={
  onBazaarConsumed:async function(productId){
   activeBazaarToken="";status((tokenAmounts[productId]||200)+" توکن به کیف پول آنلاین اضافه شد و رسید نهایی شد.");await refresh();
  },
- onBazaarReady:function(){updateNativeButtons();retryPendingBazaarToken();}
+ onBazaarProductDetails:function(payload){
+  let rows=[];try{rows=JSON.parse(payload||"[]");}catch(error){status("اطلاعات قیمت بسته‌های کافه‌بازار قابل خواندن نیست.");return;}
+  const products={};rows.forEach(item=>{if(item&&tokenAmounts[item.sku]&&item.price)products[item.sku]=item;});
+  window.PlanetBazaarProducts=products;
+  ["200","500","1000","2000"].forEach(n=>{
+   const node=$("commerceTokenPrice"+n),item=products["planet_tokens_"+n];
+   if(node)node.textContent=item?item.price:"قیمت از فروشگاه دریافت نشد";
+  });
+  window.dispatchEvent(new CustomEvent("planet:bazaar-product-details",{detail:{products}}));
+ },nBazaarReady:function(){updateNativeButtons();retryPendingBazaarToken();}
 };
 $("commerceGoogleLogin").addEventListener("click",()=>{
  const bridge=window.AndroidCommerceBridge;
