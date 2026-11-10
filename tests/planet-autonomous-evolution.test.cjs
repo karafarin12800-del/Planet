@@ -57,3 +57,13 @@ life.advanceYears(alien,80);
 assert.ok(alien.species.some(s=>s.special&&s.bodyLengthCm>5&&s.marketEligible),"special aliens become marketable only after evolution");
 life.advanceYears(alien,500);assert.ok(alien.species.length>=2&&alien.species.length<=life.OFFWORLD_SPECIES_LIMIT,"off-world species capacity is 24");
 assert.equal(life.visibleSpecies({species:[{bodyLengthCm:2},{bodyLengthCm:2.01}]}).length,1);
+
+
+const purchasedWorld=life.createState(8123,{id:"market-world-009",type:"desert",meanTemperatureC:28,waterCoverage:.08,gravity:1.2,atmosphere:"thin-carbon-dioxide"},state.species.map(s=>s.dna));
+const ordinaryWorld=life.createState(8123,{id:"market-world-009",type:"desert",meanTemperatureC:28,waterCoverage:.08,gravity:1.2,atmosphere:"thin-carbon-dioxide"},state.species.map(s=>s.dna));
+assert.equal(purchasedWorld.planetEnvironment.earthSeeded,true,"off-world founders are seeded from Earth's genome pool");
+assert.equal(life.setPlanetPurchased(purchasedWorld,true),true,"server-verified ownership enables the purchased-world boost");
+life.advanceYears(purchasedWorld,20);life.advanceYears(ordinaryWorld,20);
+const purchasedGenerations=purchasedWorld.species.reduce((n,s)=>n+s.generation,0);
+const ordinaryGenerations=ordinaryWorld.species.reduce((n,s)=>n+s.generation,0);
+assert.ok(purchasedGenerations>ordinaryGenerations,"Earth-seeded purchased planets evolve faster than unowned worlds");
