@@ -40,5 +40,15 @@ assert.ok(client.includes("if(!endpoint||!access){generateOffline();return;}"), 
 assert.ok(client.includes("An original image was generated locally"), "the UI honestly identifies offline procedural output");
 assert.ok(client.includes("generateOffline();"), "the online failure path falls back to local generation");
 assert.ok(client.includes("generateOfflineSVG:id=>"), "the generated SVG path is exposed for direct testing");
+assert.ok(client.includes("Anatomy requirement:"), "AI portraits request visible arms, hands, fingers and feet");
+assert.ok(client.includes("function getSizeGate(s)"), "creature portrait unlocks use an explicit size gate");
+assert.ok(client.includes("Evolve beyond mouse size"), "species below the mouse-size threshold stay locked");
+assert.ok(client.includes("const accelerator=(purchased?2.65:1)*(importedEarth?1.45:1)"), "Earth reference genomes and purchased planets accelerate collectible unlocks");
+assert.ok(client.includes("setOwnershipResolver"), "commerce can provide authoritative purchased-planet ownership");
+assert.ok(client.includes("function scanEligibleSpecies()"), "eligible organisms are scanned automatically without manual clicks");
+assert.ok(client.includes("planet-creature-collection-v1"), "generated portraits are persisted as a collectible gallery");
+assert.ok(client.includes("individually separated fingers"), "offline portrait prompt requests detailed hands");
+assert.ok(client.includes("shoulderY=cy-ry*.30"), "offline fallback draws paired arms and hands");
+assert.ok(sw.includes("planet-pwa-v20-creature-collectibles"), "PWA cache is invalidated for the new collectible system");
 
 console.log("PLANET image-generation contract passed: online API safety, offline genome-driven generation, Android packaging, PWA cache and syntax wiring.");
