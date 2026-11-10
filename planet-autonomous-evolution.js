@@ -178,7 +178,6 @@
     const minimumSize=MIN_VISIBLE_BODY_LENGTH_CM+0.01;
     s.bodyLengthCm=Math.max(minimumSize,Number(s.traits.estimatedBodyLengthCm)||minimumSize);
     const earth=!!state.planetEnvironment.home,divergence=distance(s.dna,s.lineageDNA||s.dna);
-    const fastPurchasedEarthSeed=!!(state.planetEnvironment.purchased&&state.planetEnvironment.earthSeeded);
     const requiredDivergence=earth?22:(fastPurchasedEarthSeed?5:8),requiredGeneration=earth?18:(fastPurchasedEarthSeed?3:6),requiredSize=earth?EARTH_MIN_MARKET_SIZE_CM:ALIEN_MIN_MARKET_SIZE_CM;
     const sizeReady=earth?s.bodyLengthCm>=requiredSize:s.bodyLengthCm>requiredSize;
     if(!s.special&&divergence>=requiredDivergence&&s.generation>=requiredGeneration&&sizeReady){
