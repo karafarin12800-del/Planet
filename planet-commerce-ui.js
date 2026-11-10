@@ -86,6 +86,14 @@ $("commerceVerify").addEventListener("click",async()=>{
  try{const result=await client.verifyEmail($("commerceEmail").value.trim(),$("commerceVerifyCode").value.trim());authView();status("ایمیل تأیید شد؛ "+Number(result.totalTokens||140)+" توکن خوش‌آمدگویی اضافه شد.");await refresh();retryPendingBazaarToken();await notifyAccountReady();}
  catch(error){status(error.message);}
 });
+$("commerceForgotPassword").addEventListener("click",async()=>{
+ try{await client.requestPasswordReset($("commerceEmail").value.trim());$("commerceResetPanel").hidden=false;status("اگر حساب ایمیلی واجد شرایط باشد، کد بازیابی به ایمیل ارسال می‌شود.");}
+ catch(error){status(error.message);}
+});
+$("commerceResetPassword").addEventListener("click",async()=>{
+ try{await client.resetPassword($("commerceEmail").value.trim(),$("commerceResetCode").value.trim(),$("commerceNewPassword").value);$("commerceResetPanel").hidden=true;$("commerceNewPassword").value="";$("commerceResetCode").value="";status("گذرواژه با موفقیت تغییر کرد؛ اکنون وارد حساب شو.");}
+ catch(error){status(error.message);}
+});
 $("commerceLogin").addEventListener("click",async()=>{
  try{await client.login($("commerceEmail").value.trim(),$("commercePassword").value);authView();status("ورود موفق بود.");await refresh();retryPendingBazaarToken();await notifyAccountReady();}
  catch(error){status(error.message);}
