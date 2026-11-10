@@ -1947,7 +1947,7 @@ html[lang="en"] .scene-coords{direction:ltr}
       id:s.id,name:s.name,nameFa:s.name,nameEn:s.name,dna:String(s.dna||''),form:String(s.form||'digital-organism'),
       habitat:String(s.habitat||'unknown'),generation:Number(s.generation)||0,bodyLengthCm:Number(s.bodyLengthCm||0),
       special:s.special===true,marketEligible:s.marketEligible===true,originWorldType:s.originWorldType||'alien',
-      planetId:activeWorldId,ageMa:Number(state.year)||0,extinct:!!s.extinct
+      planetId:activeWorldId,planetFingerprint:state.planetEnvironment.geneticFingerprint,traits:s.traits,ageMa:Number(state.year)||0,extinct:!!s.extinct
     }))
   };
   window.addEventListener('planet:owned-planets-updated',event=>{
