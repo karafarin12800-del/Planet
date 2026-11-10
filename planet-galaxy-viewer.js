@@ -513,6 +513,7 @@
             showNotice("سیاره با "+price.toLocaleString("fa-IR")+" توکن آزمایشی خریداری شد؛ منوی افزودن موجود باز شد.");
           }
         }
+        const previousGenomePanel=$("pgGenomeGameBox");if(previousGenomePanel)previousGenomePanel.remove();
         selectedSystemId=found.system.id;selectedPlanetId=found.planet.id;
         if(!found.planet.discovered)Engine.discoverPlanet(galaxy,found.planet.id);
         Engine.selectPlanet(galaxy,found.planet.id);mode="planet";
