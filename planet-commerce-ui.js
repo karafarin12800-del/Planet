@@ -12,7 +12,7 @@ function routeToWalletIfInsufficient(error){
  return true;
 }
 async function notifyAccountReady(){try{const profile=await client.profile();window.dispatchEvent(new CustomEvent("planet:account-ready",{detail:{profile}}));}catch(error){status(error.message||"پروفایل حساب دریافت نشد.");}}
-function authView(){const signed=client.hasSession();$("commerceAuthPanel").hidden=signed;$("commerceAccountPanel").hidden=!signed;}
+function authView(){const signed=client.hasSession();$("commerceAuthPanel").hidden=signed;$("commerceAccountPanel").hidden=!signed;if(!signed)window.dispatchEvent(new CustomEvent('planet:owned-planets-updated',{detail:{planetIds:[]}}));}
 function row(box,title,details,buttonText,onClick){
  const item=document.createElement("div");item.className="species-item";
  const info=document.createElement("div");info.className="species-info";
@@ -43,7 +43,7 @@ async function refresh(){
   $("commerceVipDaily").textContent=profile.vipDailyClaimedToday?"پاداش امروز دریافت شده":"دریافت ۱۰ توکن روزانه";
   $("commerceTokenBalance").textContent=Number(wallet.balance||0).toLocaleString("fa-IR");
   window.dispatchEvent(new CustomEvent("planet:wallet-updated",{detail:{balance:Number(wallet.balance||0)}}));
-  const ownedIds=new Set((owned.planets||[]).map(x=>x.id)),catalogBox=$("commercePlanetCatalog");catalogBox.textContent="";
+  const ownedIds=new Set((owned.planets||[]).map(x=>x.id)),catalogBox=$("commercePlanetCatalog");window.dispatchEvent(new CustomEvent('planet:owned-planets-updated',{detail:{planetIds:Array.from(ownedIds)}}));catalogBox.textContent="";
   (catalog.planets||[]).forEach(planet=>{
    row(catalogBox,planet.name,planet.type+" · "+planet.price+" توکن"+(profile.vipActive?" · VIP: "+Math.round(planet.price*.9)+" توکن":""),ownedIds.has(planet.id)?"خریداری‌شده":"خرید",async()=>{
     if(ownedIds.has(planet.id))return;
