@@ -10,6 +10,7 @@
   const tr=(fa,en)=>lang()?en:fa, clamp=(n,a,b)=>Math.max(a,Math.min(b,Number(n)||0));
   let selected=null, generated=null, busy=false, nextAllowedAt=0;
   const COLLECTION_KEY='planet-creature-collection-v1', autoQueued=new Set();
+  let ownershipResolver=null, activePlanetId='earth';
   const style=document.createElement('style');
   style.textContent=String.raw`
 #planet-image-generator{position:fixed;inset:0;z-index:12000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(1,7,17,.84);backdrop-filter:blur(12px)}
@@ -106,8 +107,8 @@
     const p=getPhenotype(s)||{},a=p.appearance||{},raw=Number(a.bodyLength||0);
     const generation=Math.max(0,Number(s.generation)||0),growth=1+Math.min(generation,30)*.014;
     const importedEarth=!!(s.referenceGenome&&s.referenceGenome.accession||s.referenceSequence||/reference-proxy/i.test(String(s.genomeStatus||'')));
-    const planetId=String(s.planetId||window.activePlanetId||window.currentPlanetId||'earth');let purchased=false;
-    try{const commerce=window.PlanetCommerceAPI||window.PlanetOwnership;if(commerce&&typeof commerce.isPlanetPurchased==='function')purchased=!!commerce.isPlanetPurchased(planetId);else if(commerce&&typeof commerce.isOwned==='function')purchased=!!commerce.isOwned(planetId);}catch(_){}
+    const planetId=String(s.planetId||activePlanetId||window.activePlanetId||window.currentPlanetId||'earth');let purchased=false;
+    try{if(ownershipResolver)purchased=!!ownershipResolver(planetId,s);else{const commerce=window.PlanetCommerceAPI||window.PlanetOwnership;if(commerce&&typeof commerce.isPlanetPurchased==='function')purchased=!!commerce.isPlanetPurchased(planetId);else if(commerce&&typeof commerce.isOwned==='function')purchased=!!commerce.isOwned(planetId);}}catch(_){}
     const accelerator=(purchased?2.65:1)*(importedEarth?1.45:1),sizeIndex=raw*growth*accelerator;
     const animal=!/micro|bacter|fung|plant|tree|flora/i.test(String(s.form||''));
     return{eligible:animal&&sizeIndex>=1.02,sizeIndex,generation,importedEarth,purchased,accelerator,estimatedCm:Math.round((5+sizeIndex*5)*10)/10};
@@ -117,6 +118,7 @@
     if(!box){box=document.createElement('div');box.id='planet-collection-overlay';box.style.cssText='position:fixed;z-index:12010;inset:0;display:none;overflow:auto;padding:16px;background:#020914ed;color:#eaf6ff;font-family:Tahoma';box.innerHTML='<section style="max-width:850px;margin:2vh auto;background:#0b1b2d;border:1px solid #4a829d66;border-radius:18px;padding:16px"><header style="display:flex;justify-content:space-between;align-items:center"><h2 style="font-size:17px">🏆 کلکسیون موجودات کشف‌شده</h2><button id="planet-collection-close" class="planet-img-action">بستن ×</button></header><p id="planet-collection-count" style="font-size:11px;color:#9fc4d8"></p><div id="planet-collection-grid" class="planet-collection-grid"></div></section>';document.body.appendChild(box);box.querySelector('#planet-collection-close').onclick=()=>box.style.display='none';box.addEventListener('click',e=>{if(e.target===box)box.style.display='none';});}
     const items=Object.values(readCollection()).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));box.querySelector('#planet-collection-count').textContent=tr('تعداد تصاویر ثبت‌شده: ','Collected portraits: ')+items.length;const grid=box.querySelector('#planet-collection-grid');grid.innerHTML='';items.forEach(item=>{const card=document.createElement('div');card.className='planet-collection-card';const img=document.createElement('img');img.src=item.image;img.alt=item.name;const name=document.createElement('b');name.textContent=item.name;const meta=document.createElement('small');meta.textContent=tr('نسل ','Gen ')+item.generation+' · '+item.habitat;card.append(img,name,meta);grid.appendChild(card);});box.style.display='block';
   }
+  function scanEligibleSpecies(){const api=window.PlanetLifeAPI;if(!api||typeof api.getSpeciesSnapshot!=='function')return;let list=[];try{list=api.getSpeciesSnapshot()||[];}catch(_){}list.forEach(s=>{const id=String(s.id);if(!id||readCollection()[id]||autoQueued.has(id)||!getSizeGate(s).eligible)return;autoQueued.add(id);const delay=Math.max(500,Math.min(30000,(autoQueued.size-1)*8500));setTimeout(()=>{if(readCollection()[id])return;selected=s;promptInput.value=buildPrompt(s,'auto-'+Date.now().toString(36));generate();},delay);});}
   function showBadges(s){
     const box=$('planet-image-species');box.innerHTML='';
     const title=document.createElement('strong');title.textContent=s.name||tr('جاندار بدون نام','Unnamed organism');title.style.cssText='font-size:14px;color:#eefaff;margin-inline-end:8px';box.appendChild(title);
@@ -273,8 +275,9 @@
     $('planet-image-save-settings').addEventListener('click',saveSettings);generateButton.addEventListener('click',generate);variationButton.addEventListener('click',createVariation);downloadButton.addEventListener('click',downloadImage);
     const catalog=$('speciesList');if(catalog){addButtons(catalog);new MutationObserver(()=>addButtons(catalog)).observe(catalog,{childList:true,subtree:true});}
     const collectionButton=document.createElement('button');collectionButton.type='button';collectionButton.className='planet-collection-launch';collectionButton.textContent='🏆 کلکسیون';collectionButton.addEventListener('click',showCollection);document.body.appendChild(collectionButton);
-    window.addEventListener('planet-ownership-updated',()=>{if(catalog)addButtons(catalog);});
+    window.addEventListener('planet-ownership-updated',()=>{if(catalog)addButtons(catalog);scanEligibleSpecies();});
+    setInterval(scanEligibleSpecies,5000);scanEligibleSpecies();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-  window.PlanetImageGeneration={openForSpecies:openForSpecies,buildPrompt:id=>{const s=getSpecies(id);return s?buildPrompt(s,'preview'):'';},generateOfflineSVG:id=>{const s=getSpecies(id);return s?generateOfflineSVG(s,'test'):'';},getConfigured:()=>{try{return!!localStorage.getItem(ENDPOINT_KEY)&&!!localStorage.getItem(ACCESS_KEY);}catch(_){return false;}},getSizeGate:id=>{const s=getSpecies(id);return s?getSizeGate(s):null;},getCollection:()=>Object.values(readCollection()),openCollection:showCollection,refresh:()=>{const catalog=$('speciesList');if(catalog)addButtons(catalog);}};
+  window.PlanetImageGeneration={openForSpecies:openForSpecies,buildPrompt:id=>{const s=getSpecies(id);return s?buildPrompt(s,'preview'):'';},generateOfflineSVG:id=>{const s=getSpecies(id);return s?generateOfflineSVG(s,'test'):'';},getConfigured:()=>{try{return!!localStorage.getItem(ENDPOINT_KEY)&&!!localStorage.getItem(ACCESS_KEY);}catch(_){return false;}},getSizeGate:id=>{const s=getSpecies(id);return s?getSizeGate(s):null;},getCollection:()=>Object.values(readCollection()),openCollection:showCollection,setActivePlanet:id=>{activePlanetId=String(id||'earth');scanEligibleSpecies();},setOwnershipResolver:fn=>{ownershipResolver=typeof fn==='function'?fn:null;scanEligibleSpecies();},refresh:()=>{const catalog=$('speciesList');if(catalog)addButtons(catalog);scanEligibleSpecies();}};
 })();
