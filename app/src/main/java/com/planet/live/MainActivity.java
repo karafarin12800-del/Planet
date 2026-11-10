@@ -149,7 +149,6 @@ public final class MainActivity extends ComponentActivity {
                 callback.connectionSucceed(() -> {
                     bazaarConnected = true;
                     callJs("onBazaarReady", "");
-                    queryTokenProductDetails();
                     restoreVipSubscription();
                     return Unit.INSTANCE;
                 });
