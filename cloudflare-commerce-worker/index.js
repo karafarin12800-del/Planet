@@ -134,10 +134,10 @@ async function sendTransactionalEmail(email,subject,text,env) {
   if(!r.ok) throw new Error("EMAIL_DELIVERY_FAILED");
 }
 async function sendVerification(email,code,env) {
-  await sendTransactionalEmail(email,"کد تأیید حساب Planet","کد تأیید شما: "+code+"\\nاین کد ۱۵ دقیقه اعتبار دارد.",env);
+  await sendTransactionalEmail(email,"کد تأیید حساب Planet","کد تأیید شما: "+code+"\nاین کد ۱۵ دقیقه اعتبار دارد.",env);
 }
 async function sendPasswordReset(email,code,env) {
-  await sendTransactionalEmail(email,"بازیابی گذرواژه حساب Planet","کد بازیابی گذرواژه شما: "+code+"\\nاین کد ۱۵ دقیقه اعتبار دارد و فقط یک‌بار قابل استفاده است.",env);
+  await sendTransactionalEmail(email,"بازیابی گذرواژه حساب Planet","کد بازیابی گذرواژه شما: "+code+"\nاین کد ۱۵ دقیقه اعتبار دارد و فقط یک‌بار قابل استفاده است.",env);
 }
 async function grantWelcome(db,userId) {
   // New email accounts receive 20 starter tokens plus a 120-token welcome grant (140 total).
