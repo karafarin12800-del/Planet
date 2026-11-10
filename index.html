@@ -125,7 +125,7 @@
 #collectionOverlay .token-pack-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0}
 #collectionOverlay .token-pack{position:relative;min-width:0;padding:11px;border:1px solid #5484a566;border-radius:13px;background:linear-gradient(150deg,#16334c,#0b1b30 78%);box-shadow:inset 0 1px #ffffff0b}
 #collectionOverlay .token-pack .token-amount{font-size:17px;font-weight:900;color:#ffe5a3;line-height:1.5}
-#collectionOverlay .token-pack .token-caption{font-size:9px;color:#a9c1d9;min-height:28px;line-height:1.7}
+#collectionOverlay .token-pack .token-caption{font-size:9px;color:#a9c1d9;min-height:28px;line-height:1.7}\n#collectionOverlay .token-pack .token-price{font-size:12px;font-weight:800;color:#8fe5d2;min-height:24px;padding-top:5px}
 #collectionOverlay .token-pack button{width:100%;margin-top:8px!important;border:1px solid #5ac8d8!important;border-radius:10px!important;background:linear-gradient(135deg,#17627b,#15415c)!important;color:#f0fdff!important;font-size:10px!important;font-weight:800;padding:10px 6px!important;box-shadow:0 5px 15px #0003}
 #collectionOverlay .token-pack button:disabled{opacity:.48;filter:saturate(.5)}
 #collectionOverlay #commerceWalletSection{border:1px solid #b9984e88!important;border-radius:16px!important;background:linear-gradient(155deg,#182c3d,#111c2c 70%)!important;padding:13px!important;scroll-margin-top:12px}
@@ -657,10 +657,10 @@ $('gpCreateLifeModel').addEventListener('click',()=>{
 <div class="life-actions"><h4 style="margin:0 0 6px">انتخاب بستهٔ توکن</h4><button type="button" id="commerceWalletBack">بازگشت به بازی</button></div>
 <p class="tiny-note">پرداخت در نسخهٔ اندروید از مسیر امن کافه‌بازار انجام می‌شود. قیمت نهایی را فروشگاه هنگام پرداخت نمایش می‌دهد.</p>
 <div class="token-pack-grid">
-<div class="token-pack"><div class="token-amount">۲۰۰ توکن</div><div class="token-caption">بستهٔ شروع برای خریدهای کوچک</div><button type="button" id="commerceBuyTokens200">دریافت بسته</button></div>
-<div class="token-pack"><div class="token-amount">۵۰۰ توکن</div><div class="token-caption">برای گسترش کلکسیون و آزمایش‌ها</div><button type="button" id="commerceBuyTokens500">دریافت بسته</button></div>
-<div class="token-pack"><div class="token-amount">۱٬۰۰۰ توکن</div><div class="token-caption">برای خریدهای بزرگ‌تر در جهان Planet</div><button type="button" id="commerceBuyTokens1000">دریافت بسته</button></div>
-<div class="token-pack"><div class="token-amount">۲٬۰۰۰ توکن</div><div class="token-caption">بستهٔ ویژهٔ بازیکنان فعال</div><button type="button" id="commerceBuyTokens2000">دریافت بسته</button></div>
+<div class="token-pack"><div class="token-amount">۲۰۰ توکن</div><div class="token-price" id="commerceTokenPrice200">قیمت فروشگاه پس از اتصال نمایش داده می‌شود</div><div class="token-caption">بستهٔ شروع برای خریدهای کوچک</div><button type="button" id="commerceBuyTokens200">دریافت بسته</button></div>
+<div class="token-pack"><div class="token-amount">۵۰۰ توکن</div><div class="token-price" id="commerceTokenPrice500">قیمت فروشگاه پس از اتصال نمایش داده می‌شود</div><div class="token-caption">برای گسترش کلکسیون و آزمایش‌ها</div><button type="button" id="commerceBuyTokens500">دریافت بسته</button></div>
+<div class="token-pack"><div class="token-amount">۱٬۰۰۰ توکن</div><div class="token-price" id="commerceTokenPrice1000">قیمت فروشگاه پس از اتصال نمایش داده می‌شود</div><div class="token-caption">برای خریدهای بزرگ‌تر در جهان Planet</div><button type="button" id="commerceBuyTokens1000">دریافت بسته</button></div>
+<div class="token-pack"><div class="token-amount">۲٬۰۰۰ توکن</div><div class="token-price" id="commerceTokenPrice2000">قیمت فروشگاه پس از اتصال نمایش داده می‌شود</div><div class="token-caption">بستهٔ ویژهٔ بازیکنان فعال</div><button type="button" id="commerceBuyTokens2000">دریافت بسته</button></div>
 </div>
 <div class="tiny-note">رسید پرداخت ابتدا در سرور اعتبارسنجی می‌شود؛ فقط پس از تأیید، توکن به کیف پول اضافه خواهد شد. اگر اینترنت قطع شود، رسید امن نگهداری و دوباره بررسی می‌شود.</div>
 </div>
