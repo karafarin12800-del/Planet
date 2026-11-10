@@ -108,5 +108,12 @@ assert.ok(!html.includes("setTimeout(openCollectionShop,450)"),"account/collecti
 assert.ok(ui.includes("سرویس حساب آنلاین هنوز در حال آماده‌سازی است"),"unconfigured service shows a player-friendly message");
 assert.ok(!ui.includes('ابتدا Worker را مستقر کن و نشانی HTTPS آن را وارد کن'),"player-facing UI never asks players to deploy or configure a Worker");
 
+ assert.ok(source.includes("async function authenticate(req,env)")&&source.includes("async function passwordHash(password,salt)")&&source.includes("async function signToken(account,env)"),"Worker must define its authentication and cryptographic primitives");
+ assert.ok(source.includes('path==="/auth/forgot-password"')&&source.includes('path==="/auth/reset-password"'),"email accounts support password recovery");
+ assert.ok(source.includes("password_resets")&&source.includes("attempts>=5"),"password reset codes are expiring, one-time and attempt-limited");
+ assert.ok(source.includes("sendPasswordReset")&&source.includes("Planet <Planet@toonplay.ir>")===false,"password recovery uses the configured sender binding, not a hard-coded address");
+ assert.ok(fs.readFileSync(require("node:path").join(__dirname,"..","cloudflare-commerce-worker/migrations/0010_password_resets.sql"),"utf8").includes("CREATE TABLE IF NOT EXISTS password_resets"),"password recovery storage migration exists");
+ assert.ok(fs.readFileSync(require("node:path").join(__dirname,"..","planet-commerce-client.js"),"utf8").includes('https://planet-commerce-api.zojajiali4.workers.dev'),"app client is configured to use the production Worker endpoint");
+ assert.ok(ui.includes("commerceForgotPassword")&&ui.includes("commerceResetPassword"),"account UI exposes password recovery");
  console.log("Planet commerce catalog and token contract tests passed.");
 })().catch(error=>{console.error(error);process.exit(1);});
