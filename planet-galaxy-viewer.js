@@ -177,7 +177,7 @@
       if(!panel){
         panel=doc.createElement("div");panel.id="pgGuestWalletDialog";
         panel.style.cssText="position:absolute;inset:0;z-index:40;display:none;align-items:center;justify-content:center;padding:18px;background:#020a14dd";
-        panel.innerHTML='<div style="width:min(100%,380px);max-height:90%;overflow:auto;padding:18px;border:1px solid #5a8ba8;border-radius:16px;background:#0b2035;color:#eaf7ff;text-align:center"><h3 style="margin:0 0 10px">کیف پول مهمان</h3><p id="pgGuestWalletBalance" style="font-size:22px;font-weight:800"></p><p style="font-size:12px;line-height:1.9;color:#b7cce0">۱۰۰ توکن آزمایشی برای خرید سیاره و آزمایش بازی در این دستگاه داری. این اعتبار به حساب آنلاین منتقل نمی‌شود.</p><p style="font-size:12px;color:#9fd8e8">بسته‌های شارژ کیف پول</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0"><button class="pg-btn" type="button" data-guest-pack="200">۲۰۰ توکن</button><button class="pg-btn" type="button" data-guest-pack="500">۵۰۰ توکن</button><button class="pg-btn" type="button" data-guest-pack="1000">۱۰۰۰ توکن</button><button class="pg-btn" type="button" data-guest-pack="2000">۲۰۰۰ توکن</button></div><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="pg-btn" id="pgGuestWalletBack" type="button">بازگشت به بازی</button><button class="pg-btn primary" id="pgGuestWalletBuy" type="button">ورود و خرید توکن</button></div></div>';
+        panel.innerHTML='<div style="width:min(100%,380px);max-height:90%;overflow:auto;padding:18px;border:1px solid #5a8ba8;border-radius:16px;background:#0b2035;color:#eaf7ff;text-align:center"><h3 style="margin:0 0 10px">کیف پول مهمان</h3><p id="pgGuestWalletBalance" style="font-size:22px;font-weight:800"></p><p style="font-size:12px;line-height:1.9;color:#b7cce0">۱۰۰ توکن آزمایشی برای خرید سیاره و آزمایش بازی در این دستگاه داری. این اعتبار به حساب آنلاین منتقل نمی‌شود.</p><p style="font-size:12px;color:#9fd8e8">بسته‌های شارژ کیف پول</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0"><button class="pg-btn" type="button" data-guest-pack="200">۲۰۰ توکن</button><small id="pgGuestPrice200" style="grid-column:span 1;color:#8fe5d2;font-size:10px">قیمت فروشگاه</small><button class="pg-btn" type="button" data-guest-pack="500">۵۰۰ توکن</button><small id="pgGuestPrice500" style="grid-column:span 1;color:#8fe5d2;font-size:10px">قیمت فروشگاه</small><button class="pg-btn" type="button" data-guest-pack="1000">۱۰۰۰ توکن</button><small id="pgGuestPrice1000" style="grid-column:span 1;color:#8fe5d2;font-size:10px">قیمت فروشگاه</small><button class="pg-btn" type="button" data-guest-pack="2000">۲۰۰۰ توکن</button><small id="pgGuestPrice2000" style="grid-column:span 1;color:#8fe5d2;font-size:10px">قیمت فروشگاه</small></div><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="pg-btn" id="pgGuestWalletBack" type="button">بازگشت به بازی</button><button class="pg-btn primary" id="pgGuestWalletBuy" type="button">ورود و خرید توکن</button></div></div>';
         overlay.appendChild(panel);
         panel.querySelector("#pgGuestWalletBack").addEventListener("click",()=>panel.style.display="none");
         const requestTopUp=()=>{panel.style.display="none";openAccountSection("commerceWalletSection");showNotice("برای پرداخت واقعی، ابتدا با ایمیل یا Google وارد حساب شو؛ سپس یکی از چهار بسته را بخر.");};
@@ -188,6 +188,15 @@
       panel.style.display="flex";
     }
     win.PlanetGalaxyOpenWallet=openWallet;
+    function syncGuestWalletPrices(products){
+      const data=products||win.PlanetBazaarProducts||{};
+      ["200","500","1000","2000"].forEach(n=>{
+        const node=$("pgGuestPrice"+n),item=data["planet_tokens_"+n];
+        if(node)node.textContent=item&&item.price?item.price:"قیمت در کافه‌بازار";
+      });
+    }
+    win.addEventListener("planet:bazaar-product-details",event=>syncGuestWalletPrices(event.detail&&event.detail.products));
+    syncGuestWalletPrices();
     function gameSessionKey(p){return String(playerProfile&&playerProfile.id||"local")+":"+String(p.commercePlanetId||p.id);}
     function localDayKey(){const parts=new Intl.DateTimeFormat("en-CA",{year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const part=type=>parts.find(x=>x.type===type).value;return part("year")+"-"+part("month")+"-"+part("day");}
     function saveGenomeSession(s){
