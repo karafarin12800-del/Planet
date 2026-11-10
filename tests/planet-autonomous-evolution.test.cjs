@@ -32,7 +32,7 @@ assert.equal(envRestored.planetEnvironment.planetId, "furnace");
 assert.equal(envRestored.planetEnvironment.temperatureC, 450);
 const legacyV1 = JSON.parse(life.serialize(state)); legacyV1.version = 1; delete legacyV1.planetEnvironment;
 const migratedV1 = life.restore(legacyV1);
-assert.equal(migratedV1.version, 6);
+assert.equal(migratedV1.version, 7);
 assert.equal(migratedV1.planetEnvironment.planetId, "earth");
 
 const rolesById = new Map(life.createState(99).species.map(s => [s.id, s.trophicRole]));
@@ -48,7 +48,7 @@ life.advanceYears(sameA, 180); life.advanceYears(sameB, 180);
 assert.equal(life.serialize(sameA), life.serialize(sameB), "resource and food-web simulation remains deterministic for a fixed seed");
 const v2Save = JSON.parse(life.serialize(state)); v2Save.version = 2; delete v2Save.resources; delete v2Save.detritus;
 const migratedV2 = life.restore(v2Save);
-assert.equal(migratedV2.version, 6);
+assert.equal(migratedV2.version, 7);
 assert.ok(migratedV2.resources && migratedV2.species.every(s => s.trophicRole), "version-2 saves receive initialized ecology state");
 const alien=life.createState(8123,{id:"alien-01-p1",type:"desert",meanTemperatureC:28,waterCoverage:.08,gravity:1.2,atmosphere:"thin-carbon-dioxide"},state.species.map(s=>s.dna));
 assert.equal(alien.species.length,2);
