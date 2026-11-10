@@ -54,8 +54,8 @@ assert.ok(html.includes("منبع بافت روز زمین: Solar System Scope")
 assert.ok(workflow.includes("earth-daymap-4k.jpg"), "Android build includes the downscaled map");
 assert.ok(workflow.includes("Pillow"), "CI uses a reproducible image resize step");
 assert.ok(workflow.includes("resize((4096, 2048)"), "CI creates a 4K power-of-two texture");
-assert.ok(sw.includes("planet-pwa-v32-hybrid-breeding-token-bundles"), "PWA cache key was bumped");
-assert.ok(imageContract.includes("planet-pwa-v32-hybrid-breeding-token-bundles"), "existing image contract agrees with new cache version");
+assert.ok(sw.includes("planet-pwa-v33-creature-portraits"), "PWA cache key was bumped");
+assert.ok(imageContract.includes("planet-pwa-v33-creature-portraits"), "existing image contract agrees with new cache version");
 
 // Performance regressions: large timeline jumps must yield to the browser between generations.
 const catchUpStart = html.indexOf("function catchUpEvolution(targetAge)");
@@ -128,7 +128,7 @@ assert.ok(html.includes("actAgent(agent,s,env,neighbors,context,speciesBaseFitne
 assert.ok(!html.includes("agent.fitness=clamp(.25*calculateFitness(s,lifeAgeMa)"), "fitness calculation is not repeated for every individual in a species");
 assert.ok(!html.includes("ensureDinosaurLineages()"), "evolution does not call the removed dinosaur-seeding function");
 assert.ok(html.includes("Evolution step failed; orbital rendering continues"), "an ecology exception pauses evolution without killing the planet render loop");
-assert.ok(sw.includes("planet-pwa-v32-hybrid-breeding-token-bundles"), "PWA cache invalidation includes collection and commerce");
+assert.ok(sw.includes("planet-pwa-v33-creature-portraits"), "PWA cache invalidation includes collection and commerce");
 assert.ok(html.includes("planet-collection-commerce.js"), "collection commerce module is loaded");
 assert.ok(html.includes("planet-commerce-client.js"), "online API client is loaded");
 assert.ok(html.includes("planet-commerce-ui.js"), "online commerce UI is loaded");
