@@ -193,8 +193,9 @@ window.PlanetCommerceUI={
   const products={};rows.forEach(item=>{if(item&&tokenAmounts[item.sku]&&item.price)products[item.sku]=item;});
   window.PlanetBazaarProducts=products;
   ["200","500","1000","2000"].forEach(n=>{
-   const node=$("commerceTokenPrice"+n),item=products["planet_tokens_"+n];
-   if(node)node.textContent=item?item.price:"قیمت از فروشگاه دریافت نشد";
+   const node=$("commerceTokenPrice"+n),button=$("commerceBuyTokens"+n),item=products["planet_tokens_"+n];
+   if(node)node.textContent=item?item.price:"این بسته در فروشگاه در دسترس نیست";
+   if(button){const configured=!!(window.AndroidCommerceBridge&&window.AndroidCommerceBridge.isBazaarConfigured&&window.AndroidCommerceBridge.isBazaarConfigured());button.disabled=!(configured&&item);button.title=item?"قیمت و موجودی از کافه‌بازار دریافت شد":"شناسهٔ این بسته در کافه‌بازار فعال نیست";}
   });
   window.dispatchEvent(new CustomEvent("planet:bazaar-product-details",{detail:{products}}));
  },onBazaarReady:function(){updateNativeButtons();const bridge=window.AndroidCommerceBridge;if(bridge&&bridge.refreshBazaarProductDetails)bridge.refreshBazaarProductDetails();retryPendingBazaarToken();}
