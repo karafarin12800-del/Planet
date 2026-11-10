@@ -1937,7 +1937,7 @@ html[lang="en"] .scene-coords{direction:ltr}
       savedSpeed = 10;
     }
     Model.setEnvironment(state, planet);
-    Model.setPlanetPurchased(state,ownedPlanetIds.has(worldId));
+    Model.setPlanetPurchased(state,ownedPlanetIds.has(String(planet.commercePlanetId||worldId)));
     return live;
   }
   restoreWorld(activeWorldId);
@@ -1952,7 +1952,7 @@ html[lang="en"] .scene-coords{direction:ltr}
   };
   window.addEventListener('planet:owned-planets-updated',event=>{
     const ids=event&&event.detail&&Array.isArray(event.detail.planetIds)?event.detail.planetIds:[];
-    ownedPlanetIds=new Set(ids.map(String));Model.setPlanetPurchased(state,ownedPlanetIds.has(activeWorldId));
+    ownedPlanetIds=new Set(ids.map(String));const activePlanet=WorldState.getPlanet(localStorage,window.PlanetGalaxyEngine,activeWorldId);Model.setPlanetPurchased(state,ownedPlanetIds.has(String(activePlanet&&activePlanet.commercePlanetId||activeWorldId)));
     if(window.PlanetImageGeneration&&typeof window.PlanetImageGeneration.refresh==='function')window.PlanetImageGeneration.refresh();
   });
   const style = document.createElement('style');
