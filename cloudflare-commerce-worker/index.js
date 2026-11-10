@@ -83,7 +83,7 @@ async function grantWelcome(db,userId) {
 async function route(req, env, url) {
   if(!env.DB) return response({error:"DATABASE_NOT_CONFIGURED"},503);
   const path=url.pathname, method=req.method;
-  if(method==="GET"&&path==="/health") return response({ok:true,service:"PLANET commerce API",database:true,bazaarConfigured:!!env.BAZAAR_ACCESS_TOKEN,emailConfigured:!!env.RESEND_API_KEY});
+  if(method==="GET"&&path==="/health") return response({ok:true,service:"PLANET commerce API",database:!!env.DB,bazaarConfigured:!!(env.BAZAAR_CLIENT_ID&&env.BAZAAR_CLIENT_SECRET&&env.BAZAAR_REFRESH_TOKEN&&env.BAZAAR_PACKAGE_NAME),emailConfigured:!!(env.RESEND_API_KEY&&env.VERIFY_FROM_EMAIL)});
   if(method==="GET"&&path==="/catalog/planets") return response({version:1,count:100,planets:planets()});
   if(method==="GET"&&path==="/planets/owners"){
     const ids=String(url.searchParams.get("ids")||"").split(",").filter(x=>/^[a-zA-Z0-9_-]{1,80}$/.test(x)).slice(0,100);
