@@ -209,5 +209,5 @@ $("commerceVipDaily").addEventListener("click",async()=>{
  try{const result=await client.claimVipDaily();status("۱۰ توکن پاداش روزانهٔ VIP دریافت شد.");$("commerceTokenBalance").textContent=Number(result.balance||0).toLocaleString("fa-IR");$("commerceVipDaily").disabled=true;}
  catch(error){status(error.message);}
 });
-updateNativeButtons();
+authView();updateNativeButtons();if(client.hasSession())setTimeout(()=>refresh().catch(error=>status(error.message)),1200);
 })();
