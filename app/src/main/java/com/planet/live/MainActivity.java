@@ -34,6 +34,9 @@ import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 
 import org.json.JSONObject;
+import org.json.JSONArray;
+import java.util.Arrays;
+import ir.cafebazaar.poolakey.entity.SkuDetails;
 
 import java.security.SecureRandom;
 import java.util.concurrent.Executor;
@@ -146,6 +149,7 @@ public final class MainActivity extends ComponentActivity {
                 callback.connectionSucceed(() -> {
                     bazaarConnected = true;
                     callJs("onBazaarReady", "");
+                    queryTokenProductDetails();
                     restoreVipSubscription();
                     return Unit.INSTANCE;
                 });
@@ -165,6 +169,35 @@ public final class MainActivity extends ComponentActivity {
             bazaarConnected = false;
             callJs("handleBazaarNativeError", "راه‌اندازی پرداخت کافه‌بازار انجام نشد.");
         }
+    }
+
+
+    private void queryTokenProductDetails() {
+        if (payment == null || !bazaarConnected) return;
+        payment.getInAppSkuDetails(Arrays.asList(
+                "planet_tokens_200", "planet_tokens_500",
+                "planet_tokens_1000", "planet_tokens_2000"), callback -> {
+            callback.getSkuDetailsSucceed(details -> {
+                JSONArray rows = new JSONArray();
+                for (SkuDetails item : details) {
+                    try {
+                        JSONObject row = new JSONObject();
+                        row.put("sku", item.getSku());
+                        row.put("price", item.getPrice());
+                        row.put("title", item.getTitle());
+                        row.put("description", item.getDescription());
+                        rows.put(row);
+                    } catch (Exception ignored) { }
+                }
+                callJs("onBazaarProductDetails", rows.toString());
+                return Unit.INSTANCE;
+            });
+            callback.getSkuDetailsFailed(error -> {
+                callJs("handleBazaarStatus", "قیمت بسته‌های توکن از کافه‌بازار دریافت نشد؛ اتصال فروشگاه را بررسی کن.");
+                return Unit.INSTANCE;
+            });
+            return Unit.INSTANCE;
+        });
     }
 
     private void restoreVipSubscription() {
@@ -416,6 +449,11 @@ public final class MainActivity extends ComponentActivity {
         @JavascriptInterface
         public void startBazaarPurchase(String productId) {
             runOnUiThread(() -> MainActivity.this.startBazaarPurchase(productId));
+        }
+
+        @JavascriptInterface
+        public void refreshBazaarProductDetails() {
+            runOnUiThread(MainActivity.this::queryTokenProductDetails);
         }
 
         @JavascriptInterface
