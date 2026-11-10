@@ -96,7 +96,8 @@ export default {
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     const genome = typeof body.genome === "string" ? body.genome.toUpperCase() : "";
     if (!/^[ACGT]{1,100000}$/.test(genome)) return json({ error: "A valid digital genome is required for a persistent organism image." }, 400, headers);
-    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(genome));
+    const cacheIdentity = typeof body.cacheIdentity === "string" && /^[a-f0-9]{8,128}$/i.test(body.cacheIdentity) ? body.cacheIdentity.toLowerCase() : genome;
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(cacheIdentity));
     const genomeHash = [...new Uint8Array(digest)].map(x => x.toString(16).padStart(2, "0")).join("");
     const cacheKey = "genomes/" + genomeHash + ".png";
     const cachedImage = await env.ORGANISM_IMAGES.get(cacheKey);
