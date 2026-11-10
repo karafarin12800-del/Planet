@@ -22,6 +22,8 @@ assert.ok(activity.includes('new PurchaseRequest(productId, productId, null)')&&
 assert.ok(activity.includes('new PaymentConfiguration(new SecurityCheck.Enable(rsaKey), true)'),"Poolakey subscription support is enabled");
 assert.ok(activity.includes("payment.subscribeProduct")&&activity.includes('VIP_PRODUCT_ID = "planet_vip_60d"'),"VIP uses the native Cafe Bazaar subscription flow");
 assert.ok(activity.includes("payment.getSubscribedProducts")&&activity.includes("restoreVipSubscription"),"active subscriptions are restored and revalidated on app start");
+assert.ok(activity.includes("payment.getInAppSkuDetails")&&activity.includes("getSkuDetailsSucceed")&&activity.includes("item.getPrice()"),"localized Cafe Bazaar token bundle prices are fetched from the store");
+assert.ok(activity.includes("refreshBazaarProductDetails"),"wallet can refresh localized store prices");
 assert.ok(activity.includes("PENDING_VIP_TOKEN_KEY")&&activity.includes("clearPendingVipSubscription"),"VIP receipt is retained until server verification");
 assert.ok(gradle.includes("Poolakey:poolakey:2.2.0"),"Poolakey dependency is pinned");
 assert.ok(gradle.includes("credentials:1.6.0")&&gradle.includes("googleid:1.1.1"),"Credential Manager dependencies are explicit");
@@ -32,6 +34,7 @@ assert.ok(ui.includes("client.googleLogin(token,nonce)"),"Google ID token is sen
 assert.ok(ui.includes("client.verifyBazaarReceipt(productId,token)"),"all token bundle receipts reach the Worker before consumption");
 assert.ok(ui.includes('client.verifyVipReceipt("planet_vip_60d",token)'),"VIP subscription receipt reaches the Worker before entitlement activation");
 assert.ok(ui.includes("bridge.consumeBazaarPurchase(token,productId)"),"verified token bundle receipt is consumed through Poolakey");
+assert.ok(ui.includes("onBazaarProductDetails:function(payload)")&&ui.includes("commerceTokenPrice"),"wallet displays actual localized prices returned by Cafe Bazaar");
 assert.ok(ui.includes("client.claimVipDaily()"),"daily VIP reward is claimed from the server");
 assert.ok(client.includes("body:{idToken,nonce}"),"Google nonce is sent to the Worker");
 assert.ok(worker.includes("claims.nonce!==nonce"),"Worker validates the nonce claim");
