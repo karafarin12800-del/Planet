@@ -8,7 +8,7 @@ Cafe Bazaar receipt verification and a player-to-player specimen marketplace.
 
 1. Create a Cloudflare D1 database named \`planet-commerce\`.
 2. Run \`npx wrangler d1 execute planet-commerce --file=schema.sql\`.
-3. Apply migrations in order: `npx wrangler d1 execute planet-commerce --file=migrations/0002_profile_display_name.sql`, then `0003_specimen_market_eligibility.sql`, then `0004_galaxy_planet_identity.sql`, then `0005_vip_subscriptions.sql`, then `0006_welcome_grant_adjustment.sql`, then `0007_marketplace_commission_and_price_floor.sql`, then `0008_starter_tokens_and_world_seeds.sql`, then `0009_welcome_grant_v140.sql`.
+3. Apply migrations in order: `npx wrangler d1 execute planet-commerce --file=migrations/0002_profile_display_name.sql`, then `0003_specimen_market_eligibility.sql`, then `0004_galaxy_planet_identity.sql`, then `0005_vip_subscriptions.sql`, then `0006_welcome_grant_adjustment.sql`, then `0007_marketplace_commission_and_price_floor.sql`, then `0008_starter_tokens_and_world_seeds.sql`, then `0009_welcome_grant_v140.sql`, then `0010_password_resets.sql`.
 3. Put the resulting D1 database ID in \`wrangler.toml\`.
 4. Deploy from this directory with Wrangler.
 5. Configure Worker secrets: \`AUTH_SECRET\` (random 32+ bytes), \`RESEND_API_KEY\`,
@@ -73,7 +73,7 @@ purchases until the deployed Worker validates test receipts and an end-to-end te
 
 The Android asset bundle includes `planet-commerce-client.js` and `planet-commerce-ui.js`.
 Player builds do not expose server configuration; maintainers set the deployed HTTPS Worker URL once in source.
-Email registration requires a working Resend sender and verified email. Prototype credits
+Email registration and password recovery require a working Resend sender and verified email. The app is configured to use `https://planet-commerce-api.zojajiali4.workers.dev`; the Worker must be deployed at this URL before account actions are enabled. Prototype credits
 remain local and are never transferred to the online wallet.
 
 The client can sync local specimens using a per-account idempotency key, publish and cancel
