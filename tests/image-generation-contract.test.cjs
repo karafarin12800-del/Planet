@@ -69,4 +69,5 @@ assert.ok(client.includes("Portrait unlocks above mouse size"), "the size gate i
 assert.ok(html.includes("شتاب تکامل ژنوم زمین در سیارهٔ خریداری‌شده فعال است"), "the HUD explains the purchased-world evolution boost");
 
 assert.ok(client.includes("animalLike=!/microbe|bacter|fung|plant|tree|flora|filament|colony/.test(form)"), "non-animal forms do not receive misleading hand-and-foot portraits");
+assert.ok(read("planet-commerce-ui.js").includes("if(client.hasSession())setTimeout(()=>refresh()"), "owned planets are refreshed automatically on signed-in startup");
 console.log("PLANET image-generation contract passed: online API safety, offline genome-driven generation, Android packaging, PWA cache and syntax wiring.");
