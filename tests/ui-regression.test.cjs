@@ -8,6 +8,8 @@ const html = read("index.html");
 const workflow = read(".github/workflows/android-apk.yml");
 const sw = read("sw.js");
 const imageContract = read("tests/image-generation-contract.test.cjs");
+const galaxyViewer = read("planet-galaxy-viewer.js");
+const commerceUI = read("planet-commerce-ui.js");
 
 // Catalog: simulation refreshes must not repeatedly destroy the active scroll position.
 assert.ok(html.includes("speciesListUserScrollingUntil=0"), "catalog tracks active user scrolling");
@@ -97,6 +99,17 @@ assert.ok(html.includes("artRenderScheduled"), "visible thumbnails are rendered 
 const activity = read("app/src/main/java/com/planet/live/MainActivity.java");
 assert.ok(activity.includes("protected void onPause()") && activity.includes("webView.onPause()"), "Android pauses WebView activity work in background");
 assert.ok(activity.includes("protected void onResume()") && activity.includes("webView.onResume()"), "Android resumes WebView activity work when foregrounded");
+
+// Purchased planets must be reachable directly, and token balance must not masquerade as the wallet button.
+assert.ok(galaxyViewer.includes('textContent="🪐 سیاره‌ها / سیاره‌های من"'), "planet launcher explicitly exposes owned planets");
+assert.ok(galaxyViewer.includes('id="pgOwnedPlanetsQuick"'), "galaxy home shows a direct owned-planets list");
+assert.ok(galaxyViewer.includes('data-pg-action="open-owned-planet"'), "owned planet cards have a direct open action");
+assert.ok(galaxyViewer.includes('id="pgWalletBadge">🪙 --'), "token badge contains only the token icon and balance");
+assert.ok(galaxyViewer.includes('id="pgWalletBtn" type="button">کیف پول'), "wallet remains a separate control");
+assert.ok(galaxyViewer.includes('planet:bazaar-product-details'), "guest wallet receives live store price details");
+assert.ok(html.includes('id="commerceTokenPrice200"') && html.includes('id="commerceTokenPrice2000"'), "wallet shows store price rows for token packages");
+assert.ok(commerceUI.includes("onBazaarProductDetails:function(payload)"), "wallet renders localized Bazaar product prices");
+assert.ok(sw.includes("planet-pwa-v35-wallet-owned-planets"), "cache is invalidated for owned planet and wallet UI fixes");
 
 // Offline evolution is restored with bounded, frame-sliced catch-up and survives WebView lifecycle changes.
 const offlineEvolution = read("offline-evolution.js");
