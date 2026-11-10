@@ -59,7 +59,7 @@ assert.ok(client.includes("armY=cy-ry*.30"), "offline portrait fallback includes
 assert.ok(client.includes("writeImageCache(hash,generated,'ai',species)"), "AI portraits store creature and planet metadata");
 assert.ok(worker.includes("body.cacheIdentity"), "R2 cache differentiates the same genome across planets");
 assert.ok(html.includes("window.PlanetWorldLifeAPI"), "active world exposes its live evolved species");
-assert.ok(html.includes("Model.setPlanetPurchased(state,ownedPlanetIds.has(worldId))"), "active world's evolution uses server-verified ownership");
+assert.ok(html.includes("Model.setPlanetPurchased(state,ownedPlanetIds.has(String(planet.commercePlanetId||worldId)))"), "active world's evolution uses server-verified ownership");
 assert.ok(html.includes("planet:owned-planets-updated"), "owned planet updates accelerate the active biosphere");
 assert.ok(read("planet-commerce-ui.js").includes("planet:owned-planets-updated"), "commerce publishes server-verified owned planets");
 
