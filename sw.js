@@ -1,4 +1,4 @@
-const CACHE_NAME = "planet-pwa-v32-hybrid-breeding-token-bundles";
+const CACHE_NAME = "planet-pwa-v33-creature-portraits";
 const APP_SHELL = ["./index.html", "./offline-evolution.js", "./planet-autonomous-evolution.js", "./planet-collection-commerce.js", "./planet-commerce-client.js", "./planet-commerce-ui.js", "./planet-galaxy-engine.js", "./planet-world-state.js", "./planet-galaxy-viewer.js", "./planet-genome-game.js", "./planet-localization.js", "./evolution-engine.js", "./procedural-organism-3d.js", "./planet-image-generation.js", "./offline-ai.js", "./manifest.webmanifest", "./icon.svg", "./privacy.html", "./genome-evidence.html", "./cosmology-lab.html", "./cosmology-observations.js"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
