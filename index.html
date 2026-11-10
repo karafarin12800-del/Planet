@@ -1915,7 +1915,7 @@ html[lang="en"] .scene-coords{direction:ltr}
   if (!WorldState) return;
   const homeWorldId = WorldState.getHomeWorldId(localStorage, window.PlanetGalaxyEngine);
   let activeWorldId = WorldState.getActiveWorldId(localStorage, window.PlanetGalaxyEngine);
-  let state, live = false, timer = 0, saveTimer = 0, fastRunning = false, pendingWorldId = null, lastWall = Date.now(), liveAccumulator = 0, savedSpeed = 10;
+  let state, live = false, timer = 0, saveTimer = 0, fastRunning = false, pendingWorldId = null, lastWall = Date.now(), liveAccumulator = 0, savedSpeed = 10, ownedPlanetIds = new Set();
   function restoreWorld(worldId) {
     const saved = WorldState.load(localStorage, worldId, { homeWorldId: homeWorldId, legacyKey: STORE });
     const planet = WorldState.getPlanet(localStorage, window.PlanetGalaxyEngine, worldId) || { id: worldId, name: worldId, type: 'terrestrial', meanTemperatureC: 15, waterCoverage: 0.71, gravity: 1, atmosphere: 'nitrogen-oxygen' };
@@ -1937,9 +1937,24 @@ html[lang="en"] .scene-coords{direction:ltr}
       savedSpeed = 10;
     }
     Model.setEnvironment(state, planet);
+    Model.setPlanetPurchased(state,ownedPlanetIds.has(worldId));
     return live;
   }
   restoreWorld(activeWorldId);
+  window.PlanetWorldLifeAPI={
+    getActivePlanetId:()=>activeWorldId,
+    getSpeciesSnapshot:()=>Model.visibleSpecies(state).filter(s=>!s.extinct).map(s=>({
+      id:s.id,name:s.name,nameFa:s.name,nameEn:s.name,dna:String(s.dna||''),form:String(s.form||'digital-organism'),
+      habitat:String(s.habitat||'unknown'),generation:Number(s.generation)||0,bodyLengthCm:Number(s.bodyLengthCm||0),
+      special:s.special===true,marketEligible:s.marketEligible===true,originWorldType:s.originWorldType||'alien',
+      planetId:activeWorldId,ageMa:Number(state.year)||0,extinct:!!s.extinct
+    }))
+  };
+  window.addEventListener('planet:owned-planets-updated',event=>{
+    const ids=event&&event.detail&&Array.isArray(event.detail.planetIds)?event.detail.planetIds:[];
+    ownedPlanetIds=new Set(ids.map(String));Model.setPlanetPurchased(state,ownedPlanetIds.has(activeWorldId));
+    if(window.PlanetImageGeneration&&typeof window.PlanetImageGeneration.refresh==='function')window.PlanetImageGeneration.refresh();
+  });
   const style = document.createElement('style');
   style.textContent = [
     '#planet-biosphere-launch{position:fixed;z-index:860;right:12px;bottom:14px;border:1px solid #48c9c1;background:linear-gradient(135deg,#123f50,#102d46);color:#e9ffff;border-radius:13px;padding:11px 14px;font:700 13px Tahoma,system-ui;box-shadow:0 8px 24px #0008}',
@@ -1985,6 +2000,7 @@ html[lang="en"] .scene-coords{direction:ltr}
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         window.PlanetEvolutionModel.drawOrganism(ctx, s, { traits: s.traits, angle: 0 }, 150, 92, 29, 1, 1);
       }
+      card.dataset.planetWorldSpeciesId=String(s.id);
       const title = document.createElement('strong'); title.textContent = s.name + (s.parentId ? ' · شاخهٔ ' + s.parentId : '');
       const meta = document.createElement('small'); meta.textContent = 'اندازه: ' + Number(s.bodyLengthCm||0).toLocaleString('fa-IR') + ' سانتی‌متر · جمعیت: ' + s.population.toLocaleString('fa-IR') + ' · نسل: ' + s.generation.toLocaleString('fa-IR') + ' · ' + (s.special?'گونهٔ خاص':'گونهٔ پایه') + ' · ' + s.habitat;
       card.append(canvas, title, meta);
