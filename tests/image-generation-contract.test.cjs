@@ -63,4 +63,9 @@ assert.ok(html.includes("Model.setPlanetPurchased(state,ownedPlanetIds.has(world
 assert.ok(html.includes("planet:owned-planets-updated"), "owned planet updates accelerate the active biosphere");
 assert.ok(read("planet-commerce-ui.js").includes("planet:owned-planets-updated"), "commerce publishes server-verified owned planets");
 
+
+assert.ok(client.includes("data-planet-portrait-lock"), "locked creatures show a visible portrait unlock goal");
+assert.ok(client.includes("Portrait unlocks above mouse size"), "the size gate is explained to players");
+assert.ok(html.includes("شتاب تکامل ژنوم زمین در سیارهٔ خریداری‌شده فعال است"), "the HUD explains the purchased-world evolution boost");
+
 console.log("PLANET image-generation contract passed: online API safety, offline genome-driven generation, Android packaging, PWA cache and syntax wiring.");
