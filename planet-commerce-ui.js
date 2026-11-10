@@ -197,7 +197,7 @@ window.PlanetCommerceUI={
    if(node)node.textContent=item?item.price:"قیمت از فروشگاه دریافت نشد";
   });
   window.dispatchEvent(new CustomEvent("planet:bazaar-product-details",{detail:{products}}));
- },nBazaarReady:function(){updateNativeButtons();retryPendingBazaarToken();}
+ },onBazaarReady:function(){updateNativeButtons();const bridge=window.AndroidCommerceBridge;if(bridge&&bridge.refreshBazaarProductDetails)bridge.refreshBazaarProductDetails();retryPendingBazaarToken();}
 };
 $("commerceGoogleLogin").addEventListener("click",()=>{
  const bridge=window.AndroidCommerceBridge;
