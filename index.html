@@ -106,6 +106,38 @@
 }
 
  .species-actions{grid-column:3;display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.species-actions button{white-space:nowrap}@media(max-width:900px){.species-actions{grid-column:2;grid-row:2;justify-content:flex-start}}
+
+/* PLANET GENOME premium commerce presentation */
+#collectionOverlay .species-modal{background:radial-gradient(ellipse at 90% 0%,#153d59 0,transparent 42%),linear-gradient(155deg,#0b1b31,#050d1a 78%);border:1px solid #39718a88;box-shadow:0 28px 100px #000b,inset 0 1px #ffffff0b}
+#collectionOverlay .species-modal>h3{font-size:clamp(17px,3vw,22px);letter-spacing:-.2px;color:#e7faff}
+#collectionOverlay #onlineCommercePanel{position:relative;overflow:hidden;border-color:#4bc6db55!important;background:linear-gradient(145deg,#0b2a42,#0a172b 68%,#171c39)!important;box-shadow:0 14px 40px #0004}
+#collectionOverlay #onlineCommercePanel:before{content:"";position:absolute;inset:-90px -70px auto auto;width:210px;height:210px;border-radius:50%;background:radial-gradient(circle,#47d5ed22,transparent 70%);pointer-events:none}
+#collectionOverlay #commerceAccountPanel{position:relative}
+#collectionOverlay #commerceProfileCard{background:linear-gradient(120deg,#122e48,#0b1b30)!important;border-color:#477b9c!important;border-radius:14px!important}
+#collectionOverlay #commerceTokenBalance{color:#ffe39a;font-weight:900;font-size:1.35em;text-shadow:0 0 18px #f3c96b55}
+#collectionOverlay .commerce-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:12px 0}
+#collectionOverlay .commerce-nav a{display:flex;align-items:center;justify-content:center;min-height:40px;padding:8px 5px;border:1px solid #46718b88;border-radius:11px;background:linear-gradient(145deg,#14354d,#0c1d32);color:#d8f5ff;text-decoration:none;font-size:10px;font-weight:700;transition:transform .18s,border-color .18s,background .18s}
+#collectionOverlay .commerce-nav a:active{transform:scale(.97);border-color:#78e5f5;background:#16465b}
+#collectionOverlay .wallet-hero{position:relative;overflow:hidden;padding:15px;border-radius:15px;border:1px solid #d4ae5c66;background:radial-gradient(circle at 85% 20%,#e8bb5533,transparent 35%),linear-gradient(120deg,#352b18,#17283b 65%,#10253b);margin:12px 0}
+#collectionOverlay .wallet-hero .wallet-kicker{font-size:10px;color:#f5d995;letter-spacing:.7px}
+#collectionOverlay .wallet-hero h4{margin:5px 0 4px;color:#fff0c7;font-size:16px}
+#collectionOverlay .wallet-hero p{margin:0;color:#d0c5a8;font-size:10px;line-height:1.9}
+#collectionOverlay .token-pack-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0}
+#collectionOverlay .token-pack{position:relative;min-width:0;padding:11px;border:1px solid #5484a566;border-radius:13px;background:linear-gradient(150deg,#16334c,#0b1b30 78%);box-shadow:inset 0 1px #ffffff0b}
+#collectionOverlay .token-pack .token-amount{font-size:17px;font-weight:900;color:#ffe5a3;line-height:1.5}
+#collectionOverlay .token-pack .token-caption{font-size:9px;color:#a9c1d9;min-height:28px;line-height:1.7}
+#collectionOverlay .token-pack button{width:100%;margin-top:8px!important;border:1px solid #5ac8d8!important;border-radius:10px!important;background:linear-gradient(135deg,#17627b,#15415c)!important;color:#f0fdff!important;font-size:10px!important;font-weight:800;padding:10px 6px!important;box-shadow:0 5px 15px #0003}
+#collectionOverlay .token-pack button:disabled{opacity:.48;filter:saturate(.5)}
+#collectionOverlay #commerceWalletSection{border:1px solid #b9984e88!important;border-radius:16px!important;background:linear-gradient(155deg,#182c3d,#111c2c 70%)!important;padding:13px!important;scroll-margin-top:12px}
+#collectionOverlay #commerceWalletSection h4{color:#ffedbd}
+#collectionOverlay #commerceProfileCard,#collectionOverlay #commerceGallerySection,#collectionOverlay #commerceMarketSection{scroll-margin-top:12px}
+#collectionOverlay #commerceGallerySection,#collectionOverlay #commerceMarketSection{padding-top:13px!important}
+#collectionOverlay #commerceBuyVip{background:linear-gradient(135deg,#80602a,#4b391d)!important;border-color:#d7b25e!important;color:#fff1c8}
+#collectionOverlay button{transition:filter .16s,transform .16s,border-color .16s}
+#collectionOverlay button:active{transform:scale(.985);filter:brightness(1.12)}
+#collectionOverlay input,#collectionOverlay select{max-width:100%}
+@media(max-width:520px){#collectionOverlay .commerce-nav{grid-template-columns:repeat(2,minmax(0,1fr))}#collectionOverlay .token-pack{padding:9px}#collectionOverlay .token-pack .token-amount{font-size:15px}#collectionOverlay .species-modal{padding:14px}}
+
 </style>
 
 <style id="gp-genome-lab-styles">
@@ -619,7 +651,19 @@ $('gpCreateLifeModel').addEventListener('click',()=>{
 <div id="commerceAccountPanel" hidden>
 <div id="commerceProfileCard" style="border:1px solid #365b77;border-radius:10px;padding:10px;margin:10px 0"><h4 style="margin:0 0 6px">پروفایل بازیکن <span id="commerceVipBadge" style="display:none;border:1px solid #f4d17b;color:#ffe5a6;border-radius:99px;padding:2px 8px;font-size:10px">✦ VIP</span></h4><label for="commerceDisplayName" class="tiny-note">نام نمایشی حساب تو برای پروفایل و بازار موجودات</label><input id="commerceDisplayName" maxlength="24" autocomplete="nickname" placeholder="مثلاً ستاره‌گرد" style="box-sizing:border-box;width:100%;background:#071321;color:#eaf7ff;border:1px solid #35516d;border-radius:8px;padding:9px;margin:7px 0"><button type="button" id="commerceSaveDisplayName">ذخیره نام نمایشی</button><p id="commerceProfileHint" class="tiny-note">نام مالک را خودت انتخاب می‌کنی؛ ایمیل عمومی نمایش داده نمی‌شود.</p></div>
 <div class="life-actions"><strong>کیف پول آنلاین: <span id="commerceTokenBalance">۰</span> توکن</strong><button type="button" id="commerceLogout">خروج از حساب</button></div>
-<div id="commerceWalletSection" style="border:1px solid #365b77;border-radius:10px;padding:10px;margin:10px 0"><div class="life-actions"><h4 style="margin:0 0 6px">کیف پول · خرید توکن</h4><button type="button" id="commerceWalletBack">بازگشت به بازی</button></div><p class="tiny-note">اعتبار هر بسته فقط پس از تأیید رسید توسط سرور به کیف پول اضافه می‌شود.</p><div class="life-actions"><button type="button" id="commerceBuyTokens200">خرید ۲۰۰ توکن</button><button type="button" id="commerceBuyTokens500">خرید ۵۰۰ توکن</button><button type="button" id="commerceBuyTokens1000">خرید ۱۰۰۰ توکن</button><button type="button" id="commerceBuyTokens2000">خرید ۲۰۰۰ توکن</button></div></div>
+<nav class="commerce-nav" aria-label="دسترسی سریع حساب"><a href="#commerceWalletSection">✦ خرید توکن</a><a href="#commerceVipStatus">♛ اشتراک VIP</a><a href="#commerceGallerySection">◈ کلکسیون من</a><a href="#commerceMarketSection">⇄ بازار موجودات</a></nav>
+<div id="commerceWalletSection">
+<div class="wallet-hero"><div class="wallet-kicker">PLANET WALLET · کیف پول امن</div><h4>سوخت سفر میان‌ستاره‌ای تو</h4><p>توکن‌ها را برای خرید سیاره، دارایی‌های بازی و موجودات کمیاب استفاده کن. موجودی پس از تأیید امن پرداخت در حساب ثبت می‌شود.</p></div>
+<div class="life-actions"><h4 style="margin:0 0 6px">انتخاب بستهٔ توکن</h4><button type="button" id="commerceWalletBack">بازگشت به بازی</button></div>
+<p class="tiny-note">پرداخت در نسخهٔ اندروید از مسیر امن کافه‌بازار انجام می‌شود. قیمت نهایی را فروشگاه هنگام پرداخت نمایش می‌دهد.</p>
+<div class="token-pack-grid">
+<div class="token-pack"><div class="token-amount">۲۰۰ توکن</div><div class="token-caption">بستهٔ شروع برای خریدهای کوچک</div><button type="button" id="commerceBuyTokens200">دریافت بسته</button></div>
+<div class="token-pack"><div class="token-amount">۵۰۰ توکن</div><div class="token-caption">برای گسترش کلکسیون و آزمایش‌ها</div><button type="button" id="commerceBuyTokens500">دریافت بسته</button></div>
+<div class="token-pack"><div class="token-amount">۱٬۰۰۰ توکن</div><div class="token-caption">برای خریدهای بزرگ‌تر در جهان Planet</div><button type="button" id="commerceBuyTokens1000">دریافت بسته</button></div>
+<div class="token-pack"><div class="token-amount">۲٬۰۰۰ توکن</div><div class="token-caption">بستهٔ ویژهٔ بازیکنان فعال</div><button type="button" id="commerceBuyTokens2000">دریافت بسته</button></div>
+</div>
+<div class="tiny-note">رسید پرداخت ابتدا در سرور اعتبارسنجی می‌شود؛ فقط پس از تأیید، توکن به کیف پول اضافه خواهد شد. اگر اینترنت قطع شود، رسید امن نگهداری و دوباره بررسی می‌شود.</div>
+</div>
 <div style="border:1px solid #b38b45;border-radius:12px;padding:12px;margin:10px 0;background:linear-gradient(135deg,#302713,#10243a)"><h4 style="margin:0 0 6px;color:#ffe3a0">اشتراک VIP · ۶۰ روز</h4><p class="tiny-note">نشان VIP کنار نام، روزانه ۱۰ توکن اضافه، تخفیف ۱۰٪ خرید سیاره‌ها، اولویت نمایش آگهی‌های فروش و قاب اختصاصی پروفایل.</p><p id="commerceVipStatus" class="tiny-note">اشتراک VIP فعال نیست.</p><div class="life-actions"><button type="button" id="commerceBuyVip">خرید اشتراک VIP شصت‌روزه</button><button type="button" id="commerceVipDaily" disabled>دریافت ۱۰ توکن روزانه</button></div></div>
 <div class="life-actions"><button type="button" id="commerceRefresh">به‌روزرسانی حساب و بازار</button><button type="button" id="commerceSyncSpecimens">همگام‌سازی نمونه‌های محلی</button></div>
 <p class="tiny-note">اعتبار محلی به کیف پول آنلاین منتقل نمی‌شود. با ورود اولیهٔ هر موجود به کلکسیون شخصی، ۱۰ توکن یک‌بار دریافت می‌کنی. فقط نمونه‌هایی که همگام‌سازی می‌کنی وارد بازار می‌شوند.</p>
