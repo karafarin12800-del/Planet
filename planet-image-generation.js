@@ -9,6 +9,7 @@
   const $=id=>document.getElementById(id), lang=()=>String(document.documentElement.lang||'fa').toLowerCase().startsWith('en');
   const tr=(fa,en)=>lang()?en:fa, clamp=(n,a,b)=>Math.max(a,Math.min(b,Number(n)||0));
   let selected=null, generated=null, busy=false, nextAllowedAt=0;
+  const COLLECTION_KEY='planet-creature-collection-v1', autoQueued=new Set();
   const style=document.createElement('style');
   style.textContent=String.raw`
 #planet-image-generator{position:fixed;inset:0;z-index:12000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(1,7,17,.84);backdrop-filter:blur(12px)}
@@ -28,7 +29,7 @@
 #planet-image-settings{border-top:1px solid #8fb9d622;padding-top:9px;margin-top:5px}#planet-image-settings summary{font-size:12px;color:#9edfff;cursor:pointer}
 #planet-image-settings p{font-size:11px;color:#8da9c3;line-height:1.8}#planet-image-prompt{min-height:110px;max-height:210px;resize:vertical;direction:ltr;text-align:left}
 .planet-image-badge{display:inline-block;padding:4px 8px;border-radius:99px;background:#14344a;border:1px solid #8dd9f633;color:#b9edff;font-size:10px;margin:3px}
-.planet-image-row-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.planet-image-row-actions button{background:#113043;border:1px solid #58bfd344;border-radius:9px;padding:7px 9px;color:#c8f1ff;font-size:11px;cursor:pointer}
+.planet-image-row-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;align-items:center}.planet-image-row-actions button{background:#113043;border:1px solid #58bfd344;border-radius:9px;padding:7px 9px;color:#c8f1ff;font-size:11px;cursor:pointer}.planet-creature-thumb{width:58px;height:58px;object-fit:cover;border-radius:10px;border:1px solid #7ee8e866;vertical-align:middle;cursor:pointer}.planet-creature-locked{font-size:10px;color:#c4b5a2;padding:5px 8px;border:1px solid #8c765744;border-radius:9px}.planet-collection-launch{position:fixed;z-index:11990;left:12px;top:116px;border:1px solid #7ee8e866;background:#102e43;color:#e8fbff;border-radius:12px;padding:8px 11px;font:700 11px Tahoma;box-shadow:0 5px 18px #0008}.planet-collection-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:9px;margin-top:12px}.planet-collection-card{background:#0b2033;border:1px solid #68cdd344;border-radius:12px;padding:7px}.planet-collection-card img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px}.planet-collection-card b{display:block;font-size:10px;margin-top:6px;color:#e6f8ff}
 @media(max-width:700px){#planet-image-generator{padding:7px}#planet-image-card{padding:12px;border-radius:15px;max-height:96dvh}#planet-image-layout{grid-template-columns:1fr}#planet-image-result{min-height:210px}#planet-image-output{max-height:46dvh}#planet-image-head h2{font-size:15px}}
 `;
   document.head.appendChild(style);
@@ -87,12 +88,34 @@
       'Generate one original, high-detail scientific natural-history image of a newly generated organism. The pixels must be newly synthesized by the image model, not a preloaded species picture, diagram, icon, collage, or primitive geometric shapes.',
       'Organism label: '+String(s.name||('Organism '+s.id))+'. Broad digital form hint: '+formName(s.form)+'. Use it as a loose constraint, not as a stock-animal template.',
       'Sequence-derived illustrative morphology constraints: '+shape+'.',
+      'Anatomy requirement: this is a collectible still portrait, not an animation rig. For any animal-like or humanoid body, show a complete coherent torso, a distinct left and right arm attached at the shoulders, visible forearms, wrists, palms and individually separated fingers; show two legs with articulated feet and toes. Hands must not be hidden, fused, cropped, mitten-like or replaced by fins. Give the creature a distinctive expressive face, layered skin/fur/scales/plates, subtle asymmetry and memorable silhouette. Premium original game collectible, not a simple blob or primitive toy.',
       'Environment from the simulation: '+env.setting+'; simulation timeline age '+env.ageMa.toFixed(1)+' million years ('+env.stage+'); habitat='+env.habitat+'; model-estimated preferred temperature '+env.temperature+'. The organism must visibly interact with the matching environment.',
       evidence,
       'Generation '+(Number(s.generation)||0)+'. Variation identifier '+variation+'. New variations can change pose, silhouette details and surface pattern while keeping the morphology constraints and habitat.',
       'Visual style: lifelike material response, fine surface/cellular texture appropriate to this form, connected organic anatomy, plausible support/contact with terrain or water, coherent perspective, realistic natural lighting, full organism visible and environment visible behind it. No labels, text, watermarks, or duplicated organisms.',
       'Scientific honesty: the app uses a toy digital genome and an illustrative mapping. Treat the metrics as creative morphology controls, not validated biology. Do not claim a scientifically proven reconstruction or literal anatomy prediction from DNA.'
     ].join('\n\n');
+  }
+  function readCollection(){try{return JSON.parse(localStorage.getItem(COLLECTION_KEY)||'{}')||{};}catch(_){return {};}}
+  function writeCollection(data){try{localStorage.setItem(COLLECTION_KEY,JSON.stringify(data));}catch(e){setStatus(tr('فضای ذخیرهٔ کلکسیون پر شده است؛ تصویر را دانلود کن.','Collection storage is full; download the image.'),true);}}
+  function storeCollectible(s,dataUrl){
+    if(!s||!dataUrl)return;
+    try{const img=new Image();img.onload=()=>{try{const canvas=document.createElement('canvas'),size=420;canvas.width=size;canvas.height=size;const ctx=canvas.getContext('2d');if(!ctx)return;const scale=Math.max(size/img.width,size/img.height),w=img.width*scale,h=img.height*scale;ctx.drawImage(img,(size-w)/2,(size-h)/2,w,h);const thumb=canvas.toDataURL('image/jpeg',.78),items=readCollection();items[String(s.id)]={id:String(s.id),name:String(s.name||('Organism '+s.id)),image:thumb,createdAt:Date.now(),generation:Number(s.generation)||0,habitat:String(s.habitat||'unknown')};writeCollection(items);};img.onerror=()=>{};img.src=dataUrl;}catch(_){}
+  }
+  function getSizeGate(s){
+    const p=getPhenotype(s)||{},a=p.appearance||{},raw=Number(a.bodyLength||0);
+    const generation=Math.max(0,Number(s.generation)||0),growth=1+Math.min(generation,30)*.014;
+    const importedEarth=!!(s.referenceGenome&&s.referenceGenome.accession||s.referenceSequence||/reference-proxy/i.test(String(s.genomeStatus||'')));
+    const planetId=String(s.planetId||window.activePlanetId||window.currentPlanetId||'earth');let purchased=false;
+    try{const commerce=window.PlanetCommerceAPI||window.PlanetOwnership;if(commerce&&typeof commerce.isPlanetPurchased==='function')purchased=!!commerce.isPlanetPurchased(planetId);else if(commerce&&typeof commerce.isOwned==='function')purchased=!!commerce.isOwned(planetId);}catch(_){}
+    const accelerator=(purchased?2.65:1)*(importedEarth?1.45:1),sizeIndex=raw*growth*accelerator;
+    const animal=!/micro|bacter|fung|plant|tree|flora/i.test(String(s.form||''));
+    return{eligible:animal&&sizeIndex>=1.02,sizeIndex,generation,importedEarth,purchased,accelerator,estimatedCm:Math.round((5+sizeIndex*5)*10)/10};
+  }
+  function showCollection(){
+    let box=document.getElementById('planet-collection-overlay');
+    if(!box){box=document.createElement('div');box.id='planet-collection-overlay';box.style.cssText='position:fixed;z-index:12010;inset:0;display:none;overflow:auto;padding:16px;background:#020914ed;color:#eaf6ff;font-family:Tahoma';box.innerHTML='<section style="max-width:850px;margin:2vh auto;background:#0b1b2d;border:1px solid #4a829d66;border-radius:18px;padding:16px"><header style="display:flex;justify-content:space-between;align-items:center"><h2 style="font-size:17px">🏆 کلکسیون موجودات کشف‌شده</h2><button id="planet-collection-close" class="planet-img-action">بستن ×</button></header><p id="planet-collection-count" style="font-size:11px;color:#9fc4d8"></p><div id="planet-collection-grid" class="planet-collection-grid"></div></section>';document.body.appendChild(box);box.querySelector('#planet-collection-close').onclick=()=>box.style.display='none';box.addEventListener('click',e=>{if(e.target===box)box.style.display='none';});}
+    const items=Object.values(readCollection()).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));box.querySelector('#planet-collection-count').textContent=tr('تعداد تصاویر ثبت‌شده: ','Collected portraits: ')+items.length;const grid=box.querySelector('#planet-collection-grid');grid.innerHTML='';items.forEach(item=>{const card=document.createElement('div');card.className='planet-collection-card';const img=document.createElement('img');img.src=item.image;img.alt=item.name;const name=document.createElement('b');name.textContent=item.name;const meta=document.createElement('small');meta.textContent=tr('نسل ','Gen ')+item.generation+' · '+item.habitat;card.append(img,name,meta);grid.appendChild(card);});box.style.display='block';
   }
   function showBadges(s){
     const box=$('planet-image-species');box.innerHTML='';
@@ -186,7 +209,7 @@
     if(!selected)return false;
     const variation=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);
     const svg=generateOfflineSVG(selected,variation);
-    generated='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+    generated='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);storeCollectible(selected,generated);
     output.src=generated;output.style.display='block';placeholder.style.display='none';downloadButton.disabled=false;
     setStatus(tr('تصویر به‌صورت محلی از ژنوم دیجیتال و محیط ساخته شد؛ بدون اینترنت، سرویس بیرونی یا تصویر آماده. این مولد هندسی است، نه مدل انتشار تصویرِ آموزش‌دیده.','An original image was generated locally from digital-genome traits and habitat, without internet, external services, or bundled pictures. This is a procedural generator, not a trained diffusion image model.'));
     return true;
@@ -210,7 +233,7 @@
       const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||data.message||('HTTP '+response.status));
       const b64=data.imageBase64||(data.data&&data.data[0]&&data.data[0].b64_json)||'';if(!b64)throw new Error(tr('پاسخ سرویس تصویر نداشت.','The service response contained no image.'));
       const mime=data.mimeType==='image/webp'?'image/webp':data.mimeType==='image/jpeg'?'image/jpeg':'image/png';
-      generated='data:'+mime+';base64,'+b64;output.src=generated;output.style.display='block';placeholder.style.display='none';downloadButton.disabled=false;
+      generated='data:'+mime+';base64,'+b64;storeCollectible(selected,generated);output.src=generated;output.style.display='block';placeholder.style.display='none';downloadButton.disabled=false;
       setStatus(tr('تصویر با مدل '+(data.model||'API')+' تولید شد. این یک پیشنهاد بصری بر پایهٔ صفات دیجیتال و محیط است، نه پیش‌بینی زیستی اعتبارسنجی‌شده.','Image generated by '+(data.model||'the API')+'. It is a visual proposal based on digital traits and environment, not a validated biological prediction.'));
     }catch(error){
       const reason=(error&&error.name==='AbortError'?tr('درخواست بیش از حد طول کشید.','Request timed out.'):String(error&&error.message||error));
@@ -226,9 +249,13 @@
       const existing=row.querySelector('[data-species-id]');if(!existing)return;const id=existing.getAttribute('data-species-id');
       if(row.querySelector('[data-planet-ai-image-id]'))return;
       const actions=document.createElement('div');actions.className='planet-image-row-actions';
-      const button=document.createElement('button');button.type='button';button.dataset.planetAiImageId=id;button.textContent=tr('✨ تولید تصویر هوش مصنوعی','✨ Generate AI image');
+      const species=getSpecies(id),saved=readCollection()[String(id)],gate=species?getSizeGate(species):{eligible:false};
+      if(saved){const thumb=document.createElement('img');thumb.className='planet-creature-thumb';thumb.src=saved.image;thumb.alt=saved.name;thumb.title=tr('تصویر کلکسیونی','Collectible portrait');thumb.addEventListener('click',()=>openForSpecies(id));actions.appendChild(thumb);}
+      const button=document.createElement('button');button.type='button';button.dataset.planetAiImageId=id;button.textContent=saved?tr('✨ تصویر تازه','✨ New variation'):tr('✨ تصویر موجود','✨ Creature portrait');
       button.addEventListener('click',()=>openForSpecies(id));actions.appendChild(button);
+      if(!saved&&species&&!gate.eligible){const lock=document.createElement('span');lock.className='planet-creature-locked';lock.textContent=tr('🔒 تکامل تا بزرگ‌تر از موش','🔒 Evolve beyond mouse size');actions.appendChild(lock);}
       (row.querySelector('.species-info')||row).appendChild(actions);
+      if(species&&gate.eligible&&!saved&&!autoQueued.has(String(id))){autoQueued.add(String(id));setTimeout(()=>{if(!readCollection()[String(id)]){selected=species;promptInput.value=buildPrompt(species,'auto-'+Date.now().toString(36));generate();}},Math.max(1000,Math.min(12000,(autoQueued.size-1)*8500)));}
     });
   }
   function init(){
@@ -236,7 +263,9 @@
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&overlay.classList.contains('open'))closeModal();});
     $('planet-image-save-settings').addEventListener('click',saveSettings);generateButton.addEventListener('click',generate);variationButton.addEventListener('click',createVariation);downloadButton.addEventListener('click',downloadImage);
     const catalog=$('speciesList');if(catalog){addButtons(catalog);new MutationObserver(()=>addButtons(catalog)).observe(catalog,{childList:true,subtree:true});}
+    const collectionButton=document.createElement('button');collectionButton.type='button';collectionButton.className='planet-collection-launch';collectionButton.textContent='🏆 کلکسیون';collectionButton.addEventListener('click',showCollection);document.body.appendChild(collectionButton);
+    window.addEventListener('planet-ownership-updated',()=>{if(catalog)addButtons(catalog);});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-  window.PlanetImageGeneration={openForSpecies:openForSpecies,buildPrompt:id=>{const s=getSpecies(id);return s?buildPrompt(s,'preview'):'';},generateOfflineSVG:id=>{const s=getSpecies(id);return s?generateOfflineSVG(s,'test'):'';},getConfigured:()=>{try{return!!localStorage.getItem(ENDPOINT_KEY)&&!!localStorage.getItem(ACCESS_KEY);}catch(_){return false;}}};
+  window.PlanetImageGeneration={openForSpecies:openForSpecies,buildPrompt:id=>{const s=getSpecies(id);return s?buildPrompt(s,'preview'):'';},generateOfflineSVG:id=>{const s=getSpecies(id);return s?generateOfflineSVG(s,'test'):'';},getConfigured:()=>{try{return!!localStorage.getItem(ENDPOINT_KEY)&&!!localStorage.getItem(ACCESS_KEY);}catch(_){return false;}},getSizeGate:id=>{const s=getSpecies(id);return s?getSizeGate(s):null;},getCollection:()=>Object.values(readCollection()),openCollection:showCollection,refresh:()=>{const catalog=$('speciesList');if(catalog)addButtons(catalog);}};
 })();
