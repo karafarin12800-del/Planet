@@ -138,7 +138,7 @@
     const aquatic=/ocean|marine|aquatic|water|shore|coast|wetland/.test(habitat);
     const plant=/plant|tree|flora|veget/.test(form);
     const bodyL= n(a.bodyLength,0.65,0.25,1.5),bodyW=n(a.bodyWidth,0.48,0.2,1.2),bodyH=n(a.bodyHeight,0.5,0.2,1.2);
-    const head=n(a.headSize,0.3,0.1,0.8),tail=n(a.tailLength,0.35,0,1.4),limbs=Math.round(n(a.limbCount,4,0,8));
+    const head=n(a.headSize,0.3,0.1,0.8),tail=n(a.tailLength,0.35,0,1.4),limbs=Math.max(2,Math.round(n(a.limbCount,4,0,8)));
     const append=n(a.wingSpan||a.appendageLength,0.2,0,1.2),segments=Math.round(n(a.segmentCount,4,1,12));
     const cx=512,cy=440,rx=110+bodyL*85,ry=40+bodyH*70,headR=17+head*30;
     const left=cx-rx*0.62,right=cx+rx*0.52;
@@ -253,7 +253,7 @@
       card.appendChild(lock);
     });
   }
-  function isPortraitEligible(s){return !!s&&!s.extinct&&s.special===true&&Number(s.bodyLengthCm||0)>10;}
+  function isPortraitEligible(s){const form=String(s&&s.form||'').toLowerCase();const animalLike=!/microbe|bacter|fung|plant|tree|flora|filament|colony/.test(form);return !!s&&!s.extinct&&animalLike&&s.special===true&&Number(s.bodyLengthCm||0)>10;}
   function pumpAutoQueue(){if(autoQueueRunning||busy||!autoQueue.length)return;autoQueueRunning=true;const s=autoQueue.shift();const id=String(s.id);selected=s;promptInput.value=buildPrompt(s,'collectible-'+Date.now().toString(36));Promise.resolve(generate()).finally(()=>{autoQueueRunning=false;setTimeout(pumpAutoQueue,9000);});}
   async function scanEligibleSpecies(){const api=window.PlanetWorldLifeAPI;if(!api||typeof api.getSpeciesSnapshot!=='function')return;let list=[];try{list=api.getSpeciesSnapshot()||[];}catch(_){}for(const s of list){if(!isPortraitEligible(s))continue;const hash=await genomeHash(s);if(autoQueued.has(hash))continue;autoQueued.add(hash);const cached=await readImageCache(hash);if(cached)continue;autoQueue.push(s);}addWorldButtons();pumpAutoQueue();}
   async function showCollection(){
