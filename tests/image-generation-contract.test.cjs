@@ -36,7 +36,7 @@ assert.ok(threeD.includes("implicit tissue field + marching tetrahedra; no taxon
 assert.ok(setup.includes("OPENAI_API_KEY"), "setup explains server-only API credentials");
 
 assert.ok(client.includes("function generateOfflineSVG"), "the app has a local genome-driven procedural image generator");
-assert.ok(client.includes("if(!endpoint||!access){generateOffline(hash);await writeImageCache(hash,generated,'procedural');return;}"), "offline image is stable and persisted by genome hash");
+assert.ok(client.includes("if(!endpoint||!access){generateOffline(hash);await writeImageCache(hash,generated,'procedural',species);return;}"), "offline image is stable and persisted by genome hash");
 assert.ok(client.includes("IMAGE_DB"), "generated images are stored persistently in IndexedDB");
 assert.ok(client.includes("fixed-genome-"), "one genome always uses the same image seed");
 assert.ok(worker.includes("env.ORGANISM_IMAGES.get(cacheKey)") && worker.includes("env.ORGANISM_IMAGES.put(cacheKey"), "R2 keeps one global image per genome");
