@@ -9,7 +9,7 @@ const decoder = new TextDecoder();
 function bytesToB64Url(bytes) {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");
+  return btoa(binary).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 }
 function textToB64Url(value) { return bytesToB64Url(encoder.encode(String(value))); }
 function b64UrlToBytes(value) {
@@ -52,7 +52,7 @@ async function signToken(account,env) {
 }
 async function authenticate(req,env) {
   const header=req.headers.get("Authorization")||"";
-  const match=header.match(/^Bearer\\s+([A-Za-z0-9_.-]+)$/);
+  const match=header.match(/^Bearer\s+([A-Za-z0-9_.-]+)$/);
   if(!match) return null;
   const parts=match[1].split(".");
   if(parts.length!==3) return null;
@@ -191,7 +191,7 @@ async function route(req, env, url) {
   }
   if(method==="POST"&&path==="/auth/forgot-password"){
     const b=await jsonBody(req),email=String(b?.email||"").trim().toLowerCase();
-    if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return response({error:"INVALID_EMAIL_OR_PASSWORD"},400);
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return response({error:"INVALID_EMAIL_OR_PASSWORD"},400);
     const user=await env.DB.prepare("SELECT id,email,password_hash FROM users WHERE email=?").bind(email).first();
     if(user&&user.password_hash){
       const code=String(crypto.getRandomValues(new Uint32Array(1))[0]%1000000).padStart(6,"0");
@@ -203,7 +203,7 @@ async function route(req, env, url) {
   }
   if(method==="POST"&&path==="/auth/reset-password"){
     const b=await jsonBody(req),email=String(b?.email||"").trim().toLowerCase(),code=String(b?.code||""),password=String(b?.password||"");
-    if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)||!/^[0-9]{6}$/.test(code)||password.length<10||password.length>200) return response({error:"INVALID_EMAIL_OR_PASSWORD"},400);
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!/^[0-9]{6}$/.test(code)||password.length<10||password.length>200) return response({error:"INVALID_EMAIL_OR_PASSWORD"},400);
     const user=await env.DB.prepare("SELECT id FROM users WHERE email=? AND password_hash IS NOT NULL").bind(email).first();
     if(!user) return response({error:"INVALID_OR_EXPIRED_CODE"},400);
     const reset=await env.DB.prepare("SELECT code_hash,attempts FROM password_resets WHERE user_id=? AND expires_at>datetime('now')").bind(user.id).first();
