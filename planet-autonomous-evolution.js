@@ -61,7 +61,7 @@
     return {planetId,name:String(p.name||"جهان ناشناخته").slice(0,80),type,home:p.home===true||planetId==="earth"||planetId==="system-01-p1",
       temperatureC:clamp(p.meanTemperatureC==null?(p.temperatureC==null?15:p.temperatureC):p.meanTemperatureC,-273,2000),
       waterCoverage:clamp(p.waterCoverage==null?0.71:p.waterCoverage,0,1),gravity:clamp(p.gravity==null?1:p.gravity,0.05,10),
-      atmosphere:String(p.atmosphere||"nitrogen-oxygen").slice(0,48),surfaceAvailable:type!=="gas-giant"};
+      atmosphere:String(p.atmosphere||"nitrogen-oxygen").slice(0,48),surfaceAvailable:type!=="gas-giant",purchased:p.purchased===true,earthSeeded:p.earthSeeded===true};
   }
   function environmentSuitability(species,environment){
     const e=environment&&environment.surfaceAvailable!==undefined?environment:environmentFromPlanet(environment);
@@ -125,7 +125,7 @@
     return Array.from({length:EARTH_SPECIES_COUNT},()=>makeGenome(poolState));
   }
   function createState(seed,planet,sourceGenomes){
-    const env=environmentFromPlanet(planet||DEFAULT_ENVIRONMENT);
+    const env=environmentFromPlanet(planet||DEFAULT_ENVIRONMENT);env.earthSeeded=!env.home;
     const state={version:VERSION,year:0,generation:0,serial:0,rng:(Number(seed)>>>0)||0x504c414e,
       species:[],events:[],environment:0,planetEnvironment:env,resources:createResourcePools(env),detritus:0};
     if(env.home){
@@ -163,17 +163,23 @@
     return clamp((0.30*t.metabolicEfficiency+0.22*t.protection+0.18*t.replication+0.16*habitatBias+0.14*seasonal)*0.62+fit*0.38,0.04,0.96);
   }
   function setEnvironment(state,planet){
-    state.planetEnvironment=environmentFromPlanet(planet);
+    const previous=state.planetEnvironment||{};state.planetEnvironment=environmentFromPlanet(planet);
+    state.planetEnvironment.earthSeeded=!state.planetEnvironment.home;
+    if(planet&&planet.purchased!==undefined)state.planetEnvironment.purchased=planet.purchased===true;
+    else state.planetEnvironment.purchased=previous.planetId===state.planetEnvironment.planetId&&previous.purchased===true;
     for(const s of state.species||[])s.fitness=fitnessFor(s,state.environment,state.planetEnvironment);
     return state.planetEnvironment;
   }
+  function setPlanetPurchased(state,purchased){if(!state||!state.planetEnvironment)return false;state.planetEnvironment.purchased=!!purchased;return state.planetEnvironment.purchased;}
   function mutate(s,state){
-    const rate=0.022+(1-s.fitness)*0.014,dna=engine.mutateSyntheticGenome(s.dna,rate,()=>randomFor(state));
+    const fastPurchasedEarthSeed=!!(state.planetEnvironment.purchased&&state.planetEnvironment.earthSeeded);
+    const rate=(0.022+(1-s.fitness)*0.014)*(fastPurchasedEarthSeed?1.75:1),dna=engine.mutateSyntheticGenome(s.dna,rate,()=>randomFor(state));
     s.dna=dna;s.traits=engine.phenotypeFromDNA(dna,{ageMa:4300});s.form=engine.inferForm(s.traits,4300,s.habitat);
     const minimumSize=MIN_VISIBLE_BODY_LENGTH_CM+0.01;
     s.bodyLengthCm=Math.max(minimumSize,Number(s.traits.estimatedBodyLengthCm)||minimumSize);
     const earth=!!state.planetEnvironment.home,divergence=distance(s.dna,s.lineageDNA||s.dna);
-    const requiredDivergence=earth?22:8,requiredGeneration=earth?18:6,requiredSize=earth?EARTH_MIN_MARKET_SIZE_CM:ALIEN_MIN_MARKET_SIZE_CM;
+    const fastPurchasedEarthSeed=!!(state.planetEnvironment.purchased&&state.planetEnvironment.earthSeeded);
+    const requiredDivergence=earth?22:(fastPurchasedEarthSeed?5:8),requiredGeneration=earth?18:(fastPurchasedEarthSeed?3:6),requiredSize=earth?EARTH_MIN_MARKET_SIZE_CM:ALIEN_MIN_MARKET_SIZE_CM;
     const sizeReady=earth?s.bodyLengthCm>=requiredSize:s.bodyLengthCm>requiredSize;
     if(!s.special&&divergence>=requiredDivergence&&s.generation>=requiredGeneration&&sizeReady){
       s.special=true;s.rarityScore=clamp(68+divergence*0.8+s.fitness*22+(state.planetEnvironment.specialSpeciesPotential||0)*0.12,0,100);
@@ -262,7 +268,8 @@
       const deaths=Math.max(0,old-s.population);s.deaths+=deaths;
       if(deaths>0)deathsThisYear.push({habitat:s.habitat,count:deaths});
       if(s.population<2){s.population=0;s.extinct=true;event(state,"extinction",s,"جمعیت به آستانهٔ انقراض مدل رسید");continue;}
-      if(s.age%2===0){
+      const fastPurchasedEarthSeed=!!(state.planetEnvironment.purchased&&state.planetEnvironment.earthSeeded);
+      if(s.age%(fastPurchasedEarthSeed?1:2)===0){
         s.generation++;state.generation++;
         const offspring=Math.max(1,Math.round(s.population*(0.018+s.traits.replication*0.022)*food));
         s.population=Math.min(250000,s.population+offspring);s.births+=offspring;mutate(s,state);
@@ -359,7 +366,7 @@
       alienFoundersNonMarketable&&!!b.planetEnvironment,
       years:b.year,species:b.species.length,offworldSpecies:c.species.length,engine:"PlanetAutonomousEvolution-v6"};
   }
-  return {version:VERSION,createState,createEarthGenomePool,advanceYears,advanceOneYear,serialize,restore,selfTest,visibleSpecies,isMarketEligible,
+  return {version:VERSION,createState,createEarthGenomePool,advanceYears,advanceOneYear,serialize,restore,selfTest,visibleSpecies,isMarketEligible,setPlanetPurchased,
     environmentFromPlanet,planetHabitability,environmentSuitability,fitnessFor,setEnvironment,roleForSpecies,ensureEcology,TROPHIC_ROLES,ROLE_LABELS,
     EARTH_SPECIES_COUNT,OFFWORLD_SPECIES_COUNT,OFFWORLD_SPECIES_LIMIT,MIN_VISIBLE_BODY_LENGTH_CM,EARTH_MIN_MARKET_SIZE_CM,ALIEN_MIN_MARKET_SIZE_CM};
 });
