@@ -381,8 +381,10 @@
       state.species.forEach(s=>{
         s.originWorldType="alien";
         const divergence=distance(s.dna,s.lineageDNA||s.dna);
-        s.special=Number(s.generation)>=6&&divergence>=8;
-        s.rarityScore=s.special?Math.max(68,Number(s.rarityScore)||68):0;
+        const tierBonus={common:0,rare:1,epic:2,legendary:3,mythic:4}[state.planetEnvironment.rarityTier||"common"]||0;
+        const minGeneration=Math.max(2,6-Math.floor(tierBonus/2)),minDivergence=Math.max(3,8-tierBonus);
+        s.special=s.special===true||(Number(s.generation)>=minGeneration&&divergence>=minDivergence);
+        s.rarityScore=s.special?Math.max(52,Number(s.rarityScore)||52):0;
       });
     }
     state.species.forEach(s=>{
