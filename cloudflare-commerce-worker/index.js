@@ -12,6 +12,7 @@ function bytesToB64Url(bytes) {
   return btoa(binary).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 }
 function textToB64Url(value) { return bytesToB64Url(encoder.encode(String(value))); }
+const b64url=bytesToB64Url;
 function b64UrlToBytes(value) {
   const normalized=String(value||"").replace(/-/g,"+").replace(/_/g,"/");
   const binary=atob(normalized+"=".repeat((4-normalized.length%4)%4));
