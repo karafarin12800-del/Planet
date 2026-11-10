@@ -56,6 +56,8 @@ const required = [
   ["بازگشت به PLANET", "Return to PLANET"],
   ["سیاست حریم خصوصی PLANET", "PLANET Privacy Policy"],
   ["تحلیل تمام توالی", "Analyse full sequence"],
+  ["سیاره‌های من", "My Planets"],
+  ["ورود به سیاره و زیست‌کره", "Open planet and biosphere"],
 ];
 for (const [fa, en] of required) {
   assert.ok(pairs.some(pair => pair[0] === fa && pair[1] === en), `missing required translation: ${fa}`);
@@ -75,7 +77,7 @@ assert.ok(workflow.includes("cp index.html planet-localization.js"), "Android pa
 assert.ok(sw.includes('"./planet-localization.js"'), "PWA cache precaches the shared dictionary");
 assert.ok(sw.includes('"./planet-autonomous-evolution.js"'), "PWA cache precaches the autonomous biosphere engine");
 assert.ok(sw.includes('"./planet-world-state.js"'), "PWA cache precaches per-planet biosphere persistence");
-assert.ok(sw.includes("planet-pwa-v35-wallet-owned-planets"), "PWA cache version is refreshed");
+assert.ok(sw.includes("planet-pwa-v36-wallet-owned-planets-i18n"), "PWA cache version is refreshed");
 assert.ok(activity.includes('document.documentElement.lang || \'fa\''), "native Android toast follows the selected UI language");
 assert.ok(activity.includes('"File picker is unavailable"') && activity.includes('"فایل‌گزین در دسترس نیست"'), "native file-picker error has both languages");
 assert.ok(aiWorker.includes("سرور هنوز Secret کلید OpenAI را تنظیم نکرده است."), "online AI error messages remain sourced from the worker");
