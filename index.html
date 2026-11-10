@@ -138,6 +138,13 @@
 #collectionOverlay input,#collectionOverlay select{max-width:100%}
 @media(max-width:520px){#collectionOverlay .commerce-nav{grid-template-columns:repeat(2,minmax(0,1fr))}#collectionOverlay .token-pack{padding:9px}#collectionOverlay .token-pack .token-amount{font-size:15px}#collectionOverlay .species-modal{padding:14px}}
 
+
+/* Accessibility: slightly larger, clearer interface typography */
+#app :is(.brand-sub,.pill,.icon-btn,.view-btn,.speed-btn,.section-title,.metric-top,.metric-value,.metric-foot,.gas-row,.range-line,.tiny-note,.footer-note,.bottom-chip,.help-btn,.scene-title p,.coord label,.coord strong,.panel-head h2,.modal p,.modal li,.species-item,.species-info,.pg-item,.pg-empty,.pg-btn,.pg-tag,.pg-launch,.pg-list,.pg-detail-grid,.pg-item-actions){
+  font-size: max(12px, 1.14em) !important;
+}
+#app :is(button,input,select,textarea){font-size: max(13px, 1.12em) !important;}
+#app :is(h2,h3,h4){font-size: max(16px, 1.08em) !important;}
 </style>
 
 <style id="gp-genome-lab-styles">
