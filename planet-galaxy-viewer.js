@@ -579,7 +579,7 @@
       return false;
     }
     const exploreLaunch=doc.createElement("button");
-    exploreLaunch.type="button";exploreLaunch.id="planet-galaxy-explore";exploreLaunch.className="icon-btn pg-launch";exploreLaunch.textContent="🪐 سیاره‌ها / سیاره‌های من";exploreLaunch.setAttribute("aria-label","ورود به سیاره‌ها و دسترسی سریع به سیاره‌های خریداری‌شده");
+    exploreLaunch.type="button";exploreLaunch.id="planet-galaxy-explore";exploreLaunch.className="icon-btn pg-launch";exploreLaunch.textContent="🪐 سیاره‌های من";exploreLaunch.setAttribute("aria-label","ورود به سیاره‌ها و دسترسی سریع به سیاره‌های خریداری‌شده");
     if(topActions)topActions.insertBefore(exploreLaunch,doc.getElementById("helpBtn")||null);
     else doc.body.appendChild(exploreLaunch);
     exploreLaunch.addEventListener("click",openExplorer);
