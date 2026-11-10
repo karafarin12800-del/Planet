@@ -100,9 +100,9 @@
   function writeCollection(data){try{localStorage.setItem(COLLECTION_KEY,JSON.stringify(data));}catch(e){setStatus(tr('فضای ذخیرهٔ کلکسیون پر شده است؛ تصویر را دانلود کن.','Collection storage is full; download the image.'),true);}}
   function storeCollectible(s,dataUrl){
     if(!s||!dataUrl)return;
-    try{const img=new Image();img.onload=()=>{try{const canvas=document.createElement('canvas'),size=420;canvas.width=size;canvas.height=size;const ctx=canvas.getContext('2d');if(!ctx)return;const scale=Math.max(size/img.width,size/img.height),w=img.width*scale,h=img.height*scale;ctx.drawImage(img,(size-w)/2,(size-h)/2,w,h);const thumb=canvas.toDataURL('image/jpeg',.78),items=readCollection();items[String(s.id)]={id:String(s.id),name:String(s.name||('Organism '+s.id)),image:thumb,createdAt:Date.now(),generation:Number(s.generation)||0,habitat:String(s.habitat||'unknown')};writeCollection(items);};img.onerror=()=>{};img.src=dataUrl;}catch(_){}
+    try{const img=new Image();img.onload=()=>{try{const canvas=document.createElement('canvas'),size=420;canvas.width=size;canvas.height=size;const ctx=canvas.getContext('2d');if(!ctx)return;const scale=Math.max(size/img.width,size/img.height),w=img.width*scale,h=img.height*scale;ctx.drawImage(img,(size-w)/2,(size-h)/2,w,h);const thumb=canvas.toDataURL('image/jpeg',.78),items=readCollection();items[String(s.id)]={id:String(s.id),name:String(s.name||('Organism '+s.id)),image:thumb,createdAt:Date.now(),generation:Number(s.generation)||0,habitat:String(s.habitat||'unknown')};writeCollection(items);refreshSpeciesRow(s.id);};img.onerror=()=>{};img.src=dataUrl;}catch(_){}
   }
-  function getSizeGate(s){
+  function refreshSpeciesRow(id){const catalog=document.getElementById('speciesList');if(!catalog)return;const node=catalog.querySelector('[data-species-id="'+String(id).replace(/[^0-9]/g,'')+'"]');const row=node&&node.closest('.species-item');if(row){const actions=row.querySelector('.planet-image-row-actions');if(actions)actions.remove();addButtons(catalog);}}\n  function getSizeGate(s){
     const p=getPhenotype(s)||{},a=p.appearance||{},raw=Number(a.bodyLength||0);
     const generation=Math.max(0,Number(s.generation)||0),growth=1+Math.min(generation,30)*.014;
     const importedEarth=!!(s.referenceGenome&&s.referenceGenome.accession||s.referenceSequence||/reference-proxy/i.test(String(s.genomeStatus||'')));
@@ -189,6 +189,15 @@
         shapes.push('<path d="M'+x.toFixed(1)+' '+y.toFixed(1)+' Q'+(x+side*10)+' '+(y+drop*.42)+' '+(x+side*3)+' '+(y+drop*.76)+' L'+footX.toFixed(1)+' '+(y+drop)+'" fill="none" stroke="'+darkTone+'" stroke-width="'+(9+bodyW*8).toFixed(1)+'" stroke-linecap="round" stroke-linejoin="round"/><path d="M'+(footX-12)+' '+(y+drop)+' Q'+footX+' '+(y+drop+7)+' '+(footX+18)+' '+(y+drop+1)+'" fill="none" stroke="'+darkTone+'" stroke-width="7" stroke-linecap="round"/>');
       }
       shapes.push('<path d="'+path+'" fill="url(#skin)" stroke="'+darkTone+'" stroke-width="5" stroke-linejoin="round"/>');
+      // Explicit paired arms, palms and separated fingers make the still portrait readable.
+      const shoulderY=cy-ry*.30, elbowY=cy+ry*.02, wristY=cy+ry*.28;
+      for(let side of [-1,1]){
+        const sx=cx+side*rx*.48,ex=cx+side*(rx*.82+18),wx=cx+side*(rx*1.00+20),handX=wx+side*7,handY=wristY+16;
+        shapes.push('<path d="M'+sx.toFixed(1)+' '+shoulderY.toFixed(1)+' Q'+(sx+side*30)+' '+(shoulderY+28)+' '+ex.toFixed(1)+' '+elbowY.toFixed(1)+' Q'+(ex+side*14)+' '+(elbowY+18)+' '+wx.toFixed(1)+' '+wristY.toFixed(1)+'" fill="none" stroke="'+darkTone+'" stroke-width="'+(17+bodyW*8).toFixed(1)+'" stroke-linecap="round"/>');
+        shapes.push('<path d="M'+(handX-side*5)+' '+handY+' Q'+(handX+side*15)+' '+(handY-9)+' '+(handX+side*20)+' '+(handY+7)+' Q'+(handX+side*10)+' '+(handY+24)+' '+(handX-side*4)+' '+(handY+17)+'Z" fill="url(#skin)" stroke="'+darkTone+'" stroke-width="3"/>');
+        for(let finger=0;finger<4;finger++){const fx=handX+side*(8+finger*5),fy=handY+13+Math.abs(1.5-finger)*2;shapes.push('<path d="M'+fx.toFixed(1)+' '+fy.toFixed(1)+' q'+(side*5)+' 10 '+(side*(7+finger))+' '+(17+finger*2)+'" fill="none" stroke="'+darkTone+'" stroke-width="3.5" stroke-linecap="round"/>');}
+        shapes.push('<path d="M'+(handX-side*5)+' '+(handY+10)+' q'+(-side*9)+' 7 '+(-side*11)+' 15" fill="none" stroke="'+darkTone+'" stroke-width="3.5" stroke-linecap="round"/>');
+      }
       // Segments, pigmentation and surface structures are newly sampled for every genome/variation.
       for(let i=0;i<segments;i++){const x=left+35+i*(rx*1.2/Math.max(1,segments-1)),yy=cy-ry*.8;shapes.push('<path d="M'+x.toFixed(1)+' '+yy.toFixed(1)+' Q'+(x-10)+' '+cy+' '+(x+4)+' '+(cy+ry*.78)+'" fill="none" stroke="'+darkTone+'" stroke-opacity=".55" stroke-width="'+(2+rand()*5).toFixed(1)+'"/>');}
       const textureCount=Math.round(18+n(a.armorCoverage,0,0,1)*80);
