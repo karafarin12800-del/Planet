@@ -4,6 +4,69 @@
  * All balances and specimen ownership are server-authoritative.
  */
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
+function bytesToB64Url(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");
+}
+function textToB64Url(value) { return bytesToB64Url(encoder.encode(String(value))); }
+function b64UrlToBytes(value) {
+  const normalized=String(value||"").replace(/-/g,"+").replace(/_/g,"/");
+  const binary=atob(normalized+"=".repeat((4-normalized.length%4)%4));
+  return Uint8Array.from(binary,c=>c.charCodeAt(0));
+}
+async function sha256(value) {
+  const digest=await crypto.subtle.digest("SHA-256",encoder.encode(String(value)));
+  return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
+}
+async function passwordHash(password,salt) {
+  const key=await crypto.subtle.importKey("raw",encoder.encode(String(password)),"PBKDF2",false,["deriveBits"]);
+  const bits=await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt:b64UrlToBytes(salt),iterations:120000},key,256);
+  return Array.from(new Uint8Array(bits),b=>b.toString(16).padStart(2,"0")).join("");
+}
+function response(payload,status=200,extraHeaders={}) {
+  const headers=new Headers(JSON_HEADERS);
+  for(const [key,value] of Object.entries(extraHeaders||{})) if(value) headers.set(key,value);
+  return new Response(JSON.stringify(payload),{status,headers});
+}
+function corsFor(req,env) {
+  const origin=req.headers.get("Origin");
+  const allowed=String(env.ALLOWED_ORIGINS||"https://appassets.androidplatform.net,https://karafarin12800-del.github.io,https://toonplay.ir,https://www.toonplay.ir")
+    .split(",").map(x=>x.trim()).filter(Boolean);
+  const headers={"access-control-allow-methods":"GET,POST,OPTIONS","access-control-allow-headers":"authorization,content-type","access-control-max-age":"86400","vary":"Origin"};
+  if(origin&&allowed.includes(origin)) headers["access-control-allow-origin"]=origin;
+  return headers;
+}
+async function tokenKey(env) {
+  if(!env.AUTH_SECRET||String(env.AUTH_SECRET).length<32) throw new Error("AUTH_SECRET_NOT_CONFIGURED");
+  return crypto.subtle.importKey("raw",encoder.encode(String(env.AUTH_SECRET)),{name:"HMAC",hash:"SHA-256"},false,["sign","verify"]);
+}
+async function signToken(account,env) {
+  const head=textToB64Url(JSON.stringify({alg:"HS256",typ:"JWT"}));
+  const body=textToB64Url(JSON.stringify({sub:account.id,email:account.email,iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+30*24*60*60}));
+  const content=head+"."+body;
+  const signature=await crypto.subtle.sign("HMAC",await tokenKey(env),encoder.encode(content));
+  return content+"."+bytesToB64Url(new Uint8Array(signature));
+}
+async function authenticate(req,env) {
+  const header=req.headers.get("Authorization")||"";
+  const match=header.match(/^Bearer\\s+([A-Za-z0-9_.-]+)$/);
+  if(!match) return null;
+  const parts=match[1].split(".");
+  if(parts.length!==3) return null;
+  try {
+    const key=await tokenKey(env),content=parts[0]+"."+parts[1],signature=b64UrlToBytes(parts[2]);
+    if(!await crypto.subtle.verify("HMAC",key,signature,encoder.encode(content))) return null;
+    const claims=JSON.parse(decoder.decode(b64UrlToBytes(parts[1])));
+    if(!claims.sub||!Number.isFinite(claims.exp)||claims.exp<=Math.floor(Date.now()/1000)) return null;
+    const user=await env.DB.prepare("SELECT id,email,verified_at FROM users WHERE id=?").bind(claims.sub).first();
+    if(!user||!user.verified_at) return null;
+    return {id:user.id,email:user.email};
+  } catch { return null; }
+}
+
 const TOKEN_PRODUCTS = Object.freeze({planet_tokens_200:200,planet_tokens_500:500,planet_tokens_1000:1000,planet_tokens_2000:2000});
 const VIP_PRODUCT = "planet_vip_60d";
 const VIP_DAILY_GRANT = 10;
@@ -63,11 +126,17 @@ function planets(){
  return rows;
 }
 async function jsonBody(req) { try { return await req.json(); } catch { return null; } }
-async function sendVerification(email, code, env) {
+async function sendTransactionalEmail(email,subject,text,env) {
   if(!env.RESEND_API_KEY||!env.VERIFY_FROM_EMAIL) throw new Error("EMAIL_SERVICE_NOT_CONFIGURED");
   const r=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"authorization":"Bearer "+env.RESEND_API_KEY,"content-type":"application/json"},
-    body:JSON.stringify({from:env.VERIFY_FROM_EMAIL,to:[email],subject:"کد تأیید حساب Planet",text:"کد تأیید شما: "+code+"\\nاین کد ۱۵ دقیقه اعتبار دارد."})});
+    body:JSON.stringify({from:env.VERIFY_FROM_EMAIL,to:[email],subject,text})});
   if(!r.ok) throw new Error("EMAIL_DELIVERY_FAILED");
+}
+async function sendVerification(email,code,env) {
+  await sendTransactionalEmail(email,"کد تأیید حساب Planet","کد تأیید شما: "+code+"\\nاین کد ۱۵ دقیقه اعتبار دارد.",env);
+}
+async function sendPasswordReset(email,code,env) {
+  await sendTransactionalEmail(email,"بازیابی گذرواژه حساب Planet","کد بازیابی گذرواژه شما: "+code+"\\nاین کد ۱۵ دقیقه اعتبار دارد و فقط یک‌بار قابل استفاده است.",env);
 }
 async function grantWelcome(db,userId) {
   // New email accounts receive 20 starter tokens plus a 120-token welcome grant (140 total).
@@ -119,6 +188,36 @@ async function route(req, env, url) {
     const granted=await grantWelcome(env.DB,user.id);
     const account={id:user.id,email};
     return response({ok:true,token:await signToken(account,env),welcomeTokens:granted?WELCOME_GRANT:0,starterTokens:granted?STARTER_GRANT:0,totalTokens:granted?WELCOME_GRANT+STARTER_GRANT:0});
+  }
+  if(method==="POST"&&path==="/auth/forgot-password"){
+    const b=await jsonBody(req),email=String(b?.email||"").trim().toLowerCase();
+    if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return response({error:"INVALID_EMAIL_OR_PASSWORD"},400);
+    const user=await env.DB.prepare("SELECT id,email,password_hash FROM users WHERE email=?").bind(email).first();
+    if(user&&user.password_hash){
+      const code=String(crypto.getRandomValues(new Uint32Array(1))[0]%1000000).padStart(6,"0");
+      await env.DB.prepare("INSERT INTO password_resets(user_id,code_hash,expires_at,attempts,created_at) VALUES(?,?,datetime('now','+15 minutes'),0,datetime('now')) ON CONFLICT(user_id) DO UPDATE SET code_hash=excluded.code_hash,expires_at=excluded.expires_at,attempts=0,created_at=datetime('now')").bind(user.id,await sha256(user.id+":"+code+":reset")).run();
+      try { await sendPasswordReset(email,code,env); }
+      catch(e) { await env.DB.prepare("DELETE FROM password_resets WHERE user_id=?").bind(user.id).run(); return response({error:String(e).includes("EMAIL_")?String(e):"EMAIL_DELIVERY_FAILED"},503); }
+    }
+    return response({ok:true,message:"اگر حساب ایمیلی واجد شرایط باشد، کد بازیابی ارسال می‌شود."});
+  }
+  if(method==="POST"&&path==="/auth/reset-password"){
+    const b=await jsonBody(req),email=String(b?.email||"").trim().toLowerCase(),code=String(b?.code||""),password=String(b?.password||"");
+    if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)||!/^[0-9]{6}$/.test(code)||password.length<10||password.length>200) return response({error:"INVALID_EMAIL_OR_PASSWORD"},400);
+    const user=await env.DB.prepare("SELECT id FROM users WHERE email=? AND password_hash IS NOT NULL").bind(email).first();
+    if(!user) return response({error:"INVALID_OR_EXPIRED_CODE"},400);
+    const reset=await env.DB.prepare("SELECT code_hash,attempts FROM password_resets WHERE user_id=? AND expires_at>datetime('now')").bind(user.id).first();
+    if(!reset||Number(reset.attempts)>=5) return response({error:"INVALID_OR_EXPIRED_CODE"},400);
+    if(reset.code_hash!==await sha256(user.id+":"+code+":reset")){
+      await env.DB.prepare("UPDATE password_resets SET attempts=attempts+1 WHERE user_id=?").bind(user.id).run();
+      return response({error:"INVALID_OR_EXPIRED_CODE"},400);
+    }
+    const salt=bytesToB64Url(crypto.getRandomValues(new Uint8Array(16))),hash=await passwordHash(password,salt);
+    await env.DB.batch([
+      env.DB.prepare("UPDATE users SET password_salt=?,password_hash=? WHERE id=?").bind(salt,hash,user.id),
+      env.DB.prepare("DELETE FROM password_resets WHERE user_id=?").bind(user.id)
+    ]);
+    return response({ok:true});
   }
   if(method==="POST"&&path==="/auth/login"){
     const b=await jsonBody(req),email=String(b?.email||"").trim().toLowerCase(),password=String(b?.password||"");
@@ -373,7 +472,7 @@ async function route(req, env, url) {
 export default { async fetch(req,env) {
   const cors=corsFor(req,env);
   if(req.method==="OPTIONS") return new Response(null,{status:204,headers:cors});
-  if(!cors["access-control-allow-origin"]) return response({error:"ORIGIN_NOT_ALLOWED"},403,cors);
+  if(req.headers.has("Origin")&&!cors["access-control-allow-origin"]) return response({error:"ORIGIN_NOT_ALLOWED"},403,cors);
   try { return await route(req,env,new URL(req.url)).then(r=>{const h=new Headers(r.headers);for(const [k,v] of Object.entries(cors))if(v)h.set(k,v);return new Response(r.body,{status:r.status,headers:h});}); }
   catch(e) { return response({error:"INTERNAL_ERROR"},500,cors); }
 }};
