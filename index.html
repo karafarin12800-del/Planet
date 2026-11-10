@@ -1984,7 +1984,7 @@ html[lang="en"] .scene-coords{direction:ltr}
   function render() {
     const env = state.planetEnvironment || Model.environmentFromPlanet(null);
     $('pbWorld').textContent = 'سیارهٔ فعال: ' + env.name + ' · ' + activeWorldId;
-    $('pbEnvironment').textContent = 'شرایط محیطی مدل: دما ' + env.temperatureC.toLocaleString('fa-IR') + '°C · آب ' + Math.round(env.waterCoverage * 100).toLocaleString('fa-IR') + '% · گرانش ' + env.gravity.toLocaleString('fa-IR') + 'g · جو ' + env.atmosphere + ' · سازگاری پایهٔ محیط ' + Math.round(Model.planetHabitability(env) * 100).toLocaleString('fa-IR') + '% · ' + (env.surfaceAvailable ? 'سطح جامد' : 'زیستگاه جوی فرضی') + (env.purchased&&env.earthSeeded ? ' · شتاب تکامل ژنوم زمین در سیارهٔ خریداری‌شده فعال است' : '');
+    $('pbEnvironment').textContent = 'شرایط محیطی مدل: دما ' + env.temperatureC.toLocaleString('fa-IR') + '°C · آب ' + Math.round(env.waterCoverage * 100).toLocaleString('fa-IR') + '% · گرانش ' + env.gravity.toLocaleString('fa-IR') + 'g · جو ' + env.atmosphere + ' · سازگاری پایهٔ محیط ' + Math.round(Model.planetHabitability(env) * 100).toLocaleString('fa-IR') + '% · ردهٔ ژنتیکی ' + env.rarityTier + ' · قیمت ' + env.priceTokens + ' توکن · اثر انگشت DNA ' + env.geneticFingerprint + ' · ' + (env.surfaceAvailable ? 'سطح جامد' : 'زیستگاه جوی فرضی') + (env.purchased&&env.earthSeeded ? ' · شتاب تکامل ژنوم زمین در سیارهٔ خریداری‌شده فعال است' : '');
     $('pbYear').textContent = state.year.toLocaleString('fa-IR');
     $('pbGeneration').textContent = state.generation.toLocaleString('fa-IR');
     $('pbSpecies').textContent = Model.visibleSpecies(state).length.toLocaleString('fa-IR');
@@ -2002,7 +2002,7 @@ html[lang="en"] .scene-coords{direction:ltr}
       }
       card.dataset.planetWorldSpeciesId=String(s.id);
       const title = document.createElement('strong'); title.textContent = s.name + (s.parentId ? ' · شاخهٔ ' + s.parentId : '');
-      const meta = document.createElement('small'); meta.textContent = 'اندازه: ' + Number(s.bodyLengthCm||0).toLocaleString('fa-IR') + ' سانتی‌متر · جمعیت: ' + s.population.toLocaleString('fa-IR') + ' · نسل: ' + s.generation.toLocaleString('fa-IR') + ' · ' + (s.special?'گونهٔ خاص':'گونهٔ پایه') + ' · ' + s.habitat;
+      const meta = document.createElement('small'); meta.textContent = 'اندازه: ' + Number(s.bodyLengthCm||0).toLocaleString('fa-IR') + ' سانتی‌متر · جمعیت: ' + s.population.toLocaleString('fa-IR') + ' · نسل: ' + s.generation.toLocaleString('fa-IR') + ' · ' + (s.special?'گونهٔ خاص':'گونهٔ پایه') + ' · ' + s.habitat + ' · اثر انگشت سیاره: ' + (s.traits&&s.traits.planetMorphology?s.traits.planetMorphology.fingerprint:'—');
       card.append(canvas, title, meta);
       if(s.marketEligible&&window.PlanetCommerceContext&&window.PlanetCollectionCommerce){
         const collect=document.createElement("button");collect.type="button";collect.className="pb-btn";collect.textContent="ثبت گونهٔ ویژه در کلکسیون";
