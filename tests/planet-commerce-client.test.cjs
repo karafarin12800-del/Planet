@@ -14,7 +14,7 @@ global.fetch=async(url,options)=>{calls.push({url,options});let payload={ok:true
  assert.equal(commerce.hasSession(),true);
  assert.equal(data.get("planet-commerce-session-v1"),"test-token");
  await commerce.googleLogin("google-id-token","secure-random-nonce-value-123456789");
- assert.equal(JSON.parse(calls[1].options.body).nonce,"secure-random-nonce-value-123456789");
+ assert.equal(JSON.parse(calls[2].options.body).nonce,"secure-random-nonce-value-123456789");
  const wallet=await commerce.wallet();assert.equal(wallet.balance,20);
  assert.equal(calls[3].options.headers.authorization,"Bearer test-token");
  await commerce.registerSpecimen({clientKey:"local-1",planetId:"planet-001",name:"نمونه",dna:"ACGT"});
