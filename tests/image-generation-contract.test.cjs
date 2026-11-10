@@ -29,7 +29,7 @@ assert.ok(workflow.includes("cp index.html planet-localization.js evolution-engi
 assert.ok(workflow.includes("node --check planet-image-generation.js"), "CI validates image client syntax");
 assert.ok(workflow.includes("node tests/image-generation-contract.test.cjs"), "CI runs this integration contract test");
 assert.ok(sw.includes("planet-image-generation.js"), "PWA app-shell cache contains the runtime client");
-assert.ok(sw.includes("planet-pwa-v32-hybrid-breeding-token-bundles"), "service-worker cache version is bumped for persistent genome image caching");
+assert.ok(sw.includes("planet-pwa-v33-creature-portraits"), "service-worker cache version is bumped for persistent genome image caching");
 assert.ok(sw.includes("./genome-evidence.html"), "PWA app-shell cache contains the genome evidence report");
 assert.ok(threeD.includes("implicit tissue field + marching tetrahedra; no taxon-specific mesh template selected"),
   "3D model generation uses runtime procedural geometry without taxon-specific templates");
@@ -44,5 +44,23 @@ assert.ok(worker.includes("const genome = typeof body.genome"), "server cache ke
 assert.ok(client.includes("An original image was generated locally"), "the UI honestly identifies offline procedural output");
 assert.ok(client.includes("generateOffline(hash)"), "the online failure path falls back to a stable genome-keyed local image");
 assert.ok(client.includes("generateOfflineSVG:id=>"), "the generated SVG path is exposed for direct testing");
+
+
+assert.ok(client.includes("Anatomy requirement for this still collectible portrait"), "AI prompt requires a complete still creature portrait");
+assert.ok(client.includes("two open palms with individually separated fingers"), "AI prompt requires detailed hands and fingers");
+assert.ok(client.includes("function isPortraitEligible(s)"), "automatic portrait unlock has a single eligibility gate");
+assert.ok(client.includes("Number(s.bodyLengthCm||0)>10"), "portraits remain locked until the creature is larger than a mouse");
+assert.ok(client.includes("s.special===true"), "only evolved special species become collectible portraits");
+assert.ok(client.includes("function scanEligibleSpecies()"), "eligible creatures are automatically scanned");
+assert.ok(client.includes("function showCollection()"), "players can browse their saved creature portrait collection");
+assert.ok(client.includes("PlanetWorldLifeAPI"), "portrait generation reads the active purchased planet's biosphere");
+assert.ok(client.includes("cacheIdentity:hash"), "image requests carry a world-specific stable cache identity");
+assert.ok(client.includes("armY=cy-ry*.30"), "offline portrait fallback includes paired arms and hands");
+assert.ok(client.includes("writeImageCache(hash,generated,'ai',species)"), "AI portraits store creature and planet metadata");
+assert.ok(worker.includes("body.cacheIdentity"), "R2 cache differentiates the same genome across planets");
+assert.ok(html.includes("window.PlanetWorldLifeAPI"), "active world exposes its live evolved species");
+assert.ok(html.includes("Model.setPlanetPurchased(state,ownedPlanetIds.has(worldId))"), "active world's evolution uses server-verified ownership");
+assert.ok(html.includes("planet:owned-planets-updated"), "owned planet updates accelerate the active biosphere");
+assert.ok(read("planet-commerce-ui.js").includes("planet:owned-planets-updated"), "commerce publishes server-verified owned planets");
 
 console.log("PLANET image-generation contract passed: online API safety, offline genome-driven generation, Android packaging, PWA cache and syntax wiring.");
