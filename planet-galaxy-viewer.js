@@ -486,6 +486,7 @@
     function select(id){
       const found=findPlanet(id);if(!found||!found.planet.discovered)return;
       if(Engine.selectPlanet(galaxy,id)){
+        const previousGenomePanel=$("pgGenomeGameBox");if(previousGenomePanel)previousGenomePanel.remove();
         selectedSystemId=found.system.id;selectedPlanetId=id;mode="planet";
         camera.target=[0,0,0];camera.distance=4.6;camera.yaw=-0.72;camera.pitch=0.38;persist();
         win.dispatchEvent(new win.CustomEvent("planet:active-world-changed",{detail:{planetId:id,planet:Engine.getPlanet(galaxy,id)}}));
