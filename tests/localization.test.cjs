@@ -57,6 +57,7 @@ const required = [
   ["سیاست حریم خصوصی PLANET", "PLANET Privacy Policy"],
   ["تحلیل تمام توالی", "Analyse full sequence"],
   ["سیاره‌های من", "My Planets"],
+  ["بازی ژنوم", "Genome Game"],
   ["ورود به سیاره و زیست‌کره", "Open planet and biosphere"],
 ];
 for (const [fa, en] of required) {
