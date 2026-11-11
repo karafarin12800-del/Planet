@@ -102,7 +102,7 @@ assert.ok(activity.includes("protected void onResume()") && activity.includes("w
 
 // Purchased planets must be reachable directly, and token balance must not masquerade as the wallet button.
 assert.ok(galaxyViewer.includes('textContent="🧬 بازی ژنوم"'), "planet launcher explicitly exposes owned planets");
-assert.ok(galaxyViewer.includes('insertBefore(exploreLaunch,collectionLaunch)'), "genome game launcher sits directly above the image collection button");
+assert.ok(galaxyViewer.includes('insertBefore(collectionGameButton,collectionLaunch)'), "genome game launcher sits directly above the image collection button");
 assert.ok(galaxyViewer.includes('pgDesignerTestBtn') && galaxyViewer.includes('data-pg-action="test-planet"'), "designer can test catalog planets without purchasing them");
 assert.ok(galaxyViewer.includes('pgGenomeLeaderboard'), "genome game includes a top players leaderboard");
 assert.ok(galaxyViewer.includes('id="pgOwnedPlanetsQuick"'), "galaxy home shows a direct owned-planets list");
