@@ -252,6 +252,16 @@
         status.textContent=s.completed?"تکامل کامل شد؛ موجودات تازه آماده‌اند.":"در حال تکامل · "+Math.ceil(180-s.elapsedSeconds).toLocaleString("fa-IR")+" ثانیه باقی‌مانده";
         stats.textContent=s.simulatedYears.toLocaleString("fa-IR")+" سال مدل · "+(s.state?s.state.species.length:0).toLocaleString("fa-IR")+" گونه";
       }
+      const leaderboard=$("pgGenomeLeaderboard");
+      if(leaderboard){
+        const rows=Array.from(genomeSessions.values()).map(session=>{
+          const species=(session.state&&session.state.species||[]).filter(x=>!x.extinct);
+          const special=species.filter(x=>x.special===true).length;
+          const score=species.length*10+special*25;
+          return {name:String(session.accountId&&session.accountId!=="local"?(playerProfile&&playerProfile.username||playerProfile&&playerProfile.displayName||"بازیکن"): "بازیکن مهمان"),score,species:species.length,special};
+        }).sort((a,b)=>b.score-a.score).slice(0,10);
+        leaderboard.innerHTML=rows.length?rows.map((row,index)=>'<div class="pg-album-item">🏅 '+(index+1)+'. '+escapeHtml(row.name)+' · امتیاز '+row.score.toLocaleString("fa-IR")+' · گونه '+row.species.toLocaleString("fa-IR")+' · ویژه '+row.special.toLocaleString("fa-IR")+'</div>').join(""):'<div class="pg-empty">هنوز امتیازی ثبت نشده؛ اولین نفر باش!</div>';
+      }
       if(grid){
         grid.innerHTML="";
         (s.state&&s.state.species||[]).filter(x=>!x.extinct).slice(-24).forEach(x=>{
@@ -294,7 +304,7 @@
         '<div id="pgGenomeDaily" class="pg-genome-list">در حال دریافت ژنوم‌های امروز…</div>'+
         '<div class="pg-genome-controls"><button class="pg-btn primary" id="pgPlantGenomes" data-pg-action="plant-genomes" type="button" disabled>ورود ژنوم‌ها به سیاره</button><label>سرعت تکامل <input id="pgGenomeSpeed" type="range" min="1" max="100" value="1"><b id="pgGenomeSpeedLabel">×۱</b></label></div>'+
         '<div class="pg-genome-progress"><i id="pgGenomeProgress"></i></div><p id="pgGenomeStatus" class="pg-genome-note">در حال آماده‌سازی…</p><small id="pgGenomeStats" class="pg-genome-note"></small>'+
-        '<h4>✨ سازندهٔ آزاد موجودات</h4><p class="pg-genome-note">هر چیزی توصیف کنی می‌تواند ساخته شود؛ محدودیت طبیعت وجود ندارد.</p>'+
+        '<h4>🏆 نفرات برتر آزمایش‌ها</h4><p class="pg-genome-note">رتبه‌بندی محلی بر اساس تعداد گونه‌ها و موجودات ویژهٔ ثبت‌شده در این دستگاه</p><div id="pgGenomeLeaderboard" class="pg-album-list"></div><h4>✨ سازندهٔ آزاد موجودات</h4><p class="pg-genome-note">هر چیزی توصیف کنی می‌تواند ساخته شود؛ محدودیت طبیعت وجود ندارد.</p>'+
         '<label class="pg-genome-note">توصیف موجود<textarea id="pgCreatureBrief" rows="3" maxlength="1200" placeholder="مثلاً اژدهای کریستالی بنفش با شش بال، شاخ‌های طلایی و دم بلند..."></textarea></label>'+
         '<div class="pg-genome-controls"><input id="pgCreatureName" maxlength="48" placeholder="نام دلخواه موجود"><select id="pgCreatureDiet"><option value="omnivore">همه‌چیزخوار</option><option value="herbivore">گیاه‌خوار</option><option value="carnivore">گوشت‌خوار</option><option value="photosynthetic">نورخوار</option><option value="energy">انرژی‌خوار</option></select></div>'+
         '<div class="pg-genome-controls"><select id="pgCreatureHabitat"><option value="land">خشکی</option><option value="ocean">اقیانوس</option><option value="sky">آسمان</option><option value="lava">دریای گدازه</option><option value="crystal">غار کریستالی</option><option value="space">فضا</option></select><select id="pgCreatureScale"><option value="normal">اندازه معمولی</option><option value="colossal">غول‌پیکر</option></select><button class="pg-btn primary" data-pg-action="create-creature" type="button">✨ خلق موجود</button></div>'+
