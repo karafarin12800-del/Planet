@@ -616,10 +616,16 @@
     }
     const exploreLaunch=doc.createElement("button");
     exploreLaunch.type="button";exploreLaunch.id="planet-galaxy-explore";exploreLaunch.className="pg-launch";exploreLaunch.textContent="🧬 بازی ژنوم";exploreLaunch.setAttribute("aria-label","ورود به بازی ژنوم و جهان‌های زنده");
-    const collectionLaunch=doc.getElementById("openCollectionShop");
-    if(collectionLaunch&&collectionLaunch.parentNode){collectionLaunch.parentNode.insertBefore(exploreLaunch,collectionLaunch);exploreLaunch.style.cssText="display:block;width:100%;box-sizing:border-box;margin:0 0 8px;min-height:44px";}
-    else if(topActions)topActions.insertBefore(exploreLaunch,doc.getElementById("helpBtn")||null);
+    if(topActions)topActions.insertBefore(exploreLaunch,doc.getElementById("helpBtn")||null);
     else doc.body.appendChild(exploreLaunch);
+    const collectionLaunch=doc.getElementById("openCollectionShop");
+    if(collectionLaunch&&collectionLaunch.parentNode){
+      const collectionGameButton=exploreLaunch.cloneNode(true);
+      collectionGameButton.id="planet-galaxy-explore-collection";
+      collectionGameButton.style.cssText="display:block;width:100%;box-sizing:border-box;margin:0 0 8px;min-height:44px";
+      collectionLaunch.parentNode.insertBefore(collectionGameButton,collectionLaunch);
+      collectionGameButton.addEventListener("click",openExplorer);
+    }
     exploreLaunch.addEventListener("click",openExplorer);
     function openExplorer(){
       open=true;overlay.classList.add("open");renderUI();
