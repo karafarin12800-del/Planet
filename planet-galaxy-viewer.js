@@ -229,7 +229,7 @@
       const s={planet:p,seed:seedInfo.seed,daily,dailyDay,storageKey,accountId:String(playerProfile&&playerProfile.id||"local"),
         selected:new Set(previousSelection.length>=2?previousSelection:daily.slice(0,2).map(x=>x.id)),state:saved&&saved.state?g.restore(saved.state):null,
         started:!!(saved&&saved.started),completed:!!(saved&&saved.completed),elapsedSeconds:Number(saved&&saved.elapsedSeconds)||0,
-        simulatedYears:Number(saved&&saved.simulatedYears)||0,speed:Math.max(1,Math.min(8,Number(saved&&saved.speed)||1)),
+        simulatedYears:Number(saved&&saved.simulatedYears)||0,speed:Math.max(1,Math.min(100,Number(saved&&saved.speed)||1)),
         lastWall:Date.now(),specimens:signed?(collection.specimens||[]):(saved&&saved.specimens||[])};
       if(s.started&&!s.completed&&saved&&saved.lastWall){
         s.elapsedSeconds=Math.min(180,s.elapsedSeconds+Math.max(0,(Date.now()-Number(saved.lastWall))/1000));
@@ -291,7 +291,7 @@
       const panel=doc.createElement("section");panel.id="pgGenomeGameBox";panel.className="pg-genome-panel";
       panel.innerHTML='<h4>🧬 زیست‌کرهٔ اختصاصی سیاره</h4><p class="pg-genome-note">ژنوم‌های روز و امروز از زمین مادر می‌آیند؛ هر حساب و هر سیاره بذر و مسیر تکامل تصادفی مخصوص خود را دارد.</p>'+
         '<div id="pgGenomeDaily" class="pg-genome-list">در حال دریافت ژنوم‌های امروز…</div>'+
-        '<div class="pg-genome-controls"><button class="pg-btn primary" id="pgPlantGenomes" data-pg-action="plant-genomes" type="button" disabled>ورود ژنوم‌ها به سیاره</button><label>سرعت تکامل <input id="pgGenomeSpeed" type="range" min="1" max="8" value="1"><b id="pgGenomeSpeedLabel">×۱</b></label></div>'+
+        '<div class="pg-genome-controls"><button class="pg-btn primary" id="pgPlantGenomes" data-pg-action="plant-genomes" type="button" disabled>ورود ژنوم‌ها به سیاره</button><label>سرعت تکامل <input id="pgGenomeSpeed" type="range" min="1" max="100" value="1"><b id="pgGenomeSpeedLabel">×۱</b></label></div>'+
         '<div class="pg-genome-progress"><i id="pgGenomeProgress"></i></div><p id="pgGenomeStatus" class="pg-genome-note">در حال آماده‌سازی…</p><small id="pgGenomeStats" class="pg-genome-note"></small>'+
         '<h4>✨ سازندهٔ آزاد موجودات</h4><p class="pg-genome-note">هر چیزی توصیف کنی می‌تواند ساخته شود؛ محدودیت طبیعت وجود ندارد.</p>'+
         '<label class="pg-genome-note">توصیف موجود<textarea id="pgCreatureBrief" rows="3" maxlength="1200" placeholder="مثلاً اژدهای کریستالی بنفش با شش بال، شاخ‌های طلایی و دم بلند..."></textarea></label>'+
