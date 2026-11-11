@@ -82,7 +82,7 @@
     }
     const style=doc.createElement("style");
     style.textContent=[
-      ".pg-launch{border:1px solid #5bb8d9!important;background:linear-gradient(135deg,#123e59,#172b4d)!important;color:#e9faff!important}",
+      ".pg-launch{border:1px solid #5bb8d9!important;background:linear-gradient(135deg,#123e59,#172b4d)!important;color:#e9faff!important;font-size:16px!important;font-weight:800!important;padding:12px 16px!important;min-height:48px!important;border-radius:14px!important}",
       ".pg-overlay{position:fixed;z-index:100700;inset:0;display:none;background:radial-gradient(ellipse at 50% 35%,#102b4a 0,#071326 53%,#020711 100%);color:#e9f4ff;font-family:Tahoma,system-ui,sans-serif}",
       ".pg-overlay.open{display:block}.pg-shell{height:100%;display:flex;flex-direction:column;min-height:0}",
       ".pg-head{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid #8bb5dc22;background:#061326a8;backdrop-filter:blur(16px)}",
@@ -579,7 +579,7 @@
       return false;
     }
     const exploreLaunch=doc.createElement("button");
-    exploreLaunch.type="button";exploreLaunch.id="planet-galaxy-explore";exploreLaunch.className="icon-btn pg-launch";exploreLaunch.textContent="🪐 سیاره‌های من";exploreLaunch.setAttribute("aria-label","ورود به سیاره‌ها و دسترسی سریع به سیاره‌های خریداری‌شده");
+    exploreLaunch.type="button";exploreLaunch.id="planet-galaxy-explore";exploreLaunch.className="icon-btn pg-launch";exploreLaunch.textContent="🧬 بازی ژنوم";exploreLaunch.setAttribute("aria-label","ورود به بازی ژنوم و جهان‌های زنده");
     if(topActions)topActions.insertBefore(exploreLaunch,doc.getElementById("helpBtn")||null);
     else doc.body.appendChild(exploreLaunch);
     exploreLaunch.addEventListener("click",openExplorer);
