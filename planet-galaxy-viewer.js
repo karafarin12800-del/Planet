@@ -77,6 +77,7 @@
       galaxy=Engine.createGalaxy(0x504c414e);
     }
     function persist(){
+      if(designerTestMode)return;
       try{win.localStorage.setItem(SAVE_KEY,Engine.serialize(galaxy));}
       catch(error){showNotice("ذخیرهٔ محلی در دسترس نیست: "+String(error.message||error));}
     }
@@ -126,9 +127,32 @@
     $("pgWalletBtn").addEventListener("click",openWallet);
     $("pgAlbumBtn").addEventListener("click",()=>openAccountSection("commerceGallerySection"));
     $("pgMarketBtn").addEventListener("click",()=>openAccountSection("commerceMarketSection"));
-    $("pgDesignerTestBtn").addEventListener("click",function(){designerTestMode=!designerTestMode;this.setAttribute("aria-pressed",String(designerTestMode));this.textContent=designerTestMode?"🧪 آزمایش طراح: روشن":"🧪 آزمایش طراح: خاموش";showNotice(designerTestMode?"حالت طراح فعال است: سیاره‌ها را بدون خرید آزمایش کن؛ کیف پول و مالکیت تغییر نمی‌کند.":"حالت طراح خاموش شد؛ فقط سیاره‌های خریداری‌شده زیست‌کرهٔ قابل‌ویرایش دارند.");renderUI();});
+    $("pgDesignerTestBtn").addEventListener("click",function(){
+      if(!designerTestMode){
+        try{
+          designerBaseGalaxy=galaxy;
+          galaxy=Engine.restore(Engine.serialize(galaxy));
+          designerTestMode=true;
+          selectedSystemId=galaxy.activeSystemId;selectedPlanetId=galaxy.activePlanetId;mode="galaxy";
+        }catch(error){
+          galaxy=designerBaseGalaxy||galaxy;designerBaseGalaxy=null;designerTestMode=false;
+          showNotice("حالت آزمایش موقت فعال نشد: "+String(error.message||error));return;
+        }
+      }else{
+        designerTestMode=false;
+        if(designerBaseGalaxy)galaxy=designerBaseGalaxy;
+        designerBaseGalaxy=null;
+        selectedSystemId=galaxy.activeSystemId;selectedPlanetId=galaxy.activePlanetId;mode="galaxy";
+      }
+      const oldPanel=$("pgGenomeGameBox");if(oldPanel)oldPanel.remove();
+      genomePanelLoads.clear();
+      this.setAttribute("aria-pressed",String(designerTestMode));
+      this.textContent=designerTestMode?"🧪 آزمایش طراح: روشن":"🧪 آزمایش طراح: خاموش";
+      showNotice(designerTestMode?"حالت آزمایش موقت روشن شد؛ همهٔ سیاره‌ها بدون خرید قابل تست‌اند. تغییرات کشف، انتخاب و مالکیت در ذخیرهٔ اصلی ثبت نمی‌شوند.":"به جهان اصلی برگشتی؛ کشف‌ها، انتخاب‌ها، کیف پول و مالکیت واقعی دست‌نخورده باقی ماندند.");
+      renderUI();if(renderer)renderer.invalidate();
+    });
     const canvas=$("pgCanvas"),ctxNote=$("pgCanvasNote");
-    let mode="galaxy",selectedSystemId=galaxy.activeSystemId,selectedPlanetId=galaxy.activePlanetId,open=false,raf=0,renderer=null,lastNotice="",designerTestMode=false;
+    let mode="galaxy",selectedSystemId=galaxy.activeSystemId,selectedPlanetId=galaxy.activePlanetId,open=false,raf=0,renderer=null,lastNotice="",designerTestMode=false,designerBaseGalaxy=null;
     let ownedCommerceIds=new Set();
     const GUEST_WALLET_KEY="planet-guest-wallet:v1",GUEST_PLANETS_KEY="planet-guest-owned-planets:v1";
     function guestWallet(){let value=null;try{value=win.localStorage.getItem(GUEST_WALLET_KEY);if(value===null){value="100";win.localStorage.setItem(GUEST_WALLET_KEY,value);}}catch(e){value=value===null?"100":value;}return Math.max(0,Number(value)||0);}
@@ -147,6 +171,7 @@
     function systemTitle(system,index){return system.discovered?system.name:("منظومهٔ ناشناختهٔ "+(index+1));}
     let genomeTicker=0,playerProfile=null,playerTokenBalance=null;
     const genomeSessions=new Map(),genomePanelLoads=new Set();
+    let genomeLeaderboardFetchedAt=0,genomeLeaderboardLoading=false;
     function updateWalletBadge(value){
       if(Number.isFinite(Number(value)))playerTokenBalance=Number(value);
       const el=$("pgWalletBadge");if(el)el.textContent="🪙 "+(playerTokenBalance==null?"--":playerTokenBalance.toLocaleString("fa-IR"));
@@ -198,7 +223,7 @@
     }
     win.addEventListener("planet:bazaar-product-details",event=>syncGuestWalletPrices(event.detail&&event.detail.products));
     syncGuestWalletPrices();
-    function gameSessionKey(p){return String(playerProfile&&playerProfile.id||"local")+":"+String(p.commercePlanetId||p.id);}
+    function gameSessionKey(p){return String(playerProfile&&playerProfile.id||"local")+":"+(designerTestMode?"designer-test":"player")+":"+String(p.commercePlanetId||p.id);}
     function localDayKey(){const parts=new Intl.DateTimeFormat("en-CA",{year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const part=type=>parts.find(x=>x.type===type).value;return part("year")+"-"+part("month")+"-"+part("day");}
     function saveGenomeSession(s){
       try{win.localStorage.setItem("planet-genome-game:v1:"+s.storageKey,JSON.stringify({state:s.state?win.PlanetGenomeGame.save(s.state):null,seed:s.seed,daily:s.daily,dailyDay:s.dailyDay,
@@ -214,7 +239,7 @@
       let seedInfo,collection={specimens:[]};
       if(signed){[seedInfo,collection]=await Promise.all([c.worldSeed("planet-"+String(p.commercePlanetId).slice(-3)),c.collection()]);}
       else{
-        const seedKey="planet-genome-guest-seed:v1:"+String(p.id);
+        const seedKey="planet-genome-guest-seed:v1:"+(designerTestMode?"designer-test:":"player:")+String(p.id);
         let seed="";try{seed=win.localStorage.getItem(seedKey)||"";}catch(e){}
         if(!seed){const bytes=new Uint8Array(24);try{win.crypto.getRandomValues(bytes);seed=Array.from(bytes,x=>x.toString(16).padStart(2,"0")).join("");}catch(e){seed=String(Date.now())+"-"+String(Math.random()).slice(2);}
           try{win.localStorage.setItem(seedKey,seed);}catch(e){}}
@@ -240,6 +265,38 @@
       }
       genomeSessions.set(key,s);saveGenomeSession(s);return s;
     }
+    async function loadGenomeLeaderboard(force){
+      const node=$("pgGenomeLeaderboard"),client=win.PlanetCommerceClient;
+      if(!node||genomeLeaderboardLoading||(!force&&Date.now()-genomeLeaderboardFetchedAt<60000))return;
+      genomeLeaderboardLoading=true;genomeLeaderboardFetchedAt=Date.now();
+      try{
+        if(!client||typeof client.genomeLeaderboard!=="function")throw new Error("LEADERBOARD_UNAVAILABLE");
+        const result=await client.genomeLeaderboard(),entries=Array.isArray(result.entries)?result.entries:[];
+        node.textContent="";
+        if(!entries.length){node.textContent="هنوز بازیکنی امتیاز آنلاین ثبت نکرده است؛ اولین نفر باش!";return;}
+        entries.forEach((entry,index)=>{
+          const item=doc.createElement("div");item.className="pg-album-item";
+          const name=String(entry.displayName||"بازیکن").slice(0,40);
+          const score=Number(entry.score)||0,species=Number(entry.speciesCount)||0,special=Number(entry.specialCount)||0;
+          item.textContent="🏅 "+(index+1)+". "+name+" · امتیاز "+score.toLocaleString("fa-IR")+" · گونه "+species.toLocaleString("fa-IR")+" · ویژه "+special.toLocaleString("fa-IR");
+          node.appendChild(item);
+        });
+      }catch(error){
+        node.textContent="رتبه‌بندی آنلاین فعلاً دریافت نشد؛ پس از اتصال دوباره تلاش کن.";
+        genomeLeaderboardFetchedAt=0;
+      }finally{genomeLeaderboardLoading=false;}
+    }
+    async function submitGenomeScore(s){
+      if(designerTestMode)return;
+      const client=win.PlanetCommerceClient;
+      if(!client||!client.hasSession()||typeof client.saveGenomeScore!=="function"||!s||!s.state)return;
+      const species=(s.state.species||[]).filter(x=>!x.extinct);
+      const speciesCount=species.length,specialCount=species.filter(x=>x.special===true).length;
+      try{
+        await client.saveGenomeScore({planetId:String(s.planet.commercePlanetId||s.planet.id),speciesCount,specialCount});
+        genomeLeaderboardFetchedAt=0;await loadGenomeLeaderboard(true);
+      }catch(error){showNotice("امتیاز در جدول آنلاین ثبت نشد؛ بازی و ذخیرهٔ محلی ادامه دارد.");}
+    }
     function renderGenomePanel(s){
       const daily=$("pgGenomeDaily"),status=$("pgGenomeStatus"),progress=$("pgGenomeProgress"),stats=$("pgGenomeStats"),grid=$("pgGenomeSpecies");
       if(!daily||!status)return;
@@ -252,16 +309,7 @@
         status.textContent=s.completed?"تکامل کامل شد؛ موجودات تازه آماده‌اند.":"در حال تکامل · "+Math.ceil(180-s.elapsedSeconds).toLocaleString("fa-IR")+" ثانیه باقی‌مانده";
         stats.textContent=s.simulatedYears.toLocaleString("fa-IR")+" سال مدل · "+(s.state?s.state.species.length:0).toLocaleString("fa-IR")+" گونه";
       }
-      const leaderboard=$("pgGenomeLeaderboard");
-      if(leaderboard){
-        const rows=Array.from(genomeSessions.values()).map(session=>{
-          const species=(session.state&&session.state.species||[]).filter(x=>!x.extinct);
-          const special=species.filter(x=>x.special===true).length;
-          const score=species.length*10+special*25;
-          return {name:String(session.accountId&&session.accountId!=="local"?(playerProfile&&playerProfile.username||playerProfile&&playerProfile.displayName||"بازیکن"): "بازیکن مهمان"),score,species:species.length,special};
-        }).sort((a,b)=>b.score-a.score).slice(0,10);
-        leaderboard.innerHTML=rows.length?rows.map((row,index)=>'<div class="pg-album-item">🏅 '+(index+1)+'. '+escapeHtml(row.name)+' · امتیاز '+row.score.toLocaleString("fa-IR")+' · گونه '+row.species.toLocaleString("fa-IR")+' · ویژه '+row.special.toLocaleString("fa-IR")+'</div>').join(""):'<div class="pg-empty">هنوز امتیازی ثبت نشده؛ اولین نفر باش!</div>';
-      }
+      loadGenomeLeaderboard(false);
       if(grid){
         grid.innerHTML="";
         (s.state&&s.state.species||[]).filter(x=>!x.extinct).slice(-24).forEach(x=>{
@@ -304,7 +352,7 @@
         '<div id="pgGenomeDaily" class="pg-genome-list">در حال دریافت ژنوم‌های امروز…</div>'+
         '<div class="pg-genome-controls"><button class="pg-btn primary" id="pgPlantGenomes" data-pg-action="plant-genomes" type="button" disabled>ورود ژنوم‌ها به سیاره</button><label>سرعت تکامل <input id="pgGenomeSpeed" type="range" min="1" max="100" value="1"><b id="pgGenomeSpeedLabel">×۱</b></label></div>'+
         '<div class="pg-genome-progress"><i id="pgGenomeProgress"></i></div><p id="pgGenomeStatus" class="pg-genome-note">در حال آماده‌سازی…</p><small id="pgGenomeStats" class="pg-genome-note"></small>'+
-        '<h4>🏆 نفرات برتر آزمایش‌ها</h4><p class="pg-genome-note">رتبه‌بندی محلی بر اساس تعداد گونه‌ها و موجودات ویژهٔ ثبت‌شده در این دستگاه</p><div id="pgGenomeLeaderboard" class="pg-album-list"></div><h4>✨ سازندهٔ آزاد موجودات</h4><p class="pg-genome-note">هر چیزی توصیف کنی می‌تواند ساخته شود؛ محدودیت طبیعت وجود ندارد.</p>'+
+        '<h4>🏆 نفرات برتر بازی ژنوم</h4><p class="pg-genome-note">رتبه‌بندی آنلاین بازیکنان بر اساس بهترین امتیاز ثبت‌شده در سیاره‌هایشان</p><div id="pgGenomeLeaderboard" class="pg-album-list">در حال دریافت رتبه‌بندی…</div><h4>✨ سازندهٔ آزاد موجودات</h4><p class="pg-genome-note">هر چیزی توصیف کنی می‌تواند ساخته شود؛ محدودیت طبیعت وجود ندارد.</p>'+
         '<label class="pg-genome-note">توصیف موجود<textarea id="pgCreatureBrief" rows="3" maxlength="1200" placeholder="مثلاً اژدهای کریستالی بنفش با شش بال، شاخ‌های طلایی و دم بلند..."></textarea></label>'+
         '<div class="pg-genome-controls"><input id="pgCreatureName" maxlength="48" placeholder="نام دلخواه موجود"><select id="pgCreatureDiet"><option value="omnivore">همه‌چیزخوار</option><option value="herbivore">گیاه‌خوار</option><option value="carnivore">گوشت‌خوار</option><option value="photosynthetic">نورخوار</option><option value="energy">انرژی‌خوار</option></select></div>'+
         '<div class="pg-genome-controls"><select id="pgCreatureHabitat"><option value="land">خشکی</option><option value="ocean">اقیانوس</option><option value="sky">آسمان</option><option value="lava">دریای گدازه</option><option value="crystal">غار کریستالی</option><option value="space">فضا</option></select><select id="pgCreatureScale"><option value="normal">اندازه معمولی</option><option value="colossal">غول‌پیکر</option></select><button class="pg-btn primary" data-pg-action="create-creature" type="button">✨ خلق موجود</button></div>'+
@@ -413,6 +461,7 @@
         if(!a||!b)throw new Error("برای ترکیب، دو والد معتبر انتخاب کن.");
         const child=win.PlanetGenomeGame.breed(s.state,a,b);saveGenomeSession(s);renderGenomePanel(s);await registerGenomeCreature(s,child);
       }
+      if(["create-creature","instant-evolution","boost-creature","breed-creature"].includes(action))await submitGenomeScore(s);
     }
     function showIntro(){const el=$("pgGenomeIntro");if(el)el.classList.add("open");}
     function continueIntoGenomeGame(){
@@ -530,6 +579,7 @@
       }
     }
     async function buyCommercePlanet(commercePlanetId){
+      if(designerTestMode){showNotice("خرید در حالت آزمایش طراح غیرفعال است؛ سیاره فقط در نسخهٔ موقت باز می‌شود.");return;}
       const found=galaxy.systems.flatMap(system=>system.planets.map(planet=>({system,planet}))).find(x=>x.planet.commercePlanetId===commercePlanetId);
       if(!found){showNotice("سیاره در نقشهٔ کهکشان پیدا نشد.");return;}
       const client=win.PlanetCommerceClient;
@@ -568,7 +618,7 @@
       else if(action==="view-planet")viewPlanet(id);
       else if(action==="discover-planet")discover(id);
       else if(action==="select-planet")select(id);
-      else if(action==="test-planet"){const found=findPlanet(id);if(found){if(!found.planet.discovered)Engine.discoverPlanet(galaxy,id);select(id);showNotice("سیارهٔ آزمایشی باز شد؛ خرید و مالکیت تغییر نکرده است.");}}
+      else if(action==="test-planet"){const found=findPlanet(id);if(found&&designerTestMode){if(!found.planet.discovered)Engine.discoverPlanet(galaxy,id);select(id);showNotice("سیاره در محیط موقت طراح باز شد؛ ذخیرهٔ اصلی، خرید و مالکیت تغییر نکرد.");}}
       else if(action==="open-owned-planet"){const found=findPlanet(id);if(found&&found.planet.commercePlanetId&&ownedCommerceIds.has(found.planet.commercePlanetId)){if(!found.planet.discovered)Engine.discoverPlanet(galaxy,id);select(id);showNotice("سیارهٔ خریداری‌شده باز شد؛ زیست‌کره و ژنوم اختصاصی آن آماده است.");}else showNotice("مالکیت این سیاره در حساب فعلی پیدا نشد.");}
       else if(action==="focus-planet")focusPlanet(id);
       else if(action==="buy-planet")buyCommercePlanet(id);
@@ -620,9 +670,11 @@
     else doc.body.appendChild(exploreLaunch);
     const collectionLaunch=doc.getElementById("openCollectionShop");
     if(collectionLaunch&&collectionLaunch.parentNode){
-      const collectionGameButton=exploreLaunch.cloneNode(true);
+      const collectionGameButton=collectionLaunch.cloneNode(true);
       collectionGameButton.id="planet-galaxy-explore-collection";
-      collectionGameButton.style.cssText="display:block;width:100%;box-sizing:border-box;margin:0 0 8px;min-height:44px";
+      collectionGameButton.className=collectionLaunch.className;
+      collectionGameButton.textContent="🧬 بازی ژنوم";
+      collectionGameButton.setAttribute("aria-label","ورود به بازی ژنوم و جهان‌های زنده");
       collectionLaunch.parentNode.insertBefore(collectionGameButton,collectionLaunch);
       collectionGameButton.addEventListener("click",openExplorer);
     }
