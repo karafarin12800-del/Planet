@@ -258,6 +258,10 @@ async function route(req, env, url) {
        speciesCount<0||speciesCount>100000||specialCount<0||specialCount>speciesCount){
       return response({error:"INVALID_GENOME_SCORE"},400);
     }
+    const world=planets().find(p=>p.galaxyPlanetId===planetId);
+    if(!world)return response({error:"INVALID_GENOME_PLANET"},400);
+    const owned=await env.DB.prepare("SELECT 1 AS owned FROM planet_ownership WHERE user_id=? AND galaxy_planet_id=?").bind(user.id,world.galaxyPlanetId).first();
+    if(!owned)return response({error:"PLANET_NOT_OWNED"},403);
     const score=speciesCount*10+specialCount*25;
     await env.DB.prepare("INSERT INTO genome_scores(user_id,planet_id,score,species_count,special_count,updated_at) VALUES(?,?,?,?,?,datetime('now')) ON CONFLICT(user_id,planet_id) DO UPDATE SET score=MAX(genome_scores.score,excluded.score),species_count=CASE WHEN excluded.score>genome_scores.score THEN excluded.species_count ELSE genome_scores.species_count END,special_count=CASE WHEN excluded.score>genome_scores.score THEN excluded.special_count ELSE genome_scores.special_count END,updated_at=CASE WHEN excluded.score>genome_scores.score THEN datetime('now') ELSE genome_scores.updated_at END")
       .bind(user.id,planetId,score,speciesCount,specialCount).run();
