@@ -142,6 +142,7 @@
         designerTestMode=false;
         if(designerBaseGalaxy)galaxy=designerBaseGalaxy;
         designerBaseGalaxy=null;
+        for(const key of Array.from(genomeSessions.keys()))if(key.includes(":designer-test:"))genomeSessions.delete(key);
         selectedSystemId=galaxy.activeSystemId;selectedPlanetId=galaxy.activePlanetId;mode="galaxy";
       }
       const oldPanel=$("pgGenomeGameBox");if(oldPanel)oldPanel.remove();
@@ -263,7 +264,9 @@
         if(s.state&&target>s.simulatedYears){g.advance(s.state,target-s.simulatedYears);s.simulatedYears=target;}
         if(s.elapsedSeconds>=180)s.completed=true;
       }
-      genomeSessions.set(key,s);saveGenomeSession(s);return s;
+      genomeSessions.set(key,s);saveGenomeSession(s);
+      if(s.completed)submitGenomeScore(s);
+      return s;
     }
     async function loadGenomeLeaderboard(force){
       const node=$("pgGenomeLeaderboard"),client=win.PlanetCommerceClient;
