@@ -56,8 +56,8 @@ assert.ok(html.includes("منبع بافت روز زمین: Solar System Scope")
 assert.ok(workflow.includes("earth-daymap-4k.jpg"), "Android build includes the downscaled map");
 assert.ok(workflow.includes("Pillow"), "CI uses a reproducible image resize step");
 assert.ok(workflow.includes("resize((4096, 2048)"), "CI creates a 4K power-of-two texture");
-assert.ok(sw.includes("planet-pwa-v39-creative-genome-creatures"), "PWA cache key was bumped");
-assert.ok(imageContract.includes("planet-pwa-v39-creative-genome-creatures"), "existing image contract agrees with new cache version");
+assert.ok(sw.includes("planet-pwa-v40-designer-planet-testing-leaderboard"), "PWA cache key was bumped");
+assert.ok(imageContract.includes("planet-pwa-v40-designer-planet-testing-leaderboard"), "existing image contract agrees with new cache version");
 
 // Performance regressions: large timeline jumps must yield to the browser between generations.
 const catchUpStart = html.indexOf("function catchUpEvolution(targetAge)");
@@ -102,6 +102,9 @@ assert.ok(activity.includes("protected void onResume()") && activity.includes("w
 
 // Purchased planets must be reachable directly, and token balance must not masquerade as the wallet button.
 assert.ok(galaxyViewer.includes('textContent="🧬 بازی ژنوم"'), "planet launcher explicitly exposes owned planets");
+assert.ok(galaxyViewer.includes('insertBefore(exploreLaunch,collectionLaunch)'), "genome game launcher sits directly above the image collection button");
+assert.ok(galaxyViewer.includes('pgDesignerTestBtn') && galaxyViewer.includes('data-pg-action="test-planet"'), "designer can test catalog planets without purchasing them");
+assert.ok(galaxyViewer.includes('pgGenomeLeaderboard'), "genome game includes a top players leaderboard");
 assert.ok(galaxyViewer.includes('id="pgOwnedPlanetsQuick"'), "galaxy home shows a direct owned-planets list");
 assert.ok(galaxyViewer.includes('data-pg-action="open-owned-planet"'), "owned planet cards have a direct open action");
 assert.ok(galaxyViewer.includes('id="pgWalletBadge">🪙 --'), "token badge contains only the token icon and balance");
@@ -109,7 +112,7 @@ assert.ok(galaxyViewer.includes('id="pgWalletBtn" type="button">کیف پول'),
 assert.ok(galaxyViewer.includes('planet:bazaar-product-details'), "guest wallet receives live store price details");
 assert.ok(html.includes('id="commerceTokenPrice200"') && html.includes('id="commerceTokenPrice2000"'), "wallet shows store price rows for token packages");
 assert.ok(commerceUI.includes("onBazaarProductDetails:function(payload)"), "wallet renders localized Bazaar product prices");
-assert.ok(sw.includes("planet-pwa-v39-creative-genome-creatures"), "cache is invalidated for owned planet and wallet UI fixes");
+assert.ok(sw.includes("planet-pwa-v40-designer-planet-testing-leaderboard"), "cache is invalidated for owned planet and wallet UI fixes");
 
 // Offline evolution is restored with bounded, frame-sliced catch-up and survives WebView lifecycle changes.
 const offlineEvolution = read("offline-evolution.js");
@@ -141,7 +144,7 @@ assert.ok(html.includes("actAgent(agent,s,env,neighbors,context,speciesBaseFitne
 assert.ok(!html.includes("agent.fitness=clamp(.25*calculateFitness(s,lifeAgeMa)"), "fitness calculation is not repeated for every individual in a species");
 assert.ok(!html.includes("ensureDinosaurLineages()"), "evolution does not call the removed dinosaur-seeding function");
 assert.ok(html.includes("Evolution step failed; orbital rendering continues"), "an ecology exception pauses evolution without killing the planet render loop");
-assert.ok(sw.includes("planet-pwa-v39-creative-genome-creatures"), "PWA cache invalidation includes collection and commerce");
+assert.ok(sw.includes("planet-pwa-v40-designer-planet-testing-leaderboard"), "PWA cache invalidation includes collection and commerce");
 assert.ok(html.includes("planet-collection-commerce.js"), "collection commerce module is loaded");
 assert.ok(html.includes("planet-commerce-client.js"), "online API client is loaded");
 assert.ok(html.includes("planet-commerce-ui.js"), "online commerce UI is loaded");
