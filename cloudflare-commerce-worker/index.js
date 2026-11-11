@@ -163,6 +163,10 @@ async function route(req, env, url) {
     const owners={};for(const row of rows.results||[])owners[row.galaxy_planet_id]=row.display_name;
     return response({owners});
   }
+  if(method==="GET"&&path==="/genome/leaderboard"){
+    const rows=await env.DB.prepare("SELECT u.display_name AS displayName,SUM(g.score) AS score,SUM(g.species_count) AS speciesCount,SUM(g.special_count) AS specialCount,COUNT(*) AS planetsPlayed FROM genome_scores g JOIN users u ON u.id=g.user_id GROUP BY g.user_id,u.display_name ORDER BY score DESC,speciesCount DESC,specialCount DESC LIMIT 10").all();
+    return response({entries:rows.results||[]});
+  }
   if(method==="POST"&&path==="/auth/register"){
     const b=await jsonBody(req), email=String(b?.email||"").trim().toLowerCase(), password=String(b?.password||"");
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||password.length<10||password.length>200) return response({error:"INVALID_EMAIL_OR_PASSWORD"},400);
@@ -246,6 +250,19 @@ async function route(req, env, url) {
   }
   const user=await authenticate(req,env);
   if(!user) return response({error:"UNAUTHORIZED"},401);
+  if(method==="POST"&&path==="/genome/score"){
+    const b=await jsonBody(req);
+    const planetId=String(b?.planetId||"").trim();
+    const speciesCount=Number(b?.speciesCount),specialCount=Number(b?.specialCount);
+    if(!planetId||planetId.length>180||!Number.isSafeInteger(speciesCount)||!Number.isSafeInteger(specialCount)||
+       speciesCount<0||speciesCount>100000||specialCount<0||specialCount>speciesCount){
+      return response({error:"INVALID_GENOME_SCORE"},400);
+    }
+    const score=speciesCount*10+specialCount*25;
+    await env.DB.prepare("INSERT INTO genome_scores(user_id,planet_id,score,species_count,special_count,updated_at) VALUES(?,?,?,?,?,datetime('now')) ON CONFLICT(user_id,planet_id) DO UPDATE SET score=MAX(genome_scores.score,excluded.score),species_count=CASE WHEN excluded.score>genome_scores.score THEN excluded.species_count ELSE genome_scores.species_count END,special_count=CASE WHEN excluded.score>genome_scores.score THEN excluded.special_count ELSE genome_scores.special_count END,updated_at=CASE WHEN excluded.score>genome_scores.score THEN datetime('now') ELSE genome_scores.updated_at END")
+      .bind(user.id,planetId,score,speciesCount,specialCount).run();
+    return response({ok:true,score});
+  }
   if(method==="GET"&&path==="/world-seed"){
     const planetId=String(url.searchParams.get("planetId")||""),planet=planets().find(p=>p.id===planetId);
     if(!planet)return response({error:"PLANET_NOT_FOUND"},404);
