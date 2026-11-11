@@ -46,7 +46,7 @@
   async function readImageCache(hash){const db=await openImageDB();if(!db)return null;return new Promise(resolve=>{const req=db.transaction(IMAGE_STORE,'readonly').objectStore(IMAGE_STORE).get(hash);req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>resolve(null);});}
   async function writeImageCache(hash,dataUrl,source,species){const db=await openImageDB();if(!db)return false;return new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readwrite');tx.objectStore(IMAGE_STORE).put({genomeHash:hash,dataUrl,source,createdAt:Date.now(),speciesName:String(species&&species.name||''),speciesId:String(species&&species.id||''),planetId:String(species&&species.planetId||''),form:String(species&&species.form||''),bodyLengthCm:Number(species&&species.bodyLengthCm)||0});tx.oncomplete=()=>resolve(true);tx.onerror=()=>resolve(false);});}
   async function listImageCache(){const db=await openImageDB();if(!db)return [];return new Promise(resolve=>{const req=db.transaction(IMAGE_STORE,'readonly').objectStore(IMAGE_STORE).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>resolve([]);});}
-  async function genomeHash(species){const dna=String(species&&species.dna||'').toUpperCase().replace(/[^ACGT]/g,''),identity=dna+'|'+String(species&&species.planetId||'earth')+'|'+String(species&&species.planetFingerprint||'')+'|'+String(species&&species.habitat||'')+'|'+String(species&&species.form||'');if(window.crypto&&crypto.subtle){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(identity));return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,'0')).join('');}let h=2166136261;for(let i=0;i<identity.length;i++){h^=identity.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16);}
+  async function genomeHash(species){const dna=String(species&&species.dna||'').toUpperCase().replace(/[^ACGT]/g,''),identity=dna+'|'+String(species&&species.planetId||'earth')+'|'+String(species&&species.planetFingerprint||'')+'|'+String(species&&species.habitat||'')+'|'+String(species&&species.form||'')+'|'+String(species&&species.creativeBrief||'')+'|'+String(species&&species.diet||'');if(window.crypto&&crypto.subtle){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(identity));return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,'0')).join('');}let h=2166136261;for(let i=0;i<identity.length;i++){h^=identity.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16);}
   function showCachedImage(record){if(!record||!record.dataUrl)return;generated=record.dataUrl;output.src=generated;output.style.display='block';placeholder.style.display='none';downloadButton.disabled=false;setStatus(record.source==='ai'?tr('تصویر ثابت همین ژنوم از حافظهٔ دائمی بارگذاری شد.','The permanent image for this genome was loaded.'):tr('تصویر رویه‌ای ثابت این ژنوم بارگذاری شد؛ برای ارتقا به تصویر هوش مصنوعی، سرویس را تنظیم کن.','The fixed procedural image for this genome was loaded; configure the AI service to upgrade it.'));}
   function saveSettings(){
     const endpoint=endpointInput.value.trim().replace(/\/+$/,'');
@@ -95,6 +95,8 @@
     return[
       'Generate one original, high-detail scientific natural-history image of a newly generated organism. The pixels must be newly synthesized by the image model, not a preloaded species picture, diagram, icon, collage, or primitive geometric shapes.',
       'Organism label: '+String(s.name||('Organism '+s.id))+'. Broad digital form hint: '+formName(s.form)+'. Use it as a loose constraint, not as a stock-animal template.',
+      'Player creative brief: '+String(s.creativeBrief||'No extra player brief')+'. Follow this description closely; unusual fantasy anatomy and impossible features are welcome.',
+      'Food and diet design: '+String(s.diet||'unspecified')+'. Show feeding adaptations appropriate to this diet, such as beaks, jaws, filters, tendrils, photosynthetic panels or energy-absorbing organs.',
       'Planet genetic fingerprint: '+String(s.planetFingerprint||p.planetMorphology&&p.planetMorphology.fingerprint||'unavailable')+'. This fingerprint must visibly influence the creature identity; do not reuse a generic silhouette.',
       'Sequence-derived illustrative morphology constraints: '+shape+'.',
       'Estimated in-game body length: '+Number(s.bodyLengthCm||0).toFixed(1)+' cm. The animal must be visibly larger than a common mouse; keep believable body proportions and show the entire body.',
@@ -121,6 +123,15 @@
     genomeHash(s).then(async hash=>{const cached=await readImageCache(hash);if(selected!==s)return;if(cached)showCachedImage(cached);}).catch(()=>{});
     if(!endpointInput.value||!accessInput.value){setStatus(tr('آماده است: با «تولید تصویر جدید» همین حالا تصویر را محلی و بدون تنظیمات بساز. برای تصویرسازی مولد آنلاین، تنظیم سرویس اختیاری است.','Ready: tap Generate image to create a local image now, with no setup. Online AI image generation is optional.'));}
     else setStatus(tr('سرویس آنلاین تنظیم شده؛ در صورت خطا مولد محلی جایگزین می‌شود.','Online service configured; local generation is the fallback.'));
+  }
+  function openForSpecimen(s){
+    if(!s||!s.dna){alert(tr('اطلاعات ژنوم این جاندار در دسترس نیست.','The organism genome snapshot is unavailable.'));return;}
+    selected=s;overlay.classList.add('open');document.documentElement.style.overflow='hidden';
+    $('planet-image-title').textContent=tr('ساخت تصویر اختصاصی موجود','Create a custom creature image');
+    $('planet-image-intro').textContent=tr('مدل تصویر بر اساس توضیحات بازیکن، ژنوم، غذا و زیستگاه این موجود تصویر تازه می‌سازد.','The image model creates a new image from the player brief, genome, diet and habitat.');
+    showBadges(s);promptInput.value=buildPrompt(s,'custom-'+Date.now().toString(36));clearOutput();loadSettings();
+    if(!endpointInput.value||!accessInput.value)setStatus(tr('مولد محلی آماده است؛ برای تصویر AI آنلاین باید سرویس تصویر را تنظیم کنی.','Local generator is ready; configure the image service for online AI images.'));
+    else setStatus(tr('سرویس آنلاین آمادهٔ تولید تصویر اختصاصی است.','Online image service is ready.'));
   }
   function closeModal(){overlay.classList.remove('open');document.documentElement.style.overflow='';}
 
@@ -283,5 +294,5 @@
     setInterval(()=>{scanEligibleSpecies().catch(()=>{});},6000);scanEligibleSpecies().catch(()=>{});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-  window.PlanetImageGeneration={openForSpecies:openForSpecies,buildPrompt:id=>{const s=getSpecies(id);return s?buildPrompt(s,'preview'):'';},generateOfflineSVG:id=>{const s=getSpecies(id);return s?generateOfflineSVG(s,'test'):'';},getConfigured:()=>{try{return!!localStorage.getItem(ENDPOINT_KEY)&&!!localStorage.getItem(ACCESS_KEY);}catch(_){return false;}},refresh:()=>scanEligibleSpecies(),openCollection:showCollection,isPortraitEligible:isPortraitEligible};
+  window.PlanetImageGeneration={openForSpecies:openForSpecies,openForSpecimen:openForSpecimen,buildPrompt:id=>{const s=getSpecies(id);return s?buildPrompt(s,'preview'):'';},generateOfflineSVG:id=>{const s=getSpecies(id);return s?generateOfflineSVG(s,'test'):'';},getConfigured:()=>{try{return!!localStorage.getItem(ENDPOINT_KEY)&&!!localStorage.getItem(ACCESS_KEY);}catch(_){return false;}},refresh:()=>scanEligibleSpecies(),openCollection:showCollection,isPortraitEligible:isPortraitEligible};
 })();
