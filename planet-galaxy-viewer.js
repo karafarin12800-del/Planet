@@ -287,9 +287,9 @@
       }finally{genomeLeaderboardLoading=false;}
     }
     async function submitGenomeScore(s){
-      if(designerTestMode)return;
+      if(designerTestMode||!s||!s.state||!s.planet||!s.planet.commercePlanetId||!ownedCommerceIds.has(s.planet.commercePlanetId))return;
       const client=win.PlanetCommerceClient;
-      if(!client||!client.hasSession()||typeof client.saveGenomeScore!=="function"||!s||!s.state)return;
+      if(!client||!client.hasSession()||typeof client.saveGenomeScore!=="function")return;
       const species=(s.state.species||[]).filter(x=>!x.extinct);
       const speciesCount=species.length,specialCount=species.filter(x=>x.special===true).length;
       try{
@@ -386,7 +386,9 @@
           const now=Date.now(),delta=Math.max(0,(now-s.lastWall)/1000);s.lastWall=now;s.elapsedSeconds=Math.min(180,s.elapsedSeconds+delta);
           const target=Math.floor(s.elapsedSeconds*s.speed*4);
           if(target>s.simulatedYears){win.PlanetGenomeGame.advance(s.state,target-s.simulatedYears);s.simulatedYears=target;}
-          if(s.elapsedSeconds>=180)s.completed=true;saveGenomeSession(s);
+          if(s.elapsedSeconds>=180)s.completed=true;
+          if(s.completed&&!s.scoreSubmitted){s.scoreSubmitted=true;submitGenomeScore(s);}
+          saveGenomeSession(s);
           const selected=findPlanet(selectedPlanetId),matches=selected&&selected.planet.commercePlanetId===s.planet.commercePlanetId;
           if(matches){
             const st=$("pgGenomeStatus"),pr=$("pgGenomeProgress"),stats=$("pgGenomeStats");
@@ -675,7 +677,12 @@
       collectionGameButton.className=collectionLaunch.className;
       collectionGameButton.textContent="🧬 بازی ژنوم";
       collectionGameButton.setAttribute("aria-label","ورود به بازی ژنوم و جهان‌های زنده");
-      collectionLaunch.parentNode.insertBefore(collectionGameButton,collectionLaunch);
+      const collectionButtonStack=doc.createElement("div");
+      collectionButtonStack.style.cssText="display:flex;flex-direction:column;gap:7px;flex:0 0 100%;width:100%;min-width:0";
+      [collectionGameButton,collectionLaunch].forEach(button=>{button.style.width="100%";button.style.minWidth="0";button.style.boxSizing="border-box";});
+      collectionLaunch.parentNode.insertBefore(collectionButtonStack,collectionLaunch);
+      collectionButtonStack.appendChild(collectionGameButton);
+      collectionButtonStack.appendChild(collectionLaunch);
       collectionGameButton.addEventListener("click",openExplorer);
     }
     exploreLaunch.addEventListener("click",openExplorer);
