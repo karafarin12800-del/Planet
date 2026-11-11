@@ -1,5 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict");
+require("../evolution-engine.js"); // Registers the genome phenotype model used by the ecology engine.
 const life = require("../planet-autonomous-evolution.js");
 const meshEngine = require("../procedural-organism-3d.js");
 
