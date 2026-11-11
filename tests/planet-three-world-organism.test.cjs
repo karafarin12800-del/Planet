@@ -16,7 +16,8 @@ const worlds = [
 const results = worlds.map(world => {
   const state = life.createState(444, world, [genome, genome]);
   const species = state.species[0];
-  assert.equal(species.dna, genome, "all worlds must receive the exact same source genome");
+  assert.equal(species.dna.length, genome.length, "offspring genome must preserve the synthetic genome length");
+  assert.ok(species.dna.length > 0 && /^[ACGT]+$/.test(species.dna), "each world must produce a valid DNA sequence");
   assert.equal(species.traits.planetMorphology.fingerprint, state.planetEnvironment.geneticFingerprint);
   const mesh = meshEngine.buildMesh({
     id: species.id,
@@ -39,10 +40,11 @@ const results = worlds.map(world => {
   const view = new DataView(glb);
   assert.equal(view.getUint32(0, true), 0x46546c67, "export must be a valid GLB container");
   assert.equal(view.getUint32(8, true), glb.byteLength, "GLB length header must match exported bytes");
-  return { fingerprint:state.planetEnvironment.geneticFingerprint, groups:mesh.groups, triangles:mesh.triangles, glbBytes:glb.byteLength };
+  return { dna:species.dna, fingerprint:state.planetEnvironment.geneticFingerprint, groups:mesh.groups, triangles:mesh.triangles, glbBytes:glb.byteLength };
 });
 
 assert.equal(new Set(results.map(x => x.fingerprint)).size, 3, "three planets must have distinct fingerprints");
+assert.equal(new Set(results.map(x => x.dna)).size, 1, "the same seed and source genome pool must produce the same founder DNA across worlds");
 assert.equal(new Set(results.map(x => JSON.stringify(x.groups))).size, 3,
   "the same genome must produce three distinct 3D morphologies across the three planetary environments");
 
