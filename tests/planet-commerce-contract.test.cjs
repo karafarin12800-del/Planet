@@ -122,6 +122,8 @@ assert.ok(!ui.includes('ابتدا Worker را مستقر کن و نشانی HTT
  assert.ok(source.includes("specialCount>speciesCount")&&source.includes("speciesCount*10+specialCount*25"),"server validates and calculates genome scores rather than trusting client totals");
  assert.ok(schema.includes("CREATE TABLE IF NOT EXISTS genome_scores")&&genomeLeaderboardMigration.includes("PRIMARY KEY(user_id,planet_id)"),"fresh and existing D1 databases have one high score per player and planet");
  assert.ok(source.includes("MAX(genome_scores.score,excluded.score)"),"leaderboard retains each player's best score instead of lowering it on later runs");
+ assert.ok(source.includes('path==="/genome/score"')&&source.includes('FROM planet_ownership WHERE user_id=? AND galaxy_planet_id=?'),"leaderboard accepts scores only for planets owned by the authenticated player");
+
  const commerceClient=fs.readFileSync(require("node:path").join(__dirname,"..","planet-commerce-client.js"),"utf8");
  assert.ok(commerceClient.includes('genomeLeaderboard:()=>request("/genome/leaderboard",{auth:false})')&&commerceClient.includes('saveGenomeScore:score=>request("/genome/score"'),"client reads public standings and submits authenticated scores");
  assert.ok(viewer.includes("async function loadGenomeLeaderboard")&&viewer.includes("await submitGenomeScore(s)"),"game renders shared standings and submits real player game results");
