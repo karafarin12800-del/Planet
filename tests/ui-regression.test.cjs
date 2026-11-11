@@ -106,6 +106,9 @@ assert.ok(galaxyViewer.includes('insertBefore(collectionGameButton,collectionLau
 assert.ok(galaxyViewer.includes('pgDesignerTestBtn') && galaxyViewer.includes('data-pg-action="test-planet"'), "designer can test catalog planets without purchasing them");
 assert.ok(galaxyViewer.includes('pgGenomeLeaderboard'), "genome game includes a top players leaderboard");
 assert.ok(galaxyViewer.includes('collectionGameButton.className=collectionLaunch.className') && galaxyViewer.includes('collectionGameButton.textContent="🧬 بازی ژنوم"'), "genome launcher is cloned from the collection button so dimensions and styling match");
+assert.ok(galaxyViewer.includes("collectionButtonStack") && galaxyViewer.includes('flex-direction:column') && galaxyViewer.includes("button.style.width=\"100%\""), "genome launcher is vertically stacked above the collection button at matching full width");
+assert.ok(galaxyViewer.includes("s.completed&&!s.scoreSubmitted") && galaxyViewer.includes("ownedCommerceIds.has(s.planet.commercePlanetId)"), "completed owned-planet genome runs can publish their score; designer tests cannot");
+
 assert.ok(galaxyViewer.includes("async function loadGenomeLeaderboard") && galaxyViewer.includes("saveGenomeScore"), "leaderboard is server-backed rather than a per-device session list");
 assert.ok(galaxyViewer.includes("designerBaseGalaxy=galaxy") && galaxyViewer.includes("if(designerTestMode)return;"), "designer test mutations do not persist into the player's galaxy");
 assert.ok(galaxyViewer.includes('id="pgOwnedPlanetsQuick"'), "galaxy home shows a direct owned-planets list");
