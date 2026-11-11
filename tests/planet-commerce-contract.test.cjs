@@ -128,6 +128,6 @@ assert.ok(!ui.includes('ابتدا Worker را مستقر کن و نشانی HTT
  assert.ok(commerceClient.includes('genomeLeaderboard:()=>request("/genome/leaderboard",{auth:false})')&&commerceClient.includes('saveGenomeScore:score=>request("/genome/score"'),"client reads public standings and submits authenticated scores");
  assert.ok(viewer.includes("async function loadGenomeLeaderboard")&&viewer.includes("await submitGenomeScore(s)"),"game renders shared standings and submits real player game results");
  assert.ok(viewer.includes("designerBaseGalaxy=galaxy")&&viewer.includes("if(designerTestMode)return;")&&viewer.includes('designer-test'),"designer tests use a temporary galaxy and separate save namespace");
- assert.ok(viewer.includes("collectionGameButton.className=collectionLaunch.className")&&viewer.includes('collectionGameButton.textContent="🧬 بازی ژنوم"'),"collection launcher clone keeps the exact source button styling");
+ assert.ok(viewer.includes('insertBefore(exploreLaunch,topActions.firstChild)')&&viewer.includes('exploreLaunch.textContent="🧬 بازی ژنوم"')&&!viewer.includes("collectionButtonStack"),"single game launcher appears first in main navigation without a duplicate clone");
  console.log("Planet commerce catalog and token contract tests passed.");
 })().catch(error=>{console.error(error);process.exit(1);});
