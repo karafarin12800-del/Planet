@@ -266,7 +266,9 @@
           button.disabled=alreadyCollected||!galleryEligible;
           button.title=galleryEligible?"این موجود ترکیبی شرایط ورود به آلبوم را دارد.":"گونه‌های ساده وارد آلبوم نمی‌شوند؛ آن‌ها را با موجود دیگری ترکیب کن.";
           button.setAttribute("data-pg-action","collect-creature");button.setAttribute("data-pg-id",String(x.id));
-          card.append(canvas,name,meta,button);grid.append(card);
+          const actions=doc.createElement("div");actions.className="pg-genome-controls";
+          [["✏️ نام‌گذاری","rename-creature"],["⚡ غول‌پیکر","boost-creature"],["🎨 تصویر AI","image-creature"]].forEach(([label,action])=>{const b=doc.createElement("button");b.className="pg-btn";b.type="button";b.textContent=label;b.setAttribute("data-pg-action",action);b.setAttribute("data-pg-id",String(x.id));actions.appendChild(b);});
+          card.append(canvas,name,meta,actions,button);grid.append(card);
         });
       }
       const a=$("pgBreedParentA"),b=$("pgBreedParentB");
@@ -291,7 +293,12 @@
         '<div id="pgGenomeDaily" class="pg-genome-list">در حال دریافت ژنوم‌های امروز…</div>'+
         '<div class="pg-genome-controls"><button class="pg-btn primary" id="pgPlantGenomes" data-pg-action="plant-genomes" type="button" disabled>ورود ژنوم‌ها به سیاره</button><label>سرعت تکامل <input id="pgGenomeSpeed" type="range" min="1" max="8" value="1"><b id="pgGenomeSpeedLabel">×۱</b></label></div>'+
         '<div class="pg-genome-progress"><i id="pgGenomeProgress"></i></div><p id="pgGenomeStatus" class="pg-genome-note">در حال آماده‌سازی…</p><small id="pgGenomeStats" class="pg-genome-note"></small>'+
-        '<h4>موجودات پدیدآمده · اندازه از موش‌مانند تا فیل‌مانند</h4><div id="pgGenomeSpecies" class="pg-creature-grid"></div>'+
+        '<h4>✨ سازندهٔ آزاد موجودات</h4><p class="pg-genome-note">هر چیزی توصیف کنی می‌تواند ساخته شود؛ محدودیت طبیعت وجود ندارد.</p>'+
+        '<label class="pg-genome-note">توصیف موجود<textarea id="pgCreatureBrief" rows="3" maxlength="1200" placeholder="مثلاً اژدهای کریستالی بنفش با شش بال، شاخ‌های طلایی و دم بلند..."></textarea></label>'+
+        '<div class="pg-genome-controls"><input id="pgCreatureName" maxlength="48" placeholder="نام دلخواه موجود"><select id="pgCreatureDiet"><option value="omnivore">همه‌چیزخوار</option><option value="herbivore">گیاه‌خوار</option><option value="carnivore">گوشت‌خوار</option><option value="photosynthetic">نورخوار</option><option value="energy">انرژی‌خوار</option></select></div>'+
+        '<div class="pg-genome-controls"><select id="pgCreatureHabitat"><option value="land">خشکی</option><option value="ocean">اقیانوس</option><option value="sky">آسمان</option><option value="lava">دریای گدازه</option><option value="crystal">غار کریستالی</option><option value="space">فضا</option></select><select id="pgCreatureScale"><option value="normal">اندازه معمولی</option><option value="colossal">غول‌پیکر</option></select><button class="pg-btn primary" data-pg-action="create-creature" type="button">✨ خلق موجود</button></div>'+
+        '<div class="pg-genome-controls"><button class="pg-btn" data-pg-action="instant-evolution" type="button">⚡ تکامل جهشی سریع همه</button></div>'+
+        '<h4>موجودات ساخته‌شده · از کوچک تا غول‌پیکر</h4><div id="pgGenomeSpecies" class="pg-creature-grid"></div>'+
         '<h4>ترکیب دو موجود و ساخت نسل تازه</h4><div class="pg-genome-controls"><select id="pgBreedParentA" aria-label="والد اول"></select><select id="pgBreedParentB" aria-label="والد دوم"></select><button class="pg-btn primary" data-pg-action="breed-creature" type="button">ترکیب تصادفی ژنوم‌ها</button></div>'+
         '<h4>آلبوم شخصی این سیاره</h4><div id="pgGenomeAlbum" class="pg-album-list"></div><p class="pg-genome-note">اندازه، فرم و صفات موجودات در این بخش شبیه‌سازی دیجیتال‌اند.</p>';
       detail.appendChild(panel);
@@ -366,6 +373,23 @@
         s.state=win.PlanetGenomeGame.createWorld(s.seed,p,chosen.map(x=>x.dna));
         s.started=true;s.completed=false;s.completionRendered=false;s.elapsedSeconds=0;s.simulatedYears=0;
         s.speed=Number($("pgGenomeSpeed").value)||1;s.lastWall=Date.now();saveGenomeSession(s);renderGenomePanel(s);startGenomeTicker();
+      }else if(action==="create-creature"){
+        const brief=$("pgCreatureBrief").value.trim();if(!brief)throw new Error("توضیح موجود را بنویس.");
+        const child=win.PlanetGenomeGame.createCustomCreature(s.state,{description:brief,name:$("pgCreatureName").value.trim(),diet:$("pgCreatureDiet").value,habitat:$("pgCreatureHabitat").value,scale:$("pgCreatureScale").value});
+        child.planetId=String(s.planet.id);saveGenomeSession(s);renderGenomePanel(s);showNotice("موجود تازه ساخته شد؛ می‌توانی نامش را عوض کنی، غول‌پیکرش کنی یا تصویرش را بسازی.");
+      }else if(action==="instant-evolution"){
+        const list=(s.state&&s.state.species||[]).filter(x=>!x.extinct);if(!list.length)throw new Error("ابتدا ژنوم‌ها را وارد سیاره کن.");
+        list.slice(-8).forEach(x=>win.PlanetGenomeGame.boostCreature(s.state,x.id,{factor:8+Math.floor(Math.random()*13)}));
+        saveGenomeSession(s);renderGenomePanel(s);showNotice("تکامل جهشی انجام شد.");
+      }else if(action==="rename-creature"){
+        const x=s.state&&s.state.species.find(y=>String(y.id)===String(id));if(!x)throw new Error("موجود پیدا نشد.");
+        const value=win.prompt("نام دلخواه موجود را وارد کن:",x.name||"");if(value&&value.trim()){win.PlanetGenomeGame.renameCreature(s.state,id,value);saveGenomeSession(s);renderGenomePanel(s);}
+      }else if(action==="boost-creature"){
+        win.PlanetGenomeGame.boostCreature(s.state,id,{factor:12});saveGenomeSession(s);renderGenomePanel(s);showNotice("موجود با تکامل جهشی بزرگ‌تر شد.");
+      }else if(action==="image-creature"){
+        const x=s.state&&s.state.species.find(y=>String(y.id)===String(id));if(!x)throw new Error("موجود پیدا نشد.");
+        x.planetId=String(s.planet.id);win.PlanetGenomeGameCreatures=win.PlanetGenomeGameCreatures||{};win.PlanetGenomeGameCreatures[String(x.id)]=x;
+        if(win.PlanetImageGeneration&&typeof win.PlanetImageGeneration.openForSpecimen==="function")win.PlanetImageGeneration.openForSpecimen(x);else throw new Error("موتور تصویر موجود در دسترس نیست.");
       }else if(action==="collect-creature"){
         const x=s.state&&s.state.species.find(y=>String(y.id)===String(id));if(!x)throw new Error("موجود پیدا نشد.");await registerGenomeCreature(s,x);
       }else if(action==="breed-creature"){
