@@ -91,6 +91,72 @@
     if(replacedSpecies)child.replacedSpeciesId=replacedSpecies.id;
     return Object.assign({},child,{sizeLabel:sizeLabel(bodyLengthCm),marketEligible:child.marketEligible,replacedSpeciesId:replacedSpecies&&replacedSpecies.id||null});
   }
+  function createCustomCreature(state,options){
+    if(!state||!Array.isArray(state.species))throw new Error("ابتدا یک جهان ژنومی بساز.");
+    const o=options||{},brief=String(o.description||"").trim().slice(0,1200);
+    if(!brief)throw new Error("توضیح موجود را بنویس.");
+    const parent=state.species.find(x=>!x.extinct&&x.dna)||null;
+    if(!parent)throw new Error("برای ساخت موجود، ابتدا ژنوم‌ها را وارد سیاره کن.");
+    const id=++state.serial,seed=hash32(String(state.worldSeedHash)+"|custom|"+id+"|"+brief);
+    const local={rng:seed||1};
+    let dna=parent.dna;
+    const mutationRate=Math.max(.04,Math.min(.48,Number(o.mutationRate)||.22));
+    for(let pass=0;pass<3;pass++)dna=Genome.mutateSyntheticGenome(dna,mutationRate,()=>randomFor(local));
+    const traits=Genome.phenotypeFromDNA(dna,{ageMa:4300}),appearance=traits.appearance||{};
+    const text=brief.toLowerCase();
+    const has=(...words)=>words.some(w=>text.includes(w));
+    const diet=String(o.diet||"omnivore");
+    const habitat=String(o.habitat||"land");
+    const palette=has("آبی","blue","یخی")?205:has("قرمز","red","آتشفشان")?8:has("سبز","green","گیاه")?118:has("بنفش","purple","جادویی")?278:has("طلایی","gold")?43:seed%360;
+    const huge=has("غول","giant","colossal","عظیم","تایتان")||o.scale==="colossal";
+    const bodyLengthCm=Math.max(8,Math.min(500000,Number(o.sizeCm)||(huge?80000:Math.max(25,Number(parent.bodyLengthCm)||80)*2.4)));
+    appearance.hue=palette;appearance.bodyLength=Math.max(.8,Math.min(2.2,Number(appearance.bodyLength)||1.25));
+    appearance.bodyWidth=Math.max(.65,Math.min(1.6,Number(appearance.bodyWidth)||1.05));
+    appearance.bodyHeight=Math.max(.55,Math.min(1.65,Number(appearance.bodyHeight)||1.05));
+    appearance.headSize=has("سر بزرگ","big head")?1.35:.9;
+    appearance.limbCount=has("شش پا","six legs")?6:has("بدون پا","بی‌پا","serpent","مار")?0:has("چهار بال","four wings")?4:4;
+    appearance.wingSpan=has("بال","wing","پرواز","پرنده")?1.55:.35;
+    appearance.tailLength=has("دم بلند","long tail","اژدها","dragon")?1.8:.8;
+    appearance.neckLength=has("گردن بلند","long neck")?1.65:.7;
+    appearance.armorCoverage=has("زره","armor","پوسته","سنگی")?.9:.35;
+    appearance.surface=has("کریستال","crystal","شیشه")?6:has("فلس","scale","اژدها")?4:has("پشمالو","fur","مو")?2:3;
+    appearance.pattern=seed%9;appearance.segmentCount=has("حشره","insect","بندبند")?8:4;
+    traits.appearance=appearance;
+    traits.growthRate=Math.min(1.25,Math.max(.8,Number(traits.growthRate)||.8)+.35);
+    traits.feedingEfficiency=Math.min(1.25,Math.max(.7,Number(traits.feedingEfficiency)||.7)+.2);
+    const child={id,parentId:parent.id,name:String(o.name||"موجود تازه").trim().slice(0,48)||("موجود "+id),dna,lineageDNA:dna,
+      habitat,generation:(Number(parent.generation)||0)+1,age:0,population:1,fitness:1,births:0,deaths:0,
+      speciationCooldown:0,traits,form:has("اژدها","dragon")?"dragon":has("مار","serpent")?"serpentine":has("گیاه","plant","درخت")?"flora":has("حشره","insect")?"insectoid":"custom-"+diet,
+      bodyLengthCm,special:true,rarityScore:Math.min(100,75+seed%26),originWorldType:"alien",extinct:false,
+      trophicRole:diet==="herbivore"?"grazer":diet==="carnivore"?"predator":diet==="photosynthetic"?"producer":"omnivore",
+      marketEligible:true,creativeBrief:brief,diet,planetId:String(state.planetEnvironment&&state.planetEnvironment.id||"")};
+    state.species.push(child);
+    if(state.species.length>MAX_CREATURES)state.species.splice(0,state.species.length-MAX_CREATURES);
+    return Object.assign({},child,{sizeLabel:sizeLabel(bodyLengthCm)});
+  }
+  function renameCreature(state,id,name){
+    const s=state&&state.species&&state.species.find(x=>String(x.id)===String(id));
+    const value=String(name||"").trim().slice(0,48);
+    if(!s||!value)throw new Error("موجود یا نام معتبر نیست.");
+    s.name=value;return s;
+  }
+  function boostCreature(state,id,options){
+    const s=state&&state.species&&state.species.find(x=>String(x.id)===String(id));
+    if(!s)throw new Error("موجود پیدا نشد.");
+    const o=options||{},factor=Math.max(1.2,Math.min(100,Number(o.factor)||8));
+    const seed=hash32(String(s.dna)+"|burst|"+(Number(s.generation)||0)+"|"+factor),local={rng:seed||1};
+    s.dna=Genome.mutateSyntheticGenome(s.dna,Math.min(.42,.08+factor/300),()=>randomFor(local));
+    s.lineageDNA=s.dna;
+    const t=Genome.phenotypeFromDNA(s.dna,{ageMa:4300}),a=t.appearance||{},old=s.traits&&s.traits.appearance||{};
+    Object.keys(old).forEach(k=>{if(typeof old[k]==="number")a[k]=old[k];});
+    a.bodyLength=Math.min(2.2,Math.max(.8,(Number(a.bodyLength)||1)*Math.min(1.8,1+factor/100)));
+    a.bodyWidth=Math.min(1.6,Math.max(.6,(Number(a.bodyWidth)||1)*Math.min(1.6,1+factor/140)));
+    t.appearance=a;s.traits=t;
+    s.bodyLengthCm=Math.min(500000,Math.max(8,(Number(s.bodyLengthCm)||20)*factor));
+    s.generation=(Number(s.generation)||0)+Math.max(1,Math.floor(Math.log2(factor)));
+    s.age=0;s.fitness=1;s.special=true;s.marketEligible=true;
+    return s;
+  }
   function save(state){if(!Life||!state)throw new Error("جهان ژنومی برای ذخیره آماده نیست.");return Life.serialize(state);}
   function restore(value){if(!Life)throw new Error("موتور تکامل ژنومی آماده نیست.");const state=Life.restore(value);state.genomeGameVersion=VERSION;return state;}
   return {VERSION,GENOME_LENGTH,MAX_CREATURES,MIN_SIZE_CM,MAX_SIZE_CM,hash32,validDNA,createDailyPool,createWorld,advance,breed,sizeLabel,save,restore};
