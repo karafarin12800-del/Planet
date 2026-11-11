@@ -56,7 +56,7 @@ assert.ok(html.includes("منبع بافت روز زمین: Solar System Scope")
 assert.ok(workflow.includes("earth-daymap-4k.jpg"), "Android build includes the downscaled map");
 assert.ok(workflow.includes("Pillow"), "CI uses a reproducible image resize step");
 assert.ok(workflow.includes("resize((4096, 2048)"), "CI creates a 4K power-of-two texture");
-assert.ok(sw.includes("planet-pwa-v37-wallet-owned-planets-bazaar-prices"), "PWA cache key was bumped");
+assert.ok(sw.includes("planet-pwa-v39-creative-genome-creatures"), "PWA cache key was bumped");
 assert.ok(imageContract.includes("planet-pwa-v37-wallet-owned-planets-bazaar-prices"), "existing image contract agrees with new cache version");
 
 // Performance regressions: large timeline jumps must yield to the browser between generations.
