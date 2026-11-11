@@ -101,7 +101,7 @@ assert.ok(activity.includes("protected void onPause()") && activity.includes("we
 assert.ok(activity.includes("protected void onResume()") && activity.includes("webView.onResume()"), "Android resumes WebView activity work when foregrounded");
 
 // Purchased planets must be reachable directly, and token balance must not masquerade as the wallet button.
-assert.ok(galaxyViewer.includes('textContent="🪐 سیاره‌های من"'), "planet launcher explicitly exposes owned planets");
+assert.ok(galaxyViewer.includes('textContent="🧬 بازی ژنوم"'), "planet launcher explicitly exposes owned planets");
 assert.ok(galaxyViewer.includes('id="pgOwnedPlanetsQuick"'), "galaxy home shows a direct owned-planets list");
 assert.ok(galaxyViewer.includes('data-pg-action="open-owned-planet"'), "owned planet cards have a direct open action");
 assert.ok(galaxyViewer.includes('id="pgWalletBadge">🪙 --'), "token badge contains only the token icon and balance");
