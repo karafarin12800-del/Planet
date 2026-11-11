@@ -159,5 +159,5 @@
   }
   function save(state){if(!Life||!state)throw new Error("جهان ژنومی برای ذخیره آماده نیست.");return Life.serialize(state);}
   function restore(value){if(!Life)throw new Error("موتور تکامل ژنومی آماده نیست.");const state=Life.restore(value);state.genomeGameVersion=VERSION;return state;}
-  return {VERSION,GENOME_LENGTH,MAX_CREATURES,MIN_SIZE_CM,MAX_SIZE_CM,hash32,validDNA,createDailyPool,createWorld,advance,breed,sizeLabel,save,restore};
+  return {VERSION,GENOME_LENGTH,MAX_CREATURES,MIN_SIZE_CM,MAX_SIZE_CM,hash32,validDNA,createDailyPool,createWorld,advance,breed,createCustomCreature,renameCreature,boostCreature,sizeLabel,save,restore};
 });
