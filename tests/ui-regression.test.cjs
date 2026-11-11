@@ -102,7 +102,7 @@ assert.ok(activity.includes("protected void onResume()") && activity.includes("w
 
 // Purchased planets must be reachable directly, and token balance must not masquerade as the wallet button.
 assert.ok(galaxyViewer.includes('textContent="🧬 بازی ژنوم"'), "planet launcher explicitly exposes owned planets");
-assert.ok(galaxyViewer.includes('insertBefore(collectionGameButton,collectionLaunch)'), "genome game launcher sits directly above the image collection button");
+assert.ok(galaxyViewer.includes('insertBefore(collectionButtonStack,collectionLaunch)') && galaxyViewer.includes("appendChild(collectionGameButton)") && galaxyViewer.includes("appendChild(collectionLaunch)"), "genome game launcher is stacked immediately above the image collection button");
 assert.ok(galaxyViewer.includes('pgDesignerTestBtn') && galaxyViewer.includes('data-pg-action="test-planet"'), "designer can test catalog planets without purchasing them");
 assert.ok(galaxyViewer.includes('pgGenomeLeaderboard'), "genome game includes a top players leaderboard");
 assert.ok(galaxyViewer.includes('collectionGameButton.className=collectionLaunch.className') && galaxyViewer.includes('collectionGameButton.textContent="🧬 بازی ژنوم"'), "genome launcher is cloned from the collection button so dimensions and styling match");
