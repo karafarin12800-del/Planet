@@ -122,6 +122,10 @@ jobs:
           node --check planet-autonomous-evolution.js
           node tests/planet-autonomous-evolution.test.cjs
           node tests/planet-three-world-organism.test.cjs
+          node --check planet-genome-game.js
+          node --check planet-galaxy-viewer.js
+          node --check planet-image-generation.js
+          node tests/planet-genome-creative-builder.test.cjs
           node --check planet-galaxy-engine.js
           node tests/planet-galaxy-engine.test.cjs
           node --check planet-world-state.js
