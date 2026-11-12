@@ -29,7 +29,7 @@ assert.ok(workflow.includes("cp index.html planet-localization.js evolution-engi
 assert.ok(workflow.includes("node --check planet-image-generation.js"), "CI validates image client syntax");
 assert.ok(workflow.includes("node tests/image-generation-contract.test.cjs"), "CI runs this integration contract test");
 assert.ok(sw.includes("planet-image-generation.js") && sw.includes("planet-organism-morphology.js"), "PWA app-shell cache contains the runtime client and morphology rules");
-assert.ok(sw.includes("planet-pwa-v43-organism-morphology-diversity"), "service-worker cache version refreshes organism morphology and portrait output");
+assert.ok(sw.includes("planet-pwa-v44-distinct-genome-bodyplans"), "service-worker cache version refreshes organism morphology and portrait output");
 assert.ok(sw.includes("./genome-evidence.html"), "PWA app-shell cache contains the genome evidence report");
 assert.ok(threeD.includes("implicit tissue field + marching tetrahedra; no taxon-specific mesh template selected"),
   "3D model generation uses runtime procedural geometry without taxon-specific templates");
@@ -76,4 +76,10 @@ assert.ok(html.includes("شتاب تکامل ژنوم زمین در سیارهٔ
 
 assert.ok(client.includes("animalLike=!/microbe|bacter|fung|plant|tree|flora|filament|colony/.test(form)"), "non-animal forms do not receive misleading hand-and-foot portraits");
 assert.ok(read("planet-commerce-ui.js").includes("if(client.hasSession())setTimeout(()=>refresh()"), "owned planets are refreshed automatically on signed-in startup");
+
+assert.ok(client.includes("limbCount:v[1]<.16?0:v[1]<.34?2:v[1]<.62?4:v[1]<.82?6:8"), "genome modules encode five locomotion plans instead of defaulting nearly every species to four limbs");
+assert.ok(client.includes("family==='biped'") && client.includes("family==='multi-limbed'") && client.includes("family==='limbless'") && client.includes("family==='winged'||family==='draconic'"), "offline renderer has separate biped, multi-limbed, limbless and winged silhouettes");
+assert.ok(client.includes("Species-to-species diversity rule:"), "online prompt requires clearly distinct species silhouettes");
+assert.ok(client.includes("planet-portrait-v3-morphology-diversity"), "portrait cache invalidates previous repetitive images");
+
 console.log("PLANET image-generation contract passed: online API safety, offline genome-driven generation, Android packaging, PWA cache and syntax wiring.");

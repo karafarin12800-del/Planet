@@ -48,7 +48,7 @@
   async function listImageCache(){const db=await openImageDB();if(!db)return [];return new Promise(resolve=>{const req=db.transaction(IMAGE_STORE,'readonly').objectStore(IMAGE_STORE).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>resolve([]);});}
   async function genomeHash(species){const dna=String(species&&species.dna||'').toUpperCase().replace(/[^ACGT]/g,''),identity=dna+'|'+String(species&&species.planetId||'earth')+'|'+String(species&&species.planetFingerprint||'')+'|'+String(species&&species.habitat||'')+'|'+String(species&&species.form||'')+'|'+String(species&&species.creativeBrief||'')+'|'+String(species&&species.diet||'');if(window.crypto&&crypto.subtle){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(identity));return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,'0')).join('');}let h=2166136261;for(let i=0;i<identity.length;i++){h^=identity.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16);}
   async function portraitCacheHash(species,variation,prompt){
-    const base=await genomeHash(species),identity='planet-portrait-v2|'+base+'|'+String(variation||'primary-v2')+'|'+String(prompt||'').trim();
+    const base=await genomeHash(species),identity='planet-portrait-v3-morphology-diversity|'+base+'|'+String(variation||'primary-v2')+'|'+String(prompt||'').trim();
     if(window.crypto&&crypto.subtle){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(identity));return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,'0')).join('');}
     let h=2166136261;for(let i=0;i<identity.length;i++){h^=identity.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16).padStart(8,'0');
   }
@@ -78,7 +78,7 @@
     for(let i=0;i<8;i++){const a=Math.floor(i*dna.length/8),b=Math.max(a+1,Math.floor((i+1)*dna.length/8));let gc=0;for(let j=a;j<b&&j<dna.length;j++)if(dna[j]==='G'||dna[j]==='C')gc++;v.push(gc/Math.max(1,b-a));}
     const gc=(dna.match(/[GC]/g)||[]).length/Math.max(1,dna.length);
     return{signals:v,preferredTemperatureC:-5+40*v[5],motility:v[1],sensing:v[2],protection:v[3],learning:v[6],cooperation:v[7],
-      appearance:{hue:Math.round(gc*359),bodyLength:.72+v[1],bodyWidth:.62+v[3],bodyHeight:.42+v[5],headSize:.42+v[2],limbLength:.35+1.15*v[1],tailLength:.22+1.58*v[1],wingSpan:.04+1.35*v[6],armorCoverage:v[3],stripeCount:1+Math.floor(v[7]*5),segmentCount:2+Math.floor(v[7]*5),pattern:Math.floor(v[0]*5),surface:Math.floor(v[3]*4),eyeSize:.3+.84*v[2],limbCount:v[1]<.22?0:4},metabolism:gc>.68?'photosynthetic':gc>.44?'chemosynthetic':gc>.22?'fermentative':'anaerobic',
+      appearance:{hue:Math.round(gc*359),bodyLength:.48+1.05*v[1],bodyWidth:.34+1.05*v[3],bodyHeight:.28+1.05*v[5],headSize:.16+.82*v[2],limbLength:.25+1.45*v[1],limbThickness:.2+1.1*v[3],tailLength:.08+1.9*v[4],wingSpan:.02+1.8*v[6],appendageLength:.02+1.8*v[6],finSize:.05+1.2*v[5],hornLength:v[2]>.72?.15+.7*v[2]:0,neckLength:.08+.9*v[6],armorCoverage:v[3],stripeCount:1+Math.floor(v[7]*7),segmentCount:2+Math.floor(v[7]*8),pattern:Math.floor(v[0]*7),surface:Math.floor(v[3]*5),eyeSize:.15+.95*v[2],symmetry:.35+.65*v[0],limbCount:v[1]<.16?0:v[1]<.34?2:v[1]<.62?4:v[1]<.82?6:8},photosynthetic:gc>.76,metabolism:gc>.76?'photosynthetic':gc>.52?'chemosynthetic':gc>.26?'fermentative':'anaerobic',
       model:{sourceLengthBp:dna.length,verifiedBiologicalPhenotype:false,confidence:'illustrative digital mapping only'}};
   }
   function envDescription(s,p){
@@ -114,7 +114,8 @@
       'Planet genetic fingerprint: '+String(s.planetFingerprint||p.planetMorphology&&p.planetMorphology.fingerprint||'unavailable')+'. This fingerprint must visibly influence the creature identity; do not reuse a generic silhouette.',
       'Sequence-derived illustrative morphology constraints: '+shape+'.',
       'Estimated in-game body length: '+Number(s.bodyLengthCm||0).toFixed(1)+' cm. The animal must be visibly larger than a common mouse; keep believable body proportions and show the entire body.',
-      'Anatomy and silhouette requirement: show the complete organism, not a close crop. '+morphology.instructions+' Use form-appropriate surface detail and only add eyes, mouthparts, roots, fins, limbs, wings, tentacles or sensory structures when they fit this body plan. Static natural-history portrait; no animation is needed.',
+      'Anatomy and silhouette requirement: show the complete organism, not a close crop. Classified morphology family: '+morphology.family+'; silhouette: '+morphology.silhouette+'. '+morphology.instructions+' Use form-appropriate surface detail and only add eyes, mouthparts, roots, fins, limbs, wings, tentacles or sensory structures when they fit this body plan. Static natural-history portrait; no animation is needed.',
+      'Species-to-species diversity rule: do not reuse a generic stock mammal silhouette. Make the outer contour, body orientation, appendage count and placement, head location, locomotion and dominant feature visibly distinct according to this genome and morphology family. Never add a default four-legged torso to biped, limbless, aquatic, botanical, filamentous or insectoid organisms.',
       'Environment from the simulation: '+env.setting+'; simulation timeline age '+env.ageMa.toFixed(1)+' million years ('+env.stage+'); habitat='+env.habitat+'; model-estimated preferred temperature '+env.temperature+'. The organism must visibly interact with the matching environment.',
       evidence,
       'Generation '+(Number(s.generation)||0)+'. Variation identifier '+variation+'. Preserve the genome-derived body plan while allowing a genuinely different pose, view angle, surface pattern and scene staging for each variation.',
@@ -154,7 +155,7 @@
     const p=getPhenotype(s)||{},a=p.appearance||{};
     const dna=String(s.dna||'').toUpperCase().replace(/[^ACGT]/g,'');
     let seed=2166136261;
-    const seedText=dna+'|'+String(variation||'fixed-genome');
+    const seedText=dna+'|'+String(s.planetFingerprint||'')+'|'+String(s.id||'')+'|'+String(variation||'fixed-genome');
     for(let i=0;i<seedText.length;i++){seed^=seedText.charCodeAt(i);seed=Math.imul(seed,16777619);}
     function rand(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}
     function n(v,d,min,max){v=Number(v);return Math.max(min,Math.min(max,Number.isFinite(v)?v:d));}
@@ -203,6 +204,25 @@
       for(let side of [-1,1]){shapes.push('<path d="M'+(330+side*10)+' '+(bodyY-45)+' Q'+(300+side*22)+' '+(bodyY-155)+' '+(270+side*55)+' '+(bodyY-175)+'" fill="none" stroke="'+darkTone+'" stroke-width="6" stroke-linecap="round"/>');
         for(let pair=0;pair<3;pair++){const x=410+pair*78,y=bodyY+pair*9,ex=x+side*(110+rand()*34),ey=y+65+rand()*45,kx=x+side*55;shapes.push('<path d="M'+x+' '+y+' L'+kx.toFixed(1)+' '+(y+28).toFixed(1)+' L'+ex.toFixed(1)+' '+ey.toFixed(1)+'" fill="none" stroke="'+darkTone+'" stroke-width="'+(9+bodyW*5).toFixed(1)+'" stroke-linecap="round"/>');}
       }
+    }else if(family==='biped'){
+      const tx=520,ty=420,trx=58+bodyW*28,tryy=105+bodyH*38,spread=48+bodyW*22;
+      shapes.push('<path d="M'+(tx-12)+' '+(ty+tryy*.55)+' Q'+(tx-spread)+' 590 '+(tx-spread-12)+' 680 L'+(tx-spread+22)+' 690 L'+(tx-2)+' '+(ty+tryy*.55)+'Z M'+(tx+12)+' '+(ty+tryy*.55)+' Q'+(tx+spread)+' 590 '+(tx+spread+12)+' 680 L'+(tx+spread-22)+' 690 L'+(tx+2)+' '+(ty+tryy*.55)+'Z" fill="url(#skin)" stroke="'+darkTone+'" stroke-width="7"/>');
+      shapes.push('<ellipse cx="'+tx+'" cy="'+ty+'" rx="'+trx+'" ry="'+tryy+'" fill="url(#skin)" stroke="'+darkTone+'" stroke-width="7"/><ellipse cx="'+(tx+8)+'" cy="'+(ty-tryy*.72)+'" rx="'+(headR*.75)+'" ry="'+(headR*.9)+'" fill="'+lightTone+'" stroke="'+darkTone+'" stroke-width="5"/><circle cx="'+(tx+18)+'" cy="'+(ty-tryy*.76)+'" r="5" fill="#101822"/>');
+      if(tail>.35)shapes.push('<path d="M'+(tx-12)+' '+(ty+tryy*.35)+' Q'+(tx-125)+' 520 '+(tx-170)+' 610" fill="none" stroke="'+primary+'" stroke-width="'+(8+tail*8)+'" stroke-linecap="round"/>');
+    }else if(family==='multi-limbed'){
+      const by=455,brx=90+bodyW*38,bry=65+bodyH*32;shapes.push('<ellipse cx="512" cy="'+by+'" rx="'+brx+'" ry="'+bry+'" fill="url(#skin)" stroke="'+darkTone+'" stroke-width="7"/>');
+      for(let i=0;i<Math.max(6,limbs);i++){const q=Math.PI*2*i/Math.max(6,limbs)-Math.PI/2,ax=512+Math.cos(q)*brx*.72,ay=by+Math.sin(q)*bry*.72,kx=512+Math.cos(q)*190,ky=by+Math.sin(q)*150,ex=512+Math.cos(q)*270,ey=by+Math.sin(q)*235;shapes.push('<path d="M'+ax.toFixed(1)+' '+ay.toFixed(1)+' L'+kx.toFixed(1)+' '+ky.toFixed(1)+' L'+ex.toFixed(1)+' '+ey.toFixed(1)+'" fill="none" stroke="'+darkTone+'" stroke-width="'+(8+bodyW*7)+'" stroke-linecap="round" stroke-linejoin="round"/>');}
+      shapes.push('<ellipse cx="555" cy="'+(by-18)+'" rx="'+headR+'" ry="'+(headR*.78)+'" fill="'+lightTone+'" stroke="'+darkTone+'" stroke-width="5"/>');
+    }else if(family==='limbless'){
+      const lp='M 150 565 C 230 280 460 260 540 440 S 760 670 870 370';shapes.push('<path d="'+lp+'" fill="none" stroke="'+darkTone+'" stroke-width="'+(55+bodyW*40)+'" stroke-linecap="round"/><path d="'+lp+'" fill="none" stroke="url(#skin)" stroke-width="'+(45+bodyW*40)+'" stroke-linecap="round"/>');
+      for(let i=0;i<18;i++){const x=190+i*35,y=510-120*Math.sin(i*.25);shapes.push('<path d="M'+x+' '+(y-12)+' q15 12 5 28" fill="none" stroke="'+accent+'" stroke-width="4" opacity=".8"/>');}
+      shapes.push('<path d="M820 340 Q860 270 920 300 Q955 340 900 390 Q850 410 820 380Z" fill="url(#skin)" stroke="'+darkTone+'" stroke-width="5"/><circle cx="895" cy="335" r="7" fill="#f6e7bd"/>');
+    }else if(family==='winged'||family==='draconic'){
+      const by=470,bRx=145+bodyL*30,bRy=55+bodyH*30;shapes.push('<path d="M'+(512-bRx*.55)+' '+(by-15)+' Q512 '+(by-bRy*1.6)+' '+(512+bRx*.62)+' '+(by-8)+' Q590 '+(by+bRy)+' 512 '+(by+bRy)+' Q420 '+(by+bRy)+' '+(512-bRx*.55)+' '+(by-15)+'Z" fill="url(#skin)" stroke="'+darkTone+'" stroke-width="7"/>');
+      for(const side of [-1,1]){const wx=512+side*45,wy=by-25,span=180+append*95;shapes.push('<path d="M'+wx+' '+wy+' Q'+(wx+side*span*.35)+' '+(wy-span*.95)+' '+(wx+side*span)+' '+(wy-span*.45)+' Q'+(wx+side*span*.65)+' '+(wy+span*.12)+' '+wx+' '+(wy+35)+'Z" fill="'+accent+'" fill-opacity=".8" stroke="'+darkTone+'" stroke-width="6"/>');}
+      for(const side of [-1,1]){const x=512+side*75;shapes.push('<path d="M'+x+' '+(by+25)+' L'+(x+side*28)+' '+(by+125)+' L'+(x+side*60)+' '+(by+130)+'" fill="none" stroke="'+darkTone+'" stroke-width="12" stroke-linecap="round"/>');}
+      if(family==='draconic')shapes.push('<path d="M610 430 q35 -75 60 -88 M610 430 q60 -30 82 -12" fill="none" stroke="'+darkTone+'" stroke-width="10" stroke-linecap="round"/>');
+      shapes.push('<path d="M620 455 Q700 420 760 450 Q720 500 650 495Z" fill="url(#skin)" stroke="'+darkTone+'" stroke-width="5"/>');
     }else if(family==='serpentine'){
       const sp='M 170 590 C 300 210 760 190 820 420 C 865 585 590 650 455 500 C 330 365 505 250 700 320';
       shapes.push('<path d="'+sp+'" fill="none" stroke="'+darkTone+'" stroke-width="'+(ry*.9+32)+'" stroke-linecap="round"/>');
