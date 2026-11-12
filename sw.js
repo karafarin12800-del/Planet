@@ -1,5 +1,5 @@
-const CACHE_NAME = "planet-pwa-v19-autonomous-biosphere";
-const APP_SHELL = ["./index.html", "./offline-evolution.js", "./planet-autonomous-evolution.js", "./planet-localization.js", "./evolution-engine.js", "./procedural-organism-3d.js", "./planet-image-generation.js", "./offline-ai.js", "./manifest.webmanifest", "./icon.svg", "./privacy.html", "./genome-evidence.html", "./cosmology-lab.html", "./cosmology-observations.js"];
+const CACHE_NAME = "planet-pwa-v44-distinct-genome-bodyplans";
+const APP_SHELL = ["./index.html", "./offline-evolution.js", "./planet-autonomous-evolution.js", "./planet-collection-commerce.js", "./planet-commerce-client.js", "./planet-commerce-ui.js", "./planet-galaxy-engine.js", "./planet-world-state.js", "./planet-galaxy-viewer.js", "./planet-genome-game.js", "./planet-localization.js", "./evolution-engine.js", "./procedural-organism-3d.js", "./planet-organism-morphology.js", "./planet-image-generation.js", "./offline-ai.js", "./manifest.webmanifest", "./icon.svg", "./privacy.html", "./genome-evidence.html", "./cosmology-lab.html", "./cosmology-observations.js"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
 });

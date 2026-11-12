@@ -217,7 +217,8 @@
         reason: "The 168-bp genome is synthetic and has no validated genotype-to-cell-size calibration. Real cell size depends on taxon, growth phase and environment; it cannot be inferred exactly from this model DNA.",
         displayScale: "illustrative-only"
       },
-      estimatedBodyLengthMm: age < 3900 ? null : Number((0.01 + 2.5 * ((0.12 + 0.95 * signals[3]) * stageSize(age))).toFixed(3)),
+      estimatedBodyLengthCm: Number((2.1 * Math.pow(3500, signals[3])).toFixed(2)),
+      estimatedBodyLengthMm: Number((21 * Math.pow(3500, signals[3])).toFixed(1)),
       photosynthetic: metabolism === "photosynthetic",
       swims: motility > 0.48,
       model: {
@@ -235,11 +236,16 @@
     const home = habitat || "ocean";
     // Time is a model coordinate, not a lookup table for real taxa.
     // Body-plan labels are generic; no horse/dog/dinosaur/human is inferred.
-    if (age < 3900) return "microbe";
-    if (home === "ocean") return p.motility > 0.54 ? "aquatic" : "microbe";
+    if (home === "ocean") return p.motility > 0.54 ? "aquatic" : "digital-filament";
     if (p.photosynthetic) return "digital-photosynthetic-colony";
     if (home === "shore") return p.motility > 0.52 ? "digital-motile-form" : "digital-filament";
     return p.motility > 0.55 && p.protection > 0.50 ? "digital-multicellular" : "digital-filament";
+  }
+  function estimatedBodyLengthCmFromDNA(dna) {
+    const seq = normalizeSyntheticGenome(dna);
+    if (!seq) return null;
+    const signals = signalsFromProteins(translateGenome(seq));
+    return Number((2.1 * Math.pow(3500, signals[3])).toFixed(2));
   }
   function mutateSyntheticGenome(dna, rate, random) {
     const seq = normalizeSyntheticGenome(dna);
@@ -505,6 +511,31 @@
       if (frill > 0.52 && biped) {
         path([[0.55 * body, -0.28 * neck], [0.72 * body, -(0.42 + frill * 0.28) * neck], [0.90 * body, -0.28 * neck]], dark, true);
       }
+    } else if (/hybrid/.test(form)) {
+      const ears=clamp(a.earSize,.25,1.65),trunk=clamp(a.trunkLength,.12,1.5),hand=clamp(a.handSize,.35,1.35),foot=clamp(a.footSize,.4,1.5);
+      ellipse(-0.06,0.06,0.88*body,0.48*width*bodyHeight,fill);
+      ellipse(0.58*body,-0.34*head,0.34*head,0.31*head,light);
+      ellipse(0.43*body,-0.70*head,0.13*ears,0.32*ears,light);
+      ellipse(0.77*body,-0.69*head,0.13*ears,0.32*ears,light);
+      ctx.beginPath();ctx.moveTo(0.82*body*k,-0.25*head*k);
+      ctx.quadraticCurveTo((0.92*body+0.20*trunk)*k,0.05*trunk*k,(0.76*body+0.16*trunk)*k,(0.36+0.30*trunk)*k);
+      ctx.strokeStyle=dark;ctx.lineWidth=Math.max(lw,2.2*lw);ctx.stroke();ctx.lineWidth=lw;ctx.strokeStyle=stroke;
+      ellipse(0.72*body,-0.39*head,0.035*eye,0.035*eye,"#102238");
+      for(const side of [-1,1]){
+        const sx=side<0?-0.42:0.26,ex=side<0?-0.70:0.62;
+        line([[sx,-0.16],[ex*limb,0.10],[ex*limb,0.30]],stroke,Math.max(lw,1.35*lw));
+        ellipse(ex*limb,0.32,0.12*hand,0.10*hand,light);
+        line([[ex*limb,0.32],[ex*limb-0.10*hand,0.43*hand]],stroke);
+        line([[ex*limb,0.32],[ex*limb+0.10*hand,0.43*hand]],stroke);
+      }
+      for(const side of [-1,1]){
+        const lx=side<0?-0.34:0.34;
+        line([[lx,0.30*width],[lx*1.08,0.72*limb],[lx*1.12,0.82*limb]],dark,Math.max(lw,legWidth*lw));
+        ellipse(lx*1.12+0.06,0.84*limb,0.19*foot,0.10*foot,dark);
+        line([[lx*1.12+0.12,0.84*limb],[lx*1.12+0.22,0.88*limb]],stroke);
+      }
+      line([[-0.82*body,0.02],[-1.10*tail,-0.10],[-1.55*tail,0.02]],dark,Math.max(lw,1.2*lw));
+      if(Number(a.hornLength)>.42)path([[0.50*body,-0.62*head],[0.55*body,-(0.85+crest*.2)*head],[0.64*body,-0.62*head]],light,true);
     } else if (/mammal|dog|cat|horse|elephant|humanoid|human/i.test(form)) {
       if (/humanoid|human/i.test(form)) {
         ellipse(0, -0.73, 0.28 * head, 0.30 * head, light);
@@ -577,6 +608,7 @@
     genomeLength: GENOME_LENGTH,
     allowedForms: Array.from(ALLOWED_FORMS),
     normalizeSyntheticGenome: normalizeSyntheticGenome,
+    estimatedBodyLengthCmFromDNA: estimatedBodyLengthCmFromDNA,
     translateGene: translateGene,
     translateGenome: translateGenome,
     signalsFromProteins: signalsFromProteins,

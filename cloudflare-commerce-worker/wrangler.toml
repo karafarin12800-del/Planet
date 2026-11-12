@@ -1,0 +1,8 @@
+name = "planet-commerce-api"
+main = "index.js"
+compatibility_date = "2026-11-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "planet-commerce"
+database_id = "47ad9ed1-e65f-4d1a-80da-782f7d383611"

@@ -2,7 +2,7 @@ name: Build PLANET Android app
 
 on:
   push:
-    branches: [main]
+    branches: [main, planet-online-market, planet-cafebazaar-release, planet-vip-commerce]
     paths:
       - 'index.html'
       - 'planet-localization.js'
@@ -12,12 +12,21 @@ on:
       - 'genome-evidence.html'
       - 'evolution-engine.js'
       - 'procedural-organism-3d.js'
+      - 'planet-organism-morphology.js'
       - 'planet-image-generation.js'
       - 'services/image-generation-worker/**'
       - 'tests/**'
       - 'offline-ai.js'
       - 'offline-evolution.js'
       - 'planet-autonomous-evolution.js'
+      - 'planet-galaxy-engine.js'
+      - 'planet-world-state.js'
+      - 'planet-collection-commerce.js'
+      - 'planet-commerce-client.js'
+      - 'planet-commerce-ui.js'
+      - 'planet-galaxy-viewer.js'
+      - 'planet-genome-game.js'
+      - 'cloudflare-commerce-worker/**'
       - 'manifest.webmanifest'
       - 'sw.js'
       - 'icon.svg'
@@ -37,6 +46,7 @@ on:
       - 'cosmology-observations.js'
       - 'evolution-engine.js'
       - 'procedural-organism-3d.js'
+      - 'planet-organism-morphology.js'
       - 'planet-image-generation.js'
       - 'services/image-generation-worker/**'
       - 'offline-ai.js'
@@ -48,6 +58,12 @@ on:
       - 'build.gradle'
       - 'settings.gradle'
       - 'gradle.properties'
+      - 'planet-galaxy-engine.js'
+      - 'planet-world-state.js'
+      - 'planet-collection-commerce.js'
+      - 'planet-commerce-client.js'
+      - 'planet-commerce-ui.js'
+      - 'planet-galaxy-viewer.js'
       - 'tests/**'
       - '.github/workflows/android-apk.yml'
   workflow_dispatch:
@@ -87,9 +103,18 @@ jobs:
       - name: Bundle the current web simulation into the Android app
         run: |
           mkdir -p app/src/main/assets
-          cp index.html planet-localization.js evolution-engine.js procedural-organism-3d.js planet-image-generation.js offline-ai.js offline-evolution.js planet-autonomous-evolution.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
+          cp index.html planet-localization.js evolution-engine.js procedural-organism-3d.js planet-organism-morphology.js planet-image-generation.js offline-ai.js offline-evolution.js planet-autonomous-evolution.js planet-galaxy-engine.js planet-world-state.js planet-collection-commerce.js planet-commerce-client.js planet-commerce-ui.js planet-galaxy-viewer.js planet-genome-game.js manifest.webmanifest sw.js icon.svg privacy.html app/src/main/assets/
           cp genome-evidence.html app/src/main/assets/
           cp cosmology-lab.html cosmology-observations.js app/src/main/assets/
+
+      - name: Validate commerce backend and contracts
+        run: |
+          node --check --input-type=module < cloudflare-commerce-worker/index.js
+          node --check planet-commerce-client.js
+          node --check planet-commerce-ui.js
+          node tests/planet-commerce-client.test.cjs
+          node tests/planet-commerce-contract.test.cjs
+          node tests/android-native-commerce.test.cjs
 
       - name: Validate offline evolution lifecycle controller syntax
         run: node --check offline-evolution.js
@@ -98,6 +123,21 @@ jobs:
         run: |
           node --check planet-autonomous-evolution.js
           node tests/planet-autonomous-evolution.test.cjs
+          node tests/planet-three-world-organism.test.cjs
+          node --check planet-genome-game.js
+          node --check planet-galaxy-viewer.js
+          node --check planet-image-generation.js
+          node tests/planet-genome-creative-builder.test.cjs
+          node --check planet-galaxy-engine.js
+          node tests/planet-galaxy-engine.test.cjs
+          node --check planet-world-state.js
+          node tests/planet-world-state.test.cjs
+          node --check planet-collection-commerce.js
+          node tests/planet-collection-commerce.test.cjs
+          node --check planet-genome-game.js
+          node tests/planet-genome-game.test.cjs
+          node --check planet-galaxy-viewer.js
+          node tests/planet-galaxy-viewer.test.cjs
 
       - name: Bundle high-resolution Earth day map for mobile
         shell: bash
@@ -189,9 +229,12 @@ jobs:
 
       - name: Validate genome-driven AI image generation pipeline
         run: |
+          node --check planet-organism-morphology.js
+          node tests/planet-organism-morphology.test.cjs
           node --check planet-image-generation.js
           node --check --input-type=module < services/image-generation-worker/index.js
           node tests/image-generation-contract.test.cjs
+          node tests/image-generation-worker.test.mjs
 
       - name: Validate shared localization engine and translations
         run: |
@@ -249,6 +292,8 @@ jobs:
           PLAY_UPLOAD_STORE_PASSWORD: ${{ secrets.PLAY_UPLOAD_STORE_PASSWORD }}
           PLAY_UPLOAD_KEY_ALIAS: ${{ secrets.PLAY_UPLOAD_KEY_ALIAS }}
           PLAY_UPLOAD_KEY_PASSWORD: ${{ secrets.PLAY_UPLOAD_KEY_PASSWORD }}
+          PLANET_GOOGLE_WEB_CLIENT_ID: ${{ vars.PLANET_GOOGLE_WEB_CLIENT_ID }}
+          PLANET_BAZAAR_RSA_PUBLIC_KEY: ${{ vars.PLANET_BAZAAR_RSA_PUBLIC_KEY }}
         run: |
           set -euo pipefail
           mkdir -p dist
@@ -256,6 +301,8 @@ jobs:
             KEYSTORE_PATH="$RUNNER_TEMP/planet-upload.jks"
             printf '%s' "$PLAY_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
             gradle --no-daemon --stacktrace assembleDebug assembleRelease bundleRelease \
+              -PPLANET_GOOGLE_WEB_CLIENT_ID="$PLANET_GOOGLE_WEB_CLIENT_ID" \
+              -PPLANET_BAZAAR_RSA_PUBLIC_KEY="$PLANET_BAZAAR_RSA_PUBLIC_KEY" \
               -PUPLOAD_STORE_FILE="$KEYSTORE_PATH" \
               -PUPLOAD_STORE_PASSWORD="$PLAY_UPLOAD_STORE_PASSWORD" \
               -PUPLOAD_KEY_ALIAS="$PLAY_UPLOAD_KEY_ALIAS" \
@@ -282,7 +329,9 @@ jobs:
             test -s dist/PLANET-PlayBundle-SIGNED.bin
             echo "Generated matching Cafe Bazaar BIN file."
           else
-            gradle --no-daemon --stacktrace assembleDebug assembleRelease bundleRelease
+            gradle --no-daemon --stacktrace assembleDebug assembleRelease bundleRelease \
+              -PPLANET_GOOGLE_WEB_CLIENT_ID="$PLANET_GOOGLE_WEB_CLIENT_ID" \
+              -PPLANET_BAZAAR_RSA_PUBLIC_KEY="$PLANET_BAZAAR_RSA_PUBLIC_KEY"
             cp app/build/outputs/bundle/release/app-release.aab dist/PLANET-PlayBundle-UNSIGNED-NEEDS-SIGNING.aab
             cp app/build/outputs/apk/release/app-release-unsigned.apk dist/PLANET-Android-Release-UNSIGNED.apk
           fi

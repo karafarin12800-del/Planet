@@ -6,46 +6,94 @@
 <meta name="theme-color" content="#050b17">
 <title>Planet Genome — سیاست حریم خصوصی</title>
 <style>
-:root{color-scheme:dark;--bg:#050b17;--panel:#0b192b;--line:#28405b;--text:#eaf3ff;--muted:#a5b8d1;--accent:#71e2f3}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.9 system-ui,-apple-system,"Segoe UI",sans-serif}main{width:min(840px,calc(100% - 32px));margin:24px auto;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:18px}h1{font-size:24px;line-height:1.4}h2{font-size:18px;color:var(--accent);margin-top:28px}p,li{color:var(--muted)}a{color:var(--accent);overflow-wrap:anywhere}.updated{font-size:13px;color:#86a0bf}hr{border:0;border-top:1px solid var(--line);margin:26px 0}.lang{margin-top:32px;padding-top:8px}.lang-en{direction:ltr;text-align:left;display:none}.lang-en:not([hidden]){display:block}.lang-fa[hidden]{display:none}#planetLanguageToggle{float:right;margin:0 0 12px 12px}button{padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:#122740;color:var(--text);font:inherit}
+:root{color-scheme:dark;--bg:#050b17;--panel:#0b192b;--line:#28405b;--text:#eaf3ff;--muted:#b4c5d9;--accent:#71e2f3}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.9 system-ui,-apple-system,"Segoe UI",sans-serif}main{width:min(900px,calc(100% - 32px));margin:24px auto;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:18px}h1{font-size:24px;line-height:1.5}h2{font-size:18px;color:var(--accent);margin-top:28px}p,li{color:var(--muted)}a{color:var(--accent);overflow-wrap:anywhere}.updated{font-size:13px;color:#86a0bf}hr{border:0;border-top:1px solid var(--line);margin:26px 0}.lang-en{direction:ltr;text-align:left;display:none}.lang-en:not([hidden]){display:block}.lang-fa[hidden]{display:none}#planetLanguageToggle{float:left;margin:0 0 12px 12px}button{padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:#122740;color:var(--text);font:inherit}code{direction:ltr;unicode-bidi:embed;overflow-wrap:anywhere}
 </style>
 </head>
 <body><main>
 <button id="planetLanguageToggle" type="button" aria-label="Switch language to English">EN</button>
 <section class="lang lang-fa" data-planet-lang-fa lang="fa" dir="rtl">
 <h1>سیاست حریم خصوصی Planet Genome</h1>
-<p class="updated">آخرین به‌روزرسانی: ۲۱ اکتبر ۲۰۲۶</p>
-<p>Planet Genome یک شبیه‌ساز آموزشی و تعاملی سیاره‌ای است. در نسخهٔ فعلی، برنامه حساب کاربری نمی‌سازد، تبلیغات یا ابزار تحلیل‌گر رفتاری ندارد و از سرور اختصاصی Planet Genome برای ارسال اطلاعات کاربر استفاده نمی‌کند.</p>
-<h2>چه اطلاعاتی استفاده می‌شود؟</h2>
+<p class="updated">آخرین به‌روزرسانی: ۱۰ نوامبر ۲۰۲۶</p>
+<p>این سیاست توضیح می‌دهد هنگام استفاده از PLANET، شبیه‌ساز سیاره و حیات دیجیتال، حساب کاربری، کیف پول توکن، خرید درون‌برنامه‌ای کافه‌بازار و بازار بازیکنان چه اطلاعاتی پردازش می‌شود. بعضی قابلیت‌های آنلاین فقط پس از راه‌اندازی سرویس‌های مربوطه توسط ناشر فعال می‌شوند.</p>
+<h2>۱. اطلاعاتی که ممکن است پردازش شود</h2>
 <ul>
-<li>انتخاب زبان فارسی یا انگلیسی ممکن است فقط در حافظهٔ محلی برنامه/مرورگر ذخیره شود تا در اجرای بعدی حفظ بماند.</li>
-<li>برای نمایش بهتر سطح زمین و ابرها، برنامه در صورت دسترسی به اینترنت ممکن است فایل‌های تصویری عمومی را از <a href="https://raw.githubusercontent.com/">raw.githubusercontent.com</a> دریافت کند. سرور میزبان ممکن است فرادادهٔ عادی اتصال، مانند نشانی IP و اطلاعات مرورگر/دستگاه، را مطابق سیاست‌های خودش پردازش کند.</li>
-<li>برنامه موقعیت مکانی، مخاطبان، میکروفن، دوربین یا پیامک را درخواست نمی‌کند. نقشهٔ تکامل حیات و محاسبات نمایشی در خود دستگاه اجرا می‌شوند.</li>
+<li><b>حساب ایمیلی:</b> نشانی ایمیل، شناسهٔ داخلی حساب، زمان ایجاد و تأیید حساب و رمز عبور به‌شکل هش‌شده و همراه با salt؛ رمز عبور خام برای ذخیره‌سازی در پایگاه‌داده ارسال نمی‌شود. کد یک‌بارمصرف تأیید ایمیل برای مدت محدود ایجاد می‌شود.</li>
+<li><b>ورود با Google:</b> در صورت انتخاب این روش، توکن هویت برای اعتبارسنجی به سرور Planet فرستاده می‌شود. سرور شناسهٔ Google و ایمیل تأییدشدهٔ حساب را برای ورودهای بعدی نگه می‌دارد. رمز عبور Google در اختیار Planet قرار نمی‌گیرد.</li>
+<li><b>پروفایل، بازی ژنوم و بازار:</b> نام نمایشی، شناسهٔ داخلی حساب، موجودی و دفترکل توکن، پاداش ثبت موجود در کلکسیون، شناسه و مالکیت سیاره، و برای هر حساب/سیارهٔ خریداری‌شده یک بذر تصادفی پایدار جهت ساخت زیست‌کرهٔ اختصاصی نگهداری می‌شود. اطلاعات موجودات ثبت‌شده شامل نام، فرم، ژنوم دیجیتال، نسل، اندازه، ویژگی‌های شبیه‌سازی‌شده و وضعیت آگهی است. بخشی از وضعیت شبیه‌سازی و انتخاب ژنوم‌های روز نیز ممکن است روی دستگاه ذخیره شود. در فروش بازار، مبلغ، سهم فروشنده، کارمزد ۵٪ سازنده و شناسهٔ تراکنش ثبت می‌شود. سیاره خریداری‌شده به حساب متصل است و قابل فروش یا انتقال نیست.</li>
+<li><b>پرداخت و اشتراک کافه‌بازار:</b> برای خرید بسته‌های ۲۰۰، ۵۰۰ و ۱۰۰۰ توکن یا اشتراک VIP شصت‌روزه، شناسهٔ محصول و رسید خرید/اشتراک برای تأیید به سرور ارسال می‌شود. سرور رسید را با سرویس کافه‌بازار اعتبارسنجی می‌کند و هش رسید، وضعیت اشتراک و زمان پایان اعتبار را نگه می‌دارد؛ توکن خام رسید در پایگاه‌داده ذخیره نمی‌شود.</li>
+<li><b>مزایای VIP:</b> وضعیت فعال‌بودن اشتراک و زمان پایان آن، تاریخ دریافت پاداش روزانهٔ ۱۰ توکنی و سوابق مربوط به تخفیف سیاره یا اولویت نمایش آگهی برای اجرای مزایای انتخابی نگهداری می‌شود.</li>
+<li><b>اطلاعات فنی اتصال:</b> هنگام ارتباط با سرویس‌های آنلاین، ارائه‌دهندگان زیرساخت ممکن است فرادادهٔ معمول اتصال مانند نشانی IP، زمان درخواست و اطلاعات فنی دستگاه/مرورگر را طبق سیاست‌های خود پردازش کنند.</li>
 </ul>
-<h2>اشتراک‌گذاری، نگهداری و حذف</h2>
-<p>سازنده از طریق Planet Genome اطلاعات شخصی را جمع‌آوری یا به فروش نمی‌رساند. ترجیح زبان در داده‌های محلی دستگاه/مرورگر باقی می‌ماند تا زمانی که داده‌های برنامه یا سایت را پاک کنید یا برنامه را حذف نمایید. درخواست‌های تصاویر اختیاری به زیرساخت GitHub متصل می‌شوند و تحت سیاست‌های همان ارائه‌دهنده قرار دارند.</p>
-<h2>کودکان و حریم خصوصی</h2>
-<p>Planet Genome ابزار آموزشی است و نسخهٔ فعلی هیچ حساب کاربری یا قابلیت اجتماعی ندارد. بااین‌حال، سرپرستان باید استفاده از خدمات آنلاین را با توجه به سن و قوانین محلی بررسی کنند.</p>
-<h2>تماس دربارهٔ حریم خصوصی</h2>
-<p>برای پرسش یا گزارش دربارهٔ این سیاست، از صفحهٔ مسائل مخزن پروژه استفاده کنید: <a href="https://github.com/karafarin12800-del/Planet/issues">GitHub — Planet Issues</a>.</p>
+<h2>۲. اطلاعات محلی دستگاه</h2>
+<p>تنظیمات، بخشی از وضعیت شبیه‌سازی و بازی ژنوم، انتخاب‌های ژنوم روزانه، کلکسیون محلی، ترجیح زبان و نشانهٔ ورود حساب ممکن است در حافظهٔ محلی برنامه یا WebView ذخیره شود. کاربر مهمان یک‌بار ۱۰۰ توکن آزمایشی محلی دریافت می‌کند؛ موجودی و خرید سیارهٔ مهمان نیز فقط روی همان دستگاه ذخیره می‌شود و به حساب آنلاین یا دستگاه دیگر منتقل نمی‌شود. موجودی واقعی توکن از سرور دریافت می‌شود و با اعتبار آزمایشی محلی جداست. حذف برنامه یا پاک‌کردن داده‌های آن ممکن است داده‌های محلی و نشست ورود را حذف کند؛ این کار حساب، سوابق خرید یا دارایی‌های ثبت‌شده روی سرور را خودبه‌خود حذف نمی‌کند.</p>
+<h2>۳. چرا از اطلاعات استفاده می‌شود؟</h2>
+<ul>
+<li>ساخت و امن‌سازی حساب، تأیید ایمیل یا ورود Google و حفظ نشست ورود؛</li>
+<li>نمایش کیف پول و ثبت تغییرات توکن، خرید سیاره، نگهداری بذر اختصاصی زیست‌کره و جلوگیری از خرید تکراری؛ سیاره‌های خریداری‌شده قابل فروش یا انتقال نیستند؛</li>
+<li>ثبت کلکسیون، انتشار آگهی، لغو آگهی و انتقال مالکیت نمونه بین خریدار و فروشنده؛</li>
+<li>تأیید خرید واقعی بسته‌های توکن و اشتراک VIP کافه‌بازار، اعمال مزایای اشتراک تا زمان پایان اعتبار و جلوگیری از ثبت دوبارهٔ یک رسید؛</li>
+<li>پاسخ به درخواست پشتیبانی، رفع خطا و حفظ امنیت سرویس.</li>
+</ul>
+<h2>۴. ارائه‌دهندگان و اشتراک‌گذاری</h2>
+<ul>
+<li><b>Cloudflare:</b> اجرای API آنلاین و نگهداری پایگاه‌دادهٔ حساب، کیف پول، مالکیت و بازار؛ در صورت فعال‌سازی قابلیت تصاویر، ذخیرهٔ فایل‌های تصویری در R2.</li>
+<li><b>Resend:</b> ارسال ایمیل کد تأیید حساب، در صورت پیکربندی این سرویس.</li>
+<li><b>Google:</b> اعتبارسنجی ورود Google در صورت انتخاب کاربر.</li>
+<li><b>کافه‌بازار:</b> انجام پرداخت درون‌برنامه‌ای و اعتبارسنجی رسید خرید.</li>
+<li><b>OpenAI:</b> فقط اگر تولید تصویر هوش مصنوعی آنلاین فعال و توسط کاربر درخواست شود، داده‌های ژنومی/توصیفی لازم برای ساخت تصویر به سرویس تصویرسازی ارسال می‌شود. تصویر تولیدشده می‌تواند در فضای ذخیره‌سازی R2 برای ثابت ماندن تصویر همان ژنوم نگهداری شود.</li>
+</ul>
+<p>Planet اطلاعات شخصی را برای فروش به تبلیغ‌کنندگان عرضه نمی‌کند. اطلاعات فقط برای ارائهٔ قابلیت‌های انتخاب‌شده، امنیت، پشتیبانی یا در موارد الزام قانونی با ارائه‌دهندگان مرتبط به اشتراک گذاشته می‌شود. هر ارائه‌دهنده ممکن است اطلاعات فنی را طبق سیاست حریم خصوصی خودش پردازش کند.</p>
+<h2>۵. نگهداری و امنیت</h2>
+<p>اطلاعات حساب و بازار تا زمانی که برای ارائهٔ سرویس، نگهداری سوابق مالی/امنیتی یا رعایت الزام قانونی لازم باشد نگهداری می‌شوند. گذرواژه به‌صورت هش‌شده ذخیره می‌شود؛ نشست‌ها و ارتباطات سرویس باید از طریق HTTPS انجام شوند. هیچ روش انتقال یا ذخیره‌سازی آنلاین مصونیت مطلق را تضمین نمی‌کند؛ بنابراین گذرواژه و کدهای ورود را با دیگران به اشتراک نگذار.</p>
+<h2>۶. انتخاب‌ها و درخواست حذف</h2>
+<p>می‌توانی از حساب خارج شوی؛ این کار نشانهٔ ورود ذخیره‌شده روی همان دستگاه را پاک می‌کند، اما حساب و سوابق سروری را حذف نمی‌کند. در نسخهٔ فعلی، گزینهٔ حذف حساب به‌صورت خودکار داخل برنامه وجود ندارد. برای درخواست بررسی حذف حساب و داده‌های مرتبط، به <a href="mailto:Zojajiali4@gmail.com">Zojajiali4@gmail.com</a> ایمیل بزن و ایمیل حساب را اعلام کن؛ برای امنیت، گذرواژه، کد تأیید یا رسید خام پرداخت را ارسال نکن. برخی سوابق ممکن است در صورت وجود الزام قانونی یا نیاز به پیشگیری از تقلب، تا پایان دورهٔ لازم نگهداری شوند.</p>
+<h2>۷. کودکان و تماس</h2>
+<p>اگر سرپرست قانونی هستی و فکر می‌کنی کودک بدون اجازه اطلاعاتی در حساب یا بازار ثبت کرده است، از نشانی تماس بالا درخواست بررسی کن. برای پرسش‌های حریم خصوصی یا گزارش مشکل نیز می‌توانی از همان ایمیل یا <a href="https://github.com/karafarin12800-del/Planet/issues">صفحهٔ مشکلات پروژه</a> استفاده کنی.</p>
+<h2>۸. تغییرات این سیاست</h2>
+<p>در صورت اضافه‌شدن قابلیت یا تغییر ارائه‌دهندگان، این متن به‌روزرسانی می‌شود. تاریخ بالای صفحه زمان آخرین بازبینی متن را نشان می‌دهد. استفاده از قابلیت‌های آنلاین پس از انتشار نسخهٔ جدید، تابع متن به‌روز‌شده خواهد بود.</p>
 <hr>
 </section>
-<section class="lang lang-en" data-planet-lang-en lang="en" dir="ltr">
+<section class="lang lang-en" data-planet-lang-en lang="en" dir="ltr" hidden>
 <h1>Planet Genome Privacy Policy</h1>
-<p class="updated">Last updated: October 21, 2026</p>
-<p>Planet Genome is an interactive educational planet simulation. In the current version, it does not create user accounts, include advertising or behavioural analytics SDKs, or send user information to a dedicated Planet Genome server.</p>
-<h2>Information used</h2>
+<p class="updated">Last updated: November 10, 2026</p>
+<p>This policy explains how PLANET processes information when you use the planet and digital-life simulator, user accounts, token wallet, Cafe Bazaar in-app purchases and player marketplace. Some online features become available only after the publisher deploys and configures their services.</p>
+<h2>1. Information that may be processed</h2>
 <ul>
-<li>Your Persian/English language choice may be stored locally by the app/browser so it can be remembered on the next launch.</li>
-<li>To improve the Earth and cloud textures, the app may download public image files from <a href="https://raw.githubusercontent.com/">raw.githubusercontent.com</a> when an internet connection is available. The hosting service may process ordinary connection metadata, such as an IP address and browser/device information, under its own policies.</li>
-<li>The app does not request location, contacts, microphone, camera, or SMS permissions. Life-evolution visuals and calculations run on the device.</li>
+<li><b>Email account:</b> email address, internal account ID, account creation and verification times, and a salted password hash. The raw password is not stored in the database. A short-lived email verification code is generated.</li>
+<li><b>Google sign-in:</b> if selected, an identity token is sent to the Planet server for validation. The server stores the Google subject identifier and verified account email for future sign-ins. Planet does not receive your Google password.</li>
+<li><b>Profile, Genome Game and marketplace:</b> chosen display name, internal account ID, token balance and ledger, personal-collection entry rewards, planet identifiers and ownership, and one persistent random seed for each account/purchased-planet pair to create its own digital biosphere. Registered creature data can include names, forms, digital genome sequences, generations, sizes, simulated traits and listing status. Some simulation state and daily genome selections may also be stored locally. Marketplace sale amounts, seller payouts, the 5% creator commission and transaction references are recorded for settlement and duplicate prevention. Purchased planets are bound to the account and cannot be sold or transferred.</li>
+<li><b>Cafe Bazaar billing and subscription:</b> for 200, 500 or 1,000 token packs and the 60-day VIP subscription, the product ID and purchase/subscription receipt are sent to the server for verification. The server stores the receipt hash, subscription state and expiry; the raw receipt token is not stored in the database.</li>
+<li><b>VIP benefits:</b> active status, subscription expiry, the server date of the last 10-token daily reward claim and related benefit state are stored to enforce the selected membership features.</li>
+<li><b>Technical connection data:</b> online service providers may process ordinary connection metadata such as IP address, request time and technical device/browser information under their own policies.</li>
 </ul>
-<h2>Sharing, retention and deletion</h2>
-<p>The developer does not collect or sell personal information through Planet Genome. The language preference remains in local app/browser storage until you clear the app/site data or uninstall the app. Optional texture requests use GitHub infrastructure and are subject to that provider's policies.</p>
-<h2>Children and privacy</h2>
-<p>Planet Genome is an educational tool, and the current version has no user accounts or social features. Parents or guardians should still consider online-service use in light of age and local rules.</p>
-<h2>Privacy contact</h2>
-<p>For privacy questions or reports, use the project's issue page: <a href="https://github.com/karafarin12800-del/Planet/issues">GitHub — Planet Issues</a>.</p>
+<h2>2. Local device information</h2>
+<p>Settings, some Genome Game simulation state, daily genome selections, local collection, language preference and account session token may be stored in app or WebView local storage. The real token balance is retrieved from the server and is separate from local test credits. Uninstalling the app or clearing its data may remove local data and the sign-in session; it does not automatically delete the server account, purchase records or registered online assets.</p>
+<h2>3. Purposes</h2>
+<ul>
+<li>Create and secure accounts, verify email or Google sign-in and maintain sessions;</li>
+<li>Display wallets and record token changes, planet purchases, account-specific biosphere seeds and prevent duplicate transactions; purchased planets cannot be resold or transferred;</li>
+<li>Register collections, create or cancel listings, and transfer specimens between buyers and sellers;</li>
+<li>Verify token-pack purchases and the Cafe Bazaar VIP subscription, enforce its expiry and benefits, and prevent receipt reuse;</li>
+<li>Respond to support requests, diagnose errors and protect the service.</li>
+</ul>
+<h2>4. Service providers and sharing</h2>
+<ul>
+<li><b>Cloudflare:</b> hosts the online API and account, wallet, ownership and marketplace database; R2 may store generated images if that feature is enabled.</li>
+<li><b>Resend:</b> sends account verification emails when configured.</li>
+<li><b>Google:</b> validates Google sign-in when you choose that method.</li>
+<li><b>Cafe Bazaar:</b> processes token-pack purchases and the 60-day VIP subscription, and validates purchase and subscription receipts.</li>
+<li><b>OpenAI:</b> only when online AI image generation is enabled and you request it, the genome/description data needed to generate an image is sent to the image service. The generated image may be stored in R2 so the same genome retains the same image.</li>
+</ul>
+<p>Planet does not sell personal information to advertisers. Information is shared with relevant providers only to deliver selected features, maintain security, provide support or comply with legal requirements. Each provider may process technical information under its own privacy policy.</p>
+<h2>5. Retention and security</h2>
+<p>Account and marketplace information is retained as long as needed to provide the service, preserve financial/security records or meet legal requirements. Passwords are stored as salted hashes; service communication is intended to use HTTPS. No online transmission or storage method is absolutely secure, so do not share passwords or sign-in codes.</p>
+<h2>6. Your choices and deletion requests</h2>
+<p>You can sign out; this clears the saved sign-in token on that device but does not delete the server account or records. The current version does not provide an in-app automatic account deletion option. To request a review of account and related data deletion, email <a href="mailto:Zojajiali4@gmail.com">Zojajiali4@gmail.com</a> and identify the account email. Do not send passwords, verification codes or raw purchase receipts. Some records may be retained for the period required by law or needed to prevent fraud.</p>
+<h2>7. Children and contact</h2>
+<p>If you are a legal guardian and believe a child submitted information to an account or marketplace without permission, contact us using the address above. For privacy questions or issue reports, use the same email or the <a href="https://github.com/karafarin12800-del/Planet/issues">project issue page</a>.</p>
+<h2>8. Changes to this policy</h2>
+<p>This policy may be updated when features or service providers change. The date above identifies the latest revision. Use of online features after a new version is published is subject to the updated text.</p>
 </section>
 <p style="margin-top:28px"><a href="./index.html">بازگشت به Planet Genome</a></p>
 <script src="./planet-localization.js"></script>

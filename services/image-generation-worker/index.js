@@ -74,14 +74,15 @@ export default {
     if (request.method === "GET" && url.pathname.endsWith("/health")) {
       return json({
         service: "PLANET AI image generation",
-        configured: Boolean(env.OPENAI_API_KEY && env.PLANET_ACCESS_CODE),
+        configured: Boolean(env.OPENAI_API_KEY && env.PLANET_ACCESS_CODE && env.ORGANISM_IMAGES),
+        persistentCacheAvailable: Boolean(env.ORGANISM_IMAGES),
         providerKeyPresent: Boolean(env.OPENAI_API_KEY),
         accessCodePresent: Boolean(env.PLANET_ACCESS_CODE)
       }, 200, headers);
     }
     if (request.method !== "POST") return json({ error: "Use POST to generate one image, or GET /health to inspect configuration." }, 405, headers);
-    if (!env.OPENAI_API_KEY || !env.PLANET_ACCESS_CODE) {
-      return json({ error: "The Worker is not configured. Add OPENAI_API_KEY and PLANET_ACCESS_CODE as Worker secrets." }, 503, headers);
+    if (!env.OPENAI_API_KEY || !env.PLANET_ACCESS_CODE || !env.ORGANISM_IMAGES) {
+      return json({ error: "The Worker needs OPENAI_API_KEY and PLANET_ACCESS_CODE secrets plus the ORGANISM_IMAGES R2 bucket binding." }, 503, headers);
     }
     const accessCode = request.headers.get("X-Planet-Access-Code") || "";
     if (!sameSecret(accessCode, String(env.PLANET_ACCESS_CODE))) {
@@ -95,7 +96,15 @@ export default {
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     if (!prompt) return json({ error: "An image prompt is required." }, 400, headers);
     if (prompt.length > 12000) return json({ error: "The prompt is longer than the supported limit." }, 413, headers);
-
+    const genome = typeof body.genome === "string" ? body.genome.toUpperCase() : "";
+    if (!/^[ACGT]{1,100000}$/.test(genome)) return json({ error: "A valid digital genome is required for a persistent organism image." }, 400, headers);
+    const cacheIdentity = typeof body.cacheIdentity === "string" && /^[a-f0-9]{8,128}$/i.test(body.cacheIdentity) ? body.cacheIdentity.toLowerCase() : genome;
+    const cacheMaterial = cacheIdentity + "|" + prompt;
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(cacheMaterial));
+    const genomeHash = [...new Uint8Array(digest)].map(x => x.toString(16).padStart(2, "0")).join("");
+    const cacheKey = "genomes/" + genomeHash + ".png";
+    const cachedImage = await env.ORGANISM_IMAGES.get(cacheKey);
+    if (cachedImage) return json({ imageBase64: await cachedImage.text(), mimeType: "image/png", model: cachedImage.customMetadata && cachedImage.customMetadata.model || "cached", genomeHash, cached: true, provenance: "persistent-genome-image-cache" }, 200, headers);
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
     const rate = consumeRateLimit(ip);
     if (!rate.allowed) {
@@ -111,7 +120,8 @@ export default {
       quality: "medium",
       output_format: "png",
       n: 1,
-      moderation: "auto"
+      moderation: "auto",
+      safety_identifier: genomeHash
     };
     let providerResponse;
     try {
@@ -141,11 +151,14 @@ export default {
     if (!first || typeof first.b64_json !== "string" || !first.b64_json) {
       return json({ error: "The image provider returned no encoded image. Check provider API compatibility." }, 502, headers);
     }
+    await env.ORGANISM_IMAGES.put(cacheKey, first.b64_json, { httpMetadata: { contentType: "text/plain" }, customMetadata: { genomeHash, model: model, mimeType: "image/png", variation: String(body.variation || "primary-v2").slice(0, 80) } });
     return json({
       imageBase64: first.b64_json,
       mimeType: "image/png",
       model: model,
       generatedAt: new Date().toISOString(),
+      genomeHash: genomeHash,
+      cached: false,
       provenance: "image-model-generated; conditioned on user-supplied digital phenotype prompt"
     }, 200, headers);
   }
