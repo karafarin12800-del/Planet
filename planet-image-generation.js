@@ -8,7 +8,7 @@
   const ENDPOINT_KEY='planet-image-generation-endpoint', ACCESS_KEY='planet-image-generation-access-code';
   const $=id=>document.getElementById(id), lang=()=>String(document.documentElement.lang||'fa').toLowerCase().startsWith('en');
   const tr=(fa,en)=>lang()?en:fa, clamp=(n,a,b)=>Math.max(a,Math.min(b,Number(n)||0));
-  let selected=null, generated=null, busy=false, nextAllowedAt=0;
+  let selected=null, generated=null, busy=false, nextAllowedAt=0, activeVariation='primary-v2';
   const autoQueue=[],autoQueued=new Set();let autoQueueRunning=false;
   const style=document.createElement('style');
   style.textContent=String.raw`
@@ -41,12 +41,17 @@
   const generateButton=$('planet-image-generate'), variationButton=$('planet-image-variation'), downloadButton=$('planet-image-download');
   function loadSettings(){try{endpointInput.value=localStorage.getItem(ENDPOINT_KEY)||'';accessInput.value=localStorage.getItem(ACCESS_KEY)||'';}catch(_){}}
   function setStatus(message,error){statusNode.textContent=String(message||'');statusNode.classList.toggle('error',!!error);}
-  const IMAGE_DB='planet-genome-image-cache-v1',IMAGE_STORE='images';
+  const IMAGE_DB='planet-genome-image-cache-v2',IMAGE_STORE='images';
   function openImageDB(){return new Promise(resolve=>{if(!window.indexedDB){resolve(null);return;}const req=indexedDB.open(IMAGE_DB,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(IMAGE_STORE))req.result.createObjectStore(IMAGE_STORE,{keyPath:'genomeHash'});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>resolve(null);});}
   async function readImageCache(hash){const db=await openImageDB();if(!db)return null;return new Promise(resolve=>{const req=db.transaction(IMAGE_STORE,'readonly').objectStore(IMAGE_STORE).get(hash);req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>resolve(null);});}
   async function writeImageCache(hash,dataUrl,source,species){const db=await openImageDB();if(!db)return false;return new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readwrite');tx.objectStore(IMAGE_STORE).put({genomeHash:hash,dataUrl,source,createdAt:Date.now(),speciesName:String(species&&species.name||''),speciesId:String(species&&species.id||''),planetId:String(species&&species.planetId||''),form:String(species&&species.form||''),bodyLengthCm:Number(species&&species.bodyLengthCm)||0});tx.oncomplete=()=>resolve(true);tx.onerror=()=>resolve(false);});}
   async function listImageCache(){const db=await openImageDB();if(!db)return [];return new Promise(resolve=>{const req=db.transaction(IMAGE_STORE,'readonly').objectStore(IMAGE_STORE).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>resolve([]);});}
   async function genomeHash(species){const dna=String(species&&species.dna||'').toUpperCase().replace(/[^ACGT]/g,''),identity=dna+'|'+String(species&&species.planetId||'earth')+'|'+String(species&&species.planetFingerprint||'')+'|'+String(species&&species.habitat||'')+'|'+String(species&&species.form||'')+'|'+String(species&&species.creativeBrief||'')+'|'+String(species&&species.diet||'');if(window.crypto&&crypto.subtle){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(identity));return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,'0')).join('');}let h=2166136261;for(let i=0;i<identity.length;i++){h^=identity.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16);}
+  async function portraitCacheHash(species,variation,prompt){
+    const base=await genomeHash(species),identity='planet-portrait-v2|'+base+'|'+String(variation||'primary-v2')+'|'+String(prompt||'').trim();
+    if(window.crypto&&crypto.subtle){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(identity));return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,'0')).join('');}
+    let h=2166136261;for(let i=0;i<identity.length;i++){h^=identity.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16).padStart(8,'0');
+  }
   function showCachedImage(record){if(!record||!record.dataUrl)return;generated=record.dataUrl;output.src=generated;output.style.display='block';placeholder.style.display='none';downloadButton.disabled=false;setStatus(record.source==='ai'?tr('تصویر ثابت همین ژنوم از حافظهٔ دائمی بارگذاری شد.','The permanent image for this genome was loaded.'):tr('تصویر رویه‌ای ثابت این ژنوم بارگذاری شد؛ برای ارتقا به تصویر هوش مصنوعی، سرویس را تنظیم کن.','The fixed procedural image for this genome was loaded; configure the AI service to upgrade it.'));}
   function saveSettings(){
     const endpoint=endpointInput.value.trim().replace(/\/+$/,'');
@@ -56,14 +61,19 @@
   }
   function getSpecies(id,source){if(source!=='legacy'&&window.PlanetWorldLifeAPI&&typeof window.PlanetWorldLifeAPI.getSpeciesSnapshot==='function'){const found=window.PlanetWorldLifeAPI.getSpeciesSnapshot().find(x=>Number(x.id)===Number(id));if(found)return found;}if(source!=='world'&&window.PlanetLifeAPI&&typeof window.PlanetLifeAPI.getSpeciesSnapshot==='function')return window.PlanetLifeAPI.getSpeciesSnapshot().find(x=>Number(x.id)===Number(id))||null;return null;}
   function formName(form){
-    const map={microbe:['میکروب‌مانند','microbe-like'],bacterium:['باکتری‌مانند','bacterium-like'],fish:['آبزی با فرم ماهی‌مانند','fish-like aquatic'],aquatic:['آبزی','aquatic'],amphibian:['دوزیست‌مانند','amphibian-like'],fungus:['قارچ‌مانند','fungus-like'],plant:['گیاه‌مانند','plant-like'],tree:['درخت‌مانند','tree-like'],dinosaur:['خزنده‌مانند','reptile-like'],theropod:['دوپای خزنده‌مانند','bipedal reptile-like'],sauropod:['بدن بزرگ و گردن/دم بلند','large-bodied, long-necked, long-tailed'],bird:['پرنده‌مانند','bird-like'],mammal:['پستاندارمانند','mammal-like'],humanoid:['دوپای انسان‌مانند','humanoid biped-like']};
+    const map={microbe:['میکروب‌مانند','microbe-like'],bacterium:['باکتری‌مانند','bacterium-like'],fish:['آبزی با فرم ماهی‌مانند','fish-like aquatic'],aquatic:['آبزی','aquatic'],amphibian:['دوزیست‌مانند','amphibian-like'],fungus:['قارچ‌مانند','fungus-like'],plant:['گیاه‌مانند','plant-like'],tree:['درخت‌مانند','tree-like'],dinosaur:['خزنده‌مانند','reptile-like'],theropod:['دوپای خزنده‌مانند','bipedal reptile-like'],sauropod:['بدن بزرگ و گردن/دم بلند','large-bodied, long-necked, long-tailed'],bird:['پرنده‌مانند','bird-like'],mammal:['پستاندارمانند','mammal-like'],humanoid:['دوپای انسان‌مانند','humanoid biped-like'],'digital-filament':['رشته‌ای و شاخه‌دار','branching filamentous organism'],'digital-photosynthetic-colony':['کلونی گیاهی نورگیر','photosynthetic botanical colony'],'digital-multicellular':['جاندار چندسلولی با فرم متغیر','variable multicellular body plan'],'digital-motile-form':['جاندار متحرک با اندام‌های متغیر','variable motile body plan'],insectoid:['بندپا/حشره‌مانند','segmented insectoid'],serpentine:['مارپیچ/مارمانند','serpentine'],dragon:['اژدهای خیالی','draconic']};
     return map[String(form||'').toLowerCase()]?.[lang()?1:0]||String(form||'unknown');
   }
   function colourName(hue){const h=((Math.round(Number(hue)||0)%360)+360)%360;if(h<15||h>=345)return tr('قرمز تا سرخابی','red to magenta');if(h<42)return tr('نارنجی/کهربایی','orange/amber');if(h<68)return tr('زرد/طلایی','yellow/gold');if(h<155)return tr('سبز تا زیتونی','green to olive');if(h<195)return tr('فیروزه‌ای/سبزآبی','turquoise/teal');if(h<245)return tr('آبی','blue');if(h<290)return tr('بنفش','violet');return tr('ارغوانی/صورتی','purple/pink');}
   function pct(x){return Math.round(clamp(x,0,1)*100);}
   function getPhenotype(s){
-    if(s&&s.traits&&s.traits.planetMorphology)return s.traits;
-    try{if(window.PlanetEvolutionModel&&typeof window.PlanetEvolutionModel.phenotypeFromDNA==='function')return window.PlanetEvolutionModel.phenotypeFromDNA(s.dna,{ageMa:s.ageMa});}catch(_){}
+    if(s&&s.traits&&(s.traits.planetMorphology||s.traits.appearance))return s.traits;
+    if(s&&s.phenotype&&s.phenotype.appearance)return s.phenotype;
+    try{if(window.PlanetEvolutionModel&&typeof window.PlanetEvolutionModel.phenotypeFromDNA==='function'){
+      const decoded=window.PlanetEvolutionModel.phenotypeFromDNA(s.dna,{ageMa:s.ageMa});
+      if(s&&s.appearance)return Object.assign({},decoded,{appearance:Object.assign({},decoded.appearance||{},s.appearance)});
+      return decoded;
+    }}catch(_){}
     const dna=String(s.dna||'').toUpperCase().replace(/[^ACGT]/g,''),v=[];
     for(let i=0;i<8;i++){const a=Math.floor(i*dna.length/8),b=Math.max(a+1,Math.floor((i+1)*dna.length/8));let gc=0;for(let j=a;j<b&&j<dna.length;j++)if(dna[j]==='G'||dna[j]==='C')gc++;v.push(gc/Math.max(1,b-a));}
     const gc=(dna.match(/[GC]/g)||[]).length/Math.max(1,dna.length);
@@ -85,10 +95,14 @@
     const env=envDescription(s,p),signalList=signals.slice(0,8).map((v,i)=>'module '+(i+1)+': '+pct(v)+'%').join(', ');
     const shape=['body-length index '+Number(a.bodyLength||0).toFixed(2),'body-width index '+Number(a.bodyWidth||0).toFixed(2),'body-height index '+Number(a.bodyHeight||0).toFixed(2),
       'head-proportion index '+Number(a.headSize||0).toFixed(2),'limb count '+(Number.isFinite(Number(a.limbCount))?a.limbCount:'variable'),
-      'limb-length index '+Number(a.limbLength||0).toFixed(2),'tail-length index '+Number(a.tailLength||0).toFixed(2),
-      'wing/appendage span index '+Number(a.wingSpan||a.appendageLength||0).toFixed(2),'rigid-surface/armor coverage '+pct(a.armorCoverage)+'%',
+      'limb-length index '+Number(a.limbLength||0).toFixed(2),'limb-thickness index '+Number(a.limbThickness||0).toFixed(2),
+      'tail-length index '+Number(a.tailLength||0).toFixed(2),'neck-length index '+Number(a.neckLength||0).toFixed(2),
+      'wing-span index '+Number(a.wingSpan||a.appendageLength||0).toFixed(2),'fin-size index '+Number(a.finSize||0).toFixed(2),
+      'horn-length index '+Number(a.hornLength||0).toFixed(2),'rigid-surface/armor coverage '+pct(a.armorCoverage)+'%',
       'eye-size index '+Number(a.eyeSize||0).toFixed(2),'pattern code '+Number(a.pattern||0)+', stripe count '+Number(a.stripeCount||0),
-      'segment count '+Number(a.segmentCount||0),'digital palette hue '+Number(a.hue||0)+' degrees ('+colourName(a.hue)+')','surface code '+Number(a.surface||0)].join('; ');
+      'segment count '+Number(a.segmentCount||0),'symmetry index '+Number(a.symmetry||0).toFixed(2),
+      'digital palette hue '+Number(a.hue||0)+' degrees ('+colourName(a.hue)+')','surface code '+Number(a.surface||0)].join('; ');
+    const morphology=window.PlanetOrganismMorphology?window.PlanetOrganismMorphology.describe(s,p):{instructions:'Use measured anatomy; do not force a humanoid body or add unmeasured limbs.'};
     const evidence=s.genomeStatus==='reference-proxy'&&s.referenceGenome&&s.referenceGenome.accession?
       'Imported accession linked in the app: '+s.referenceGenome.accession+'. It is handled as a proxy and not a validated direct anatomy prediction.':
       'Digital genome length: '+dna.length+' bases; GC content '+(100*((dna.match(/[GC]/g)||[]).length/Math.max(1,dna.length))).toFixed(1)+'%; eight synthetic sequence modules ('+signalList+').';
@@ -100,10 +114,10 @@
       'Planet genetic fingerprint: '+String(s.planetFingerprint||p.planetMorphology&&p.planetMorphology.fingerprint||'unavailable')+'. This fingerprint must visibly influence the creature identity; do not reuse a generic silhouette.',
       'Sequence-derived illustrative morphology constraints: '+shape+'.',
       'Estimated in-game body length: '+Number(s.bodyLengthCm||0).toFixed(1)+' cm. The animal must be visibly larger than a common mouse; keep believable body proportions and show the entire body.',
-      'Anatomy requirement for this still collectible portrait: show the complete creature, not a close crop. Animal-like bodies must have a distinct torso, two clearly attached arms, visible forearms and wrists, two open palms with individually separated fingers, two legs and articulated feet with toes. Keep hands anatomically readable and in front of the body; never omit, fuse, hide or replace them with simple stubs. Give it a memorable expressive face, layered organic skin, fine scales/fur/plates, small asymmetries and a premium cinematic collectible-game finish. It is a static portrait; no animation or movement is needed.',
+      'Anatomy and silhouette requirement: show the complete organism, not a close crop. '+morphology.instructions+' Use form-appropriate surface detail and only add eyes, mouthparts, roots, fins, limbs, wings, tentacles or sensory structures when they fit this body plan. Static natural-history portrait; no animation is needed.',
       'Environment from the simulation: '+env.setting+'; simulation timeline age '+env.ageMa.toFixed(1)+' million years ('+env.stage+'); habitat='+env.habitat+'; model-estimated preferred temperature '+env.temperature+'. The organism must visibly interact with the matching environment.',
       evidence,
-      'Generation '+(Number(s.generation)||0)+'. Variation identifier '+variation+'. New variations can change pose, silhouette details and surface pattern while keeping the morphology constraints and habitat.',
+      'Generation '+(Number(s.generation)||0)+'. Variation identifier '+variation+'. Preserve the genome-derived body plan while allowing a genuinely different pose, view angle, surface pattern and scene staging for each variation.',
       'Visual style: lifelike material response, fine surface/cellular texture appropriate to this form, connected organic anatomy, plausible support/contact with terrain or water, coherent perspective, realistic natural lighting, full organism visible and environment visible behind it. No labels, text, watermarks, or duplicated organisms.',
       'Scientific honesty: the app uses a toy digital genome and an illustrative mapping. Treat the metrics as creative morphology controls, not validated biology. Do not claim a scientifically proven reconstruction or literal anatomy prediction from DNA.'
     ].join('\n\n');
@@ -119,8 +133,8 @@
     selected=s;overlay.classList.add('open');document.documentElement.style.overflow='hidden';
     $('planet-image-title').textContent=tr('تولید تصویر مولد از ژنوم و محیط','Generate an AI image from genome + environment');
     $('planet-image-intro').textContent=tr('تصویر توسط مدل مولد و بر اساس صفات محاسبه‌شده از ژنوم دیجیتال، زیستگاه و مرحلهٔ زمانی ساخته می‌شود؛ تصویر از پیش در برنامه ذخیره نشده است. نگاشت DNA این شبیه‌سازی فرضی است، نه پیش‌بینی زیستی معتبر.','The image model generates new pixels using digital-genome traits, habitat and timeline stage; no prepared image is bundled. The DNA mapping is illustrative, not validated biological prediction.');
-    showBadges(s);promptInput.value=buildPrompt(s,'A');clearOutput();loadSettings();
-    genomeHash(s).then(async hash=>{const cached=await readImageCache(hash);if(selected!==s)return;if(cached)showCachedImage(cached);}).catch(()=>{});
+    activeVariation='primary-v2';showBadges(s);promptInput.value=buildPrompt(s,activeVariation);clearOutput();loadSettings();
+    portraitCacheHash(s,activeVariation,promptInput.value).then(async hash=>{const cached=await readImageCache(hash);if(selected!==s)return;if(cached)showCachedImage(cached);}).catch(()=>{});
     if(!endpointInput.value||!accessInput.value){setStatus(tr('آماده است: با «تولید تصویر جدید» همین حالا تصویر را محلی و بدون تنظیمات بساز. برای تصویرسازی مولد آنلاین، تنظیم سرویس اختیاری است.','Ready: tap Generate image to create a local image now, with no setup. Online AI image generation is optional.'));}
     else setStatus(tr('سرویس آنلاین تنظیم شده؛ در صورت خطا مولد محلی جایگزین می‌شود.','Online service configured; local generation is the fallback.'));
   }
@@ -129,7 +143,8 @@
     selected=s;overlay.classList.add('open');document.documentElement.style.overflow='hidden';
     $('planet-image-title').textContent=tr('ساخت تصویر اختصاصی موجود','Create a custom creature image');
     $('planet-image-intro').textContent=tr('مدل تصویر بر اساس توضیحات بازیکن، ژنوم، غذا و زیستگاه این موجود تصویر تازه می‌سازد.','The image model creates a new image from the player brief, genome, diet and habitat.');
-    showBadges(s);promptInput.value=buildPrompt(s,'custom-'+Date.now().toString(36));clearOutput();loadSettings();
+    activeVariation='primary-v2';showBadges(s);promptInput.value=buildPrompt(s,activeVariation);clearOutput();loadSettings();
+    portraitCacheHash(s,activeVariation,promptInput.value).then(async hash=>{const cached=await readImageCache(hash);if(selected!==s)return;if(cached)showCachedImage(cached);}).catch(()=>{});
     if(!endpointInput.value||!accessInput.value)setStatus(tr('مولد محلی آماده است؛ برای تصویر AI آنلاین باید سرویس تصویر را تنظیم کنی.','Local generator is ready; configure the image service for online AI images.'));
     else setStatus(tr('سرویس آنلاین آمادهٔ تولید تصویر اختصاصی است.','Online image service is ready.'));
   }
@@ -149,9 +164,11 @@
     const accent='hsl('+((hue+70+Math.round(rand()*90))%360)+',58%,62%)';
     const habitat=String(s.habitat||'').toLowerCase(),form=String(s.form||'').toLowerCase();
     const aquatic=/ocean|marine|aquatic|water|shore|coast|wetland/.test(habitat);
-    const plant=/plant|tree|flora|veget/.test(form);
+    const plant=/plant|tree|flora|veget|photosynthetic/.test(form);
+    const morphology=window.PlanetOrganismMorphology?window.PlanetOrganismMorphology.classify(s,p):{family:plant?'photosynthetic-colony':aquatic?'aquatic':'quadruped',limbCount:4};
+    const family=morphology.family;
     const bodyL= n(a.bodyLength,0.65,0.25,1.5),bodyW=n(a.bodyWidth,0.48,0.2,1.2),bodyH=n(a.bodyHeight,0.5,0.2,1.2);
-    const head=n(a.headSize,0.3,0.1,0.8),tail=n(a.tailLength,0.35,0,1.4),limbs=Math.max(2,Math.round(n(a.limbCount,4,0,8)));
+    const head=n(a.headSize,0.3,0.1,0.8),tail=n(a.tailLength,0.35,0,1.4),limbs=Math.max(0,Math.round(n(a.limbCount,morphology.limbCount===undefined?4:morphology.limbCount,0,8)));
     const append=n(a.wingSpan||a.appendageLength,0.2,0,1.2),segments=Math.round(n(a.segmentCount,4,1,12));
     const cx=512,cy=440,rx=110+bodyL*85,ry=40+bodyH*70,headR=17+head*30;
     const left=cx-rx*0.62,right=cx+rx*0.52;
@@ -166,13 +183,38 @@
       shapes.push('<circle cx="820" cy="125" r="47" fill="#f4d9a0" opacity=".8"/><path d="M0 570 Q170 480 330 558 T650 540 T1024 520 L1024 800 L0 800Z" fill="#756a4e"/><path d="M0 635 Q240 590 460 630 T820 612 T1100 640 L1100 800 L0 800Z" fill="#3d5140"/><path d="M0 708 Q200 680 430 714 T850 700 T1100 718" fill="none" stroke="#a8b78a" stroke-opacity=".35" stroke-width="4"/>');
       for(let i=0;i<35;i++){const x=Math.round(rand()*1024),y=Math.round(570+rand()*160),r=1+rand()*4;shapes.push('<ellipse cx="'+x+'" cy="'+y+'" rx="'+r.toFixed(1)+'" ry="'+(r*.45).toFixed(1)+'" fill="#d5c39a" opacity=".25"/>');}
     }
-    if(plant){
-      const baseY=635,stemTop=235+rand()*80,stemX=512;
-      shapes.push('<path d="M'+stemX+' '+baseY+' Q'+(stemX-30)+' 470 '+(stemX+Math.round(rand()*25-12))+' '+stemTop+'" fill="none" stroke="'+darkTone+'" stroke-width="'+(12+bodyW*14).toFixed(1)+'" stroke-linecap="round"/>');
-      const leafCount=Math.max(5,segments+4);
-      for(let i=0;i<leafCount;i++){const y=baseY-(i+1)*(baseY-stemTop)/(leafCount+1),side=i%2?1:-1,len=38+rand()*105,w=12+rand()*22,x=stemX+side*(12+rand()*25);
-        shapes.push('<path d="M'+x+' '+y+' Q'+(x+side*len*.35)+' '+(y-18-w)+' '+(x+side*len)+' '+(y-len*.45)+' Q'+(x+side*len*.35)+' '+(y+8)+' '+x+' '+y+'Z" fill="'+(i%3===0?accent:primary)+'" stroke="'+darkTone+'" stroke-opacity=".6" stroke-width="2"/>');}
-      shapes.push('<ellipse cx="512" cy="646" rx="'+(50+bodyW*45).toFixed(1)+'" ry="16" fill="#1a3429" opacity=".8"/>');
+    if(family==='filamentous'){
+      const rootX=512,rootY=650,branches=7+Math.round(rand()*5);
+      for(let i=0;i<branches;i++){const angle=(Math.PI*2*i)/branches+(rand()-.5)*.3,reach=105+rand()*185,midX=rootX+Math.cos(angle)*reach*.55,midY=rootY-Math.abs(Math.sin(angle))*reach*.7-45-rand()*55,endX=rootX+Math.cos(angle)*reach,endY=rootY-Math.abs(Math.sin(angle))*reach-80-rand()*90;
+        shapes.push('<path d="M'+rootX+' '+rootY+' Q'+midX.toFixed(1)+' '+midY.toFixed(1)+' '+endX.toFixed(1)+' '+endY.toFixed(1)+'" fill="none" stroke="'+primary+'" stroke-width="'+(5+rand()*9).toFixed(1)+'" stroke-linecap="round"/>');
+        for(let j=0;j<3;j++){const t=.3+j*.19,bx=rootX+(endX-rootX)*t,by=rootY+(endY-rootY)*t,side=j%2?1:-1,bl=25+rand()*80;shapes.push('<path d="M'+bx.toFixed(1)+' '+by.toFixed(1)+' Q'+(bx+side*bl*.35).toFixed(1)+' '+(by-bl*.5).toFixed(1)+' '+(bx+side*bl).toFixed(1)+' '+(by-bl).toFixed(1)+'" fill="none" stroke="'+lightTone+'" stroke-width="'+(2+rand()*4).toFixed(1)+'" stroke-linecap="round"/>');}
+        shapes.push('<circle cx="'+endX.toFixed(1)+'" cy="'+endY.toFixed(1)+'" r="'+(6+rand()*12).toFixed(1)+'" fill="'+accent+'"/>');
+      }
+    }else if(family==='photosynthetic-colony'||plant){
+      const rootY=655,stems=3+Math.floor(rand()*4);
+      for(let stem=0;stem<stems;stem++){const baseX=270+stem*(460/Math.max(1,stems-1))+(rand()-.5)*45,topY=180+rand()*150,lean=(rand()-.5)*100;
+        shapes.push('<path d="M'+baseX.toFixed(1)+' '+rootY+' Q'+(baseX+lean*.4).toFixed(1)+' 430 '+(baseX+lean).toFixed(1)+' '+topY.toFixed(1)+'" fill="none" stroke="'+darkTone+'" stroke-width="'+(9+bodyW*13).toFixed(1)+'" stroke-linecap="round"/>');
+        const leafCount=4+Math.round(rand()*5);for(let i=0;i<leafCount;i++){const t=(i+1)/(leafCount+1),y=rootY-(rootY-topY)*t,x=baseX+lean*t,side=i%2?1:-1,len=42+rand()*95,w=17+rand()*25;shapes.push('<path d="M'+x.toFixed(1)+' '+y.toFixed(1)+' Q'+(x+side*len*.4).toFixed(1)+' '+(y-w-len*.15).toFixed(1)+' '+(x+side*len).toFixed(1)+' '+(y-len*.36).toFixed(1)+' Q'+(x+side*len*.35).toFixed(1)+' '+(y+w*.4).toFixed(1)+' '+x.toFixed(1)+' '+y.toFixed(1)+'Z" fill="'+(i%3===0?accent:primary)+'" stroke="'+darkTone+'" stroke-width="2"/>');}
+      }
+    }else if(family==='insectoid'){
+      const bodyY=420,bodyRx=rx*.72;shapes.push('<ellipse cx="565" cy="'+(bodyY+35)+'" rx="'+(bodyRx*.42)+'" ry="'+(ry*.62)+'" fill="url(#skin)" stroke="'+darkTone+'" stroke-width="6"/>');
+      shapes.push('<ellipse cx="420" cy="'+bodyY+'" rx="'+(bodyRx*.28)+'" ry="'+(ry*.48)+'" fill="'+primary+'" stroke="'+darkTone+'" stroke-width="5"/>');
+      shapes.push('<ellipse cx="330" cy="'+(bodyY-28)+'" rx="'+headR*1.15+'" ry="'+headR*.88+'" fill="url(#skin)" stroke="'+darkTone+'" stroke-width="5"/>');
+      for(let side of [-1,1]){shapes.push('<path d="M'+(330+side*10)+' '+(bodyY-45)+' Q'+(300+side*22)+' '+(bodyY-155)+' '+(270+side*55)+' '+(bodyY-175)+'" fill="none" stroke="'+darkTone+'" stroke-width="6" stroke-linecap="round"/>');
+        for(let pair=0;pair<3;pair++){const x=410+pair*78,y=bodyY+pair*9,ex=x+side*(110+rand()*34),ey=y+65+rand()*45,kx=x+side*55;shapes.push('<path d="M'+x+' '+y+' L'+kx.toFixed(1)+' '+(y+28).toFixed(1)+' L'+ex.toFixed(1)+' '+ey.toFixed(1)+'" fill="none" stroke="'+darkTone+'" stroke-width="'+(9+bodyW*5).toFixed(1)+'" stroke-linecap="round"/>');}
+      }
+    }else if(family==='serpentine'){
+      const sp='M 170 590 C 300 210 760 190 820 420 C 865 585 590 650 455 500 C 330 365 505 250 700 320';
+      shapes.push('<path d="'+sp+'" fill="none" stroke="'+darkTone+'" stroke-width="'+(ry*.9+32)+'" stroke-linecap="round"/>');
+      shapes.push('<path d="'+sp+'" fill="none" stroke="url(#skin)" stroke-width="'+(ry*.9+22)+'" stroke-linecap="round"/>');
+      for(let i=0;i<segments*3;i++){const x=215+i*19,y=570-110*Math.sin(i*.33);shapes.push('<path d="M'+x+' '+(y-16)+' q18 16 4 36" fill="none" stroke="'+accent+'" stroke-width="5" opacity=".8"/>');}
+      shapes.push('<path d="M690 300 Q760 210 845 250 Q888 283 850 344 Q790 390 720 345Z" fill="url(#skin)" stroke="'+darkTone+'" stroke-width="6"/><ellipse cx="820" cy="290" rx="12" ry="8" fill="#f7e7bd"/><circle cx="823" cy="290" r="4" fill="#101822"/>');
+    }else if(family==='aquatic'){
+      const ab='M 210 430 Q 370 260 650 390 Q 740 440 650 505 Q 360 615 210 430Z';
+      shapes.push('<path d="M230 430 Q110 300 70 275 Q88 420 70 575 Q150 530 230 455Z" fill="'+accent+'" stroke="'+darkTone+'" stroke-width="6"/><path d="'+ab+'" fill="url(#skin)" stroke="'+darkTone+'" stroke-width="7"/>');
+      shapes.push('<path d="M420 355 Q475 210 590 240 Q562 330 505 392Z" fill="'+accent+'" stroke="'+darkTone+'" stroke-width="5"/><path d="M420 510 Q470 630 590 595 Q565 535 500 485Z" fill="'+accent+'" stroke="'+darkTone+'" stroke-width="5"/>');
+      for(let i=0;i<4;i++){const x=325+i*20;shapes.push('<path d="M'+x+' 390 q-24 38 0 78" fill="none" stroke="'+lightTone+'" stroke-width="5" stroke-linecap="round"/>');}
+      shapes.push('<ellipse cx="650" cy="400" rx="'+headR+'" ry="'+(headR*.8)+'" fill="'+lightTone+'"/><circle cx="662" cy="397" r="8" fill="#101822"/>');
     }else{
       // Body silhouette is constructed afresh from genome-derived proportions and seeded perturbations.
       const points=[];
@@ -190,13 +232,8 @@
         shapes.push('<path d="M'+x.toFixed(1)+' '+y.toFixed(1)+' Q'+(x+side*10)+' '+(y+drop*.42)+' '+(x+side*3)+' '+(y+drop*.76)+' L'+footX.toFixed(1)+' '+(y+drop)+'" fill="none" stroke="'+darkTone+'" stroke-width="'+(9+bodyW*8).toFixed(1)+'" stroke-linecap="round" stroke-linejoin="round"/><path d="M'+(footX-12)+' '+(y+drop)+' Q'+footX+' '+(y+drop+7)+' '+(footX+18)+' '+(y+drop+1)+'" fill="none" stroke="'+darkTone+'" stroke-width="7" stroke-linecap="round"/>');
       }
       shapes.push('<path d="'+path+'" fill="url(#skin)" stroke="'+darkTone+'" stroke-width="5" stroke-linejoin="round"/>');
-      const armY=cy-ry*.30,elbowY=cy+ry*.02,wristY=cy+ry*.28;
-      for(const side of [-1,1]){const sx=cx+side*rx*.48,ex=cx+side*(rx*.82+18),wx=cx+side*(rx*1.00+20),hx=wx+side*7,hy=wristY+16;
-        shapes.push('<path d="M'+sx.toFixed(1)+' '+armY.toFixed(1)+' Q'+(sx+side*30)+' '+(armY+28)+' '+ex.toFixed(1)+' '+elbowY.toFixed(1)+' Q'+(ex+side*14)+' '+(elbowY+18)+' '+wx.toFixed(1)+' '+wristY.toFixed(1)+'" fill="none" stroke="'+darkTone+'" stroke-width="'+(17+bodyW*8).toFixed(1)+'" stroke-linecap="round"/>');
-        shapes.push('<path d="M'+(hx-side*5)+' '+hy+' Q'+(hx+side*15)+' '+(hy-9)+' '+(hx+side*20)+' '+(hy+7)+' Q'+(hx+side*10)+' '+(hy+24)+' '+(hx-side*4)+' '+(hy+17)+'Z" fill="url(#skin)" stroke="'+darkTone+'" stroke-width="3"/>');
-        for(let finger=0;finger<4;finger++){const fx=hx+side*(8+finger*5),fy=hy+13+Math.abs(1.5-finger)*2;shapes.push('<path d="M'+fx.toFixed(1)+' '+fy.toFixed(1)+' q'+(side*5)+' 10 '+(side*(7+finger))+' '+(17+finger*2)+'" fill="none" stroke="'+darkTone+'" stroke-width="3.5" stroke-linecap="round"/>');}
-        shapes.push('<path d="M'+(hx-side*5)+' '+(hy+10)+' q'+(-side*9)+' 7 '+(-side*11)+' 15" fill="none" stroke="'+darkTone+'" stroke-width="3.5" stroke-linecap="round"/>');
-      }
+      if(family==='draconic'||family==='winged'||append>.9){for(const side of [-1,1]){const ax=cx+side*rx*.15,ay=cy-ry*.43,span=append*155;shapes.push('<path d="M'+ax+' '+ay+' Q'+(ax+side*span*.35)+' '+(ay-span*.7)+' '+(ax+side*span)+' '+(ay-span*.52)+' Q'+(ax+side*span*.82)+' '+(ay+span*.18)+' '+ax+' '+(ay+ry*.35)+'Z" fill="'+accent+'" fill-opacity=".74" stroke="'+darkTone+'" stroke-width="5"/>');}}
+      if(Number(a.hornLength)>0.18){for(const side of [-1,1])shapes.push('<path d="M'+(right+headR*.15+side*headR*.25)+' '+(cy-ry*.38)+' q'+(side*22)+' -45 '+(side*45)+' -58" fill="none" stroke="'+darkTone+'" stroke-width="'+(4+Number(a.hornLength)*8).toFixed(1)+'" stroke-linecap="round"/>');}
       // Segments, pigmentation and surface structures are newly sampled for every genome/variation.
       for(let i=0;i<segments;i++){const x=left+35+i*(rx*1.2/Math.max(1,segments-1)),yy=cy-ry*.8;shapes.push('<path d="M'+x.toFixed(1)+' '+yy.toFixed(1)+' Q'+(x-10)+' '+cy+' '+(x+4)+' '+(cy+ry*.78)+'" fill="none" stroke="'+darkTone+'" stroke-opacity=".55" stroke-width="'+(2+rand()*5).toFixed(1)+'"/>');}
       const textureCount=Math.round(18+n(a.armorCoverage,0,0,1)*80);
@@ -213,10 +250,9 @@
     shapes.push('<rect x="26" y="24" width="972" height="70" rx="14" fill="#06111c" fill-opacity=".72" stroke="#b8e8ff" stroke-opacity=".28"/><text x="48" y="54" fill="#e8f7ff" font-size="21" font-family="sans-serif" font-weight="700">'+label+'</text><text x="48" y="78" fill="#a9cce0" font-size="13" font-family="sans-serif">GENOME-DRIVEN PROCEDURAL RENDER · '+dna.length+' bp · generation '+(Number(s.generation)||0)+'</text>');
     return '<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768" viewBox="0 0 1024 768">'+shapes.join('')+'</svg>';
   }
-  function generateOffline(hash){
+  function generateOffline(hash,variation){
     if(!selected)return false;
-    const variation='fixed-genome-'+String(hash||'');
-    const svg=generateOfflineSVG(selected,variation);
+    const svg=generateOfflineSVG(selected,String(variation||'primary-v2')+'|'+String(hash||''));
     generated='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
     output.src=generated;output.style.display='block';placeholder.style.display='none';downloadButton.disabled=false;
     setStatus(tr('تصویر محلی از ژنوم و محیط ساخته شد؛ این نسخهٔ پشتیبان رویه‌ای است. برای تصویر با جزئیات حرفه‌ای، سرویس تصویر هوش مصنوعی را فعال کن.','A local genome-and-habitat portrait was created; this is the procedural fallback. Enable the AI image service for a richer high-detail portrait.'));
@@ -225,11 +261,11 @@
 
   async function generate(){
     if(busy||!selected)return;
-    const species=selected,hash=await genomeHash(species),cached=await readImageCache(hash);
+    const species=selected,variation=activeVariation,prompt=promptInput.value.trim(),hash=await portraitCacheHash(species,variation,prompt),cached=await readImageCache(hash);
     const endpoint=endpointInput.value.trim().replace(/\/+$/,''),access=accessInput.value.trim();
     if(cached&&cached.source==='ai'){showCachedImage(cached);return;}
     if(cached&&cached.source==='procedural'&&(!endpoint||!access)){showCachedImage(cached);return;}
-    if(!endpoint||!access){generateOffline(hash);await writeImageCache(hash,generated,'procedural',species);return;}
+    if(!endpoint||!access){generateOffline(hash,variation);await writeImageCache(hash,generated,'procedural',species);return;}
     const wait=Math.ceil((nextAllowedAt-Date.now())/1000);if(wait>0){setStatus(tr('برای جلوگیری از درخواست تکراری '+wait+' ثانیه صبر کن.','Please wait '+wait+' seconds before another request.'),true);return;}
     let url;try{url=new URL(endpoint);}catch(_){setStatus(tr('نشانی سرویس معتبر نیست.','Invalid service URL.'),true);return;}
     if(url.protocol!=='https:'&&url.hostname!=='localhost'&&url.hostname!=='127.0.0.1'){setStatus(tr('نشانی سرویس باید HTTPS باشد.','The service endpoint must use HTTPS.'),true);return;}
@@ -238,9 +274,9 @@
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),160000);
     try{
       const response=await fetch(url.toString(),{method:'POST',headers:{'Content-Type':'application/json','X-Planet-Access-Code':access},
-        body:JSON.stringify({prompt:promptInput.value.trim().slice(0,12000),genome:String(selected.dna||'').toUpperCase(),speciesId:selected.id,speciesName:String(selected.name||'').slice(0,120),
+        body:JSON.stringify({prompt:prompt.slice(0,12000),genome:String(selected.dna||'').toUpperCase(),speciesId:selected.id,speciesName:String(selected.name||'').slice(0,120),
           genomeLength:String(selected.dna||'').length,habitat:String(selected.habitat||'unknown').slice(0,32),generation:Number(selected.generation)||0,
-          variation:'fixed-genome-'+hash,cacheIdentity:hash,planetId:String(selected.planetId||'earth')}),signal:controller.signal});
+          variation:variation,portraitVersion:2,cacheIdentity:hash,planetId:String(selected.planetId||'earth')}),signal:controller.signal});
       const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||data.message||('HTTP '+response.status));
       const b64=data.imageBase64||(data.data&&data.data[0]&&data.data[0].b64_json)||'';if(!b64)throw new Error(tr('پاسخ سرویس تصویر نداشت.','The service response contained no image.'));
       const mime=data.mimeType==='image/webp'?'image/webp':data.mimeType==='image/jpeg'?'image/jpeg':'image/png';
@@ -248,11 +284,17 @@
       setStatus(tr('تصویر با مدل '+(data.model||'API')+' تولید شد. این یک پیشنهاد بصری بر پایهٔ صفات دیجیتال و محیط است، نه پیش‌بینی زیستی اعتبارسنجی‌شده.','Image generated by '+(data.model||'the API')+'. It is a visual proposal based on digital traits and environment, not a validated biological prediction.'));
     }catch(error){
       const reason=(error&&error.name==='AbortError'?tr('درخواست بیش از حد طول کشید.','Request timed out.'):String(error&&error.message||error));
-      generateOffline(hash);await writeImageCache(hash,generated,'procedural',species);
+      generateOffline(hash,variation);await writeImageCache(hash,generated,'procedural',species);
       setStatus(tr('سرویس آنلاین در دسترس نبود ('+reason+'). تصویر محلی ثابت ساخته شد.','Online image service unavailable ('+reason+'). A fixed local image was generated.')+'\n'+tr('این تصویر مولد رویه‌ای است، نه خروجی مدل انتشار آموزش‌دیده.','This is procedural output, not a trained diffusion model output.'));
     }finally{clearTimeout(timer);busy=false;generateButton.disabled=variationButton.disabled=false;generateButton.textContent=tr('تولید تصویر جدید','Generate image');}
   }
-  function createVariation(){setStatus(tr('برای حفظ هویت موجود، هر ژنوم فقط یک تصویر ثابت دارد؛ تصویر تازه فقط پس از تغییر ژنوم در نسل تکامل ساخته می‌شود.','Each genome has one fixed image. A new image is created only when evolution changes the genome.'));}
+  function createVariation(){
+    if(!selected||busy)return;
+    activeVariation='variation-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);
+    promptInput.value=buildPrompt(selected,activeVariation);clearOutput();
+    setStatus(tr('در حال ساخت برداشت بصری تازه از همین موجود؛ فرم اصلی ژنوم حفظ می‌شود.','Creating a fresh visual variation while preserving this organism body plan.'));
+    generate().catch(error=>setStatus(error.message||'Image variation failed.',true));
+  }
   function downloadImage(){if(!generated||!selected)return;const a=document.createElement('a');a.href=generated;a.download='planet-organism-'+String(selected.id)+(generated.indexOf('data:image/svg+xml')===0?'-procedural.svg':'-ai.png');document.body.appendChild(a);a.click();a.remove();}
   function addWorldButtons(){
     const grid=document.getElementById('pbSpeciesGrid');if(!grid)return;
@@ -261,14 +303,20 @@
       const s=getSpecies(id,'world');if(!s)return;
       if(isPortraitEligible(s)){const button=document.createElement('button');button.type='button';button.className='pb-btn';button.dataset.planetWorldImage='1';button.textContent=tr('✨ تصویر کلکسیونی','✨ Collectible portrait');button.addEventListener('click',()=>openForSpecies(id,'world'));card.appendChild(button);return;}
       const lock=document.createElement('div');lock.className='pb-portrait-lock';lock.dataset.planetPortraitLock='1';
-      if(!s.special){lock.textContent=tr('🔒 با تکامل و تبدیل‌شدن به گونهٔ ویژه، تصویر آزاد می‌شود.','🔒 Evolve into a special species to unlock its portrait.');}
+      const profile=window.PlanetOrganismMorphology&&window.PlanetOrganismMorphology.classify(s,s.traits);
+      if(profile&&profile.nonAnimal){lock.textContent=tr('این موجود گیاهی/رشته‌ای است و در زیست‌کره نمایش داده می‌شود؛ پرترهٔ جانوری برایش ساخته نمی‌شود.','This botanical or filamentous organism belongs in the biosphere, not the animal portrait gallery.');}
+      else if(!s.special){lock.textContent=tr('🔒 با تکامل و تبدیل‌شدن به گونهٔ ویژه، تصویر آزاد می‌شود.','🔒 Evolve into a special species to unlock its portrait.');}
       else{const size=Math.max(0,Number(s.bodyLengthCm)||0),progress=Math.min(100,size/10*100);lock.textContent=tr('🔒 تصویر در اندازهٔ بیشتر از موش آزاد می‌شود · ','🔒 Portrait unlocks above mouse size · ')+size.toFixed(1)+' / 10 cm';const bar=document.createElement('div');bar.className='pb-portrait-progress';const fill=document.createElement('i');fill.style.width=progress+'%';bar.appendChild(fill);lock.appendChild(bar);}
       card.appendChild(lock);
     });
   }
-  function isPortraitEligible(s){const form=String(s&&s.form||'').toLowerCase();const animalLike=!/microbe|bacter|fung|plant|tree|flora|filament|colony/.test(form);return !!s&&!s.extinct&&animalLike&&s.special===true&&Number(s.bodyLengthCm||0)>10;}
-  function pumpAutoQueue(){if(autoQueueRunning||busy||!autoQueue.length)return;autoQueueRunning=true;const s=autoQueue.shift();const id=String(s.id);selected=s;promptInput.value=buildPrompt(s,'collectible-'+Date.now().toString(36));Promise.resolve(generate()).finally(()=>{autoQueueRunning=false;setTimeout(pumpAutoQueue,9000);});}
-  async function scanEligibleSpecies(){const api=window.PlanetWorldLifeAPI;if(!api||typeof api.getSpeciesSnapshot!=='function')return;let list=[];try{list=api.getSpeciesSnapshot()||[];}catch(_){}for(const s of list){if(!isPortraitEligible(s))continue;const hash=await genomeHash(s);if(autoQueued.has(hash))continue;autoQueued.add(hash);const cached=await readImageCache(hash);if(cached)continue;autoQueue.push(s);}addWorldButtons();pumpAutoQueue();}
+  function isPortraitEligible(s){
+    if(!s||s.extinct||s.special!==true||Number(s.bodyLengthCm||0)<=10)return false;
+    const form=String(s.form||'').toLowerCase(),profile=window.PlanetOrganismMorphology&&window.PlanetOrganismMorphology.classify(s,s.traits);
+    return !(profile&&profile.nonAnimal)&&!/microbe|bacter|fung|plant|tree|flora|filament|colony|photosynthetic/.test(form);
+  }
+  function pumpAutoQueue(){if(autoQueueRunning||busy||!autoQueue.length)return;autoQueueRunning=true;const s=autoQueue.shift();selected=s;activeVariation='primary-v2';promptInput.value=buildPrompt(s,activeVariation);Promise.resolve(generate()).finally(()=>{autoQueueRunning=false;setTimeout(pumpAutoQueue,9000);});}
+  async function scanEligibleSpecies(){const api=window.PlanetWorldLifeAPI;if(!api||typeof api.getSpeciesSnapshot!=='function')return;let list=[];try{list=api.getSpeciesSnapshot()||[];}catch(_){}for(const s of list){if(!isPortraitEligible(s))continue;const base=await genomeHash(s);if(autoQueued.has(base))continue;autoQueued.add(base);const cacheKey=await portraitCacheHash(s,'primary-v2',buildPrompt(s,'primary-v2'));const cached=await readImageCache(cacheKey);if(cached)continue;autoQueue.push(s);}addWorldButtons();pumpAutoQueue();}
   async function showCollection(){
     let box=document.getElementById('planet-creature-gallery');if(!box){box=document.createElement('div');box.id='planet-creature-gallery';box.style.cssText='position:fixed;z-index:12020;inset:0;display:none;overflow:auto;padding:14px;background:#020914ed;color:#eaf6ff;font-family:Tahoma';box.innerHTML='<section style="max-width:900px;margin:2vh auto;background:#0b1b2d;border:1px solid #4a829d66;border-radius:18px;padding:15px"><header style="display:flex;justify-content:space-between;align-items:center"><h2 style="font-size:17px">🏆 کلکسیون تصاویر موجودات</h2><button id="planet-creature-gallery-close" class="planet-img-action">بستن ×</button></header><p id="planet-creature-gallery-count" style="font-size:11px;color:#9fc4d8"></p><div id="planet-creature-gallery-grid" class="planet-collection-grid"></div></section>';document.body.appendChild(box);box.querySelector('#planet-creature-gallery-close').onclick=()=>box.style.display='none';box.addEventListener('click',e=>{if(e.target===box)box.style.display='none';});}
     const active=window.PlanetWorldLifeAPI&&window.PlanetWorldLifeAPI.getActivePlanetId?window.PlanetWorldLifeAPI.getActivePlanetId():'';const items=(await listImageCache()).filter(x=>!active||!x.planetId||x.planetId===active).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));box.querySelector('#planet-creature-gallery-count').textContent=tr('تصاویر ثبت‌شده در این سیاره: ','Portraits saved for this planet: ')+items.length;const grid=box.querySelector('#planet-creature-gallery-grid');grid.innerHTML='';items.forEach(item=>{const card=document.createElement('div');card.className='planet-collection-card';const img=document.createElement('img');img.src=item.dataUrl;img.alt=item.speciesName||'Planet creature';const name=document.createElement('b');name.textContent=item.speciesName||tr('موجود دیجیتال','Digital organism');const meta=document.createElement('small');meta.textContent=(item.form||'')+' · '+Number(item.bodyLengthCm||0).toLocaleString('fa-IR')+' cm';card.append(img,name,meta);grid.appendChild(card);});box.style.display='block';
@@ -287,12 +335,12 @@
   function init(){
     loadSettings();$('planet-image-close').addEventListener('click',closeModal);overlay.addEventListener('click',e=>{if(e.target===overlay)closeModal();});
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&overlay.classList.contains('open'))closeModal();});
-    $('planet-image-save-settings').addEventListener('click',saveSettings);generateButton.addEventListener('click',generate);variationButton.hidden=true;downloadButton.addEventListener('click',downloadImage);
+    $('planet-image-save-settings').addEventListener('click',saveSettings);generateButton.addEventListener('click',generate);variationButton.hidden=false;variationButton.textContent=tr('تنوع ظاهری تازه','New visual variation');variationButton.addEventListener('click',createVariation);downloadButton.addEventListener('click',downloadImage);
     const catalog=$('speciesList');if(catalog){addButtons(catalog);new MutationObserver(()=>addButtons(catalog)).observe(catalog,{childList:true,subtree:true});}
     const galleryButton=document.createElement('button');galleryButton.type='button';galleryButton.className='planet-collection-launch';galleryButton.textContent='🏆 کلکسیون تصاویر';galleryButton.addEventListener('click',showCollection);document.body.appendChild(galleryButton);
     const worldGrid=document.getElementById('pbSpeciesGrid');if(worldGrid)new MutationObserver(()=>addWorldButtons()).observe(worldGrid,{childList:true,subtree:true});
     setInterval(()=>{scanEligibleSpecies().catch(()=>{});},6000);scanEligibleSpecies().catch(()=>{});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-  window.PlanetImageGeneration={openForSpecies:openForSpecies,openForSpecimen:openForSpecimen,buildPrompt:id=>{const s=getSpecies(id);return s?buildPrompt(s,'preview'):'';},generateOfflineSVG:id=>{const s=getSpecies(id);return s?generateOfflineSVG(s,'test'):'';},getConfigured:()=>{try{return!!localStorage.getItem(ENDPOINT_KEY)&&!!localStorage.getItem(ACCESS_KEY);}catch(_){return false;}},refresh:()=>scanEligibleSpecies(),openCollection:showCollection,isPortraitEligible:isPortraitEligible};
+  window.PlanetImageGeneration={openForSpecies:openForSpecies,openForSpecimen:openForSpecimen,buildPrompt:id=>{const s=getSpecies(id);return s?buildPrompt(s,'primary-v2'):'';},buildPromptForSpecimen:s=>s?buildPrompt(s,'test'):'',generateOfflineSVG:id=>{const s=getSpecies(id);return s?generateOfflineSVG(s,'test'):'';},generateOfflineSVGForSpecimen:(s,variation)=>s?generateOfflineSVG(s,variation||'test'):'',getConfigured:()=>{try{return!!localStorage.getItem(ENDPOINT_KEY)&&!!localStorage.getItem(ACCESS_KEY);}catch(_){return false;}},refresh:()=>scanEligibleSpecies(),openCollection:showCollection,isPortraitEligible:isPortraitEligible};
 })();

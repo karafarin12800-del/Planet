@@ -84,12 +84,18 @@ try {
   assert.equal(cachedData.cached, true, "same planet/genome identity reuses the persistent image");
   assert.equal(providerCalls, 1, "cache hits do not incur another provider request");
 
+  const alternatePrompt = { ...payload, prompt: "A branching filament organism with no animal torso or limbs." };
+  const promptVariation = await worker.fetch(request("/generate", { method: "POST", headers, body: JSON.stringify(alternatePrompt) }), env);
+  assert.equal(promptVariation.status, 200);
+  assert.equal((await json(promptVariation)).cached, false, "changed morphology prompt cannot reuse the old image");
+  assert.equal(providerCalls, 2);
+
   const otherPlanet = { ...payload, cacheIdentity: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", planetId: "world-b" };
   const secondPlanet = await worker.fetch(request("/generate", { method: "POST", headers, body: JSON.stringify(otherPlanet) }), env);
   assert.equal(secondPlanet.status, 200);
   assert.equal((await json(secondPlanet)).cached, false, "same genome on another planet gets a distinct cache entry");
-  assert.equal(providerCalls, 2);
-  assert.equal(bucket.size, 2, "two planet-specific images are stored separately");
+  assert.equal(providerCalls, 3);
+  assert.equal(bucket.size, 3, "different prompts and planet identities are stored separately");
 
   console.log("PLANET image Worker runtime tests passed: health, origin allowlist, fail-closed config, auth, genome validation, provider request and planet-specific R2 cache.");
 } finally {

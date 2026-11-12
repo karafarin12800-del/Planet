@@ -94,17 +94,17 @@ export default {
     let body;
     try { body = await request.json(); } catch (_) { return json({ error: "Invalid JSON request." }, 400, headers); }
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+    if (!prompt) return json({ error: "An image prompt is required." }, 400, headers);
+    if (prompt.length > 12000) return json({ error: "The prompt is longer than the supported limit." }, 413, headers);
     const genome = typeof body.genome === "string" ? body.genome.toUpperCase() : "";
     if (!/^[ACGT]{1,100000}$/.test(genome)) return json({ error: "A valid digital genome is required for a persistent organism image." }, 400, headers);
     const cacheIdentity = typeof body.cacheIdentity === "string" && /^[a-f0-9]{8,128}$/i.test(body.cacheIdentity) ? body.cacheIdentity.toLowerCase() : genome;
-    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(cacheIdentity));
+    const cacheMaterial = cacheIdentity + "|" + prompt;
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(cacheMaterial));
     const genomeHash = [...new Uint8Array(digest)].map(x => x.toString(16).padStart(2, "0")).join("");
     const cacheKey = "genomes/" + genomeHash + ".png";
     const cachedImage = await env.ORGANISM_IMAGES.get(cacheKey);
     if (cachedImage) return json({ imageBase64: await cachedImage.text(), mimeType: "image/png", model: cachedImage.customMetadata && cachedImage.customMetadata.model || "cached", genomeHash, cached: true, provenance: "persistent-genome-image-cache" }, 200, headers);
-    if (!prompt) return json({ error: "An image prompt is required." }, 400, headers);
-    if (prompt.length > 12000) return json({ error: "The prompt is longer than the supported limit." }, 413, headers);
-
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
     const rate = consumeRateLimit(ip);
     if (!rate.allowed) {
@@ -151,7 +151,7 @@ export default {
     if (!first || typeof first.b64_json !== "string" || !first.b64_json) {
       return json({ error: "The image provider returned no encoded image. Check provider API compatibility." }, 502, headers);
     }
-    await env.ORGANISM_IMAGES.put(cacheKey, first.b64_json, { httpMetadata: { contentType: "text/plain" }, customMetadata: { genomeHash, model: model, mimeType: "image/png" } });
+    await env.ORGANISM_IMAGES.put(cacheKey, first.b64_json, { httpMetadata: { contentType: "text/plain" }, customMetadata: { genomeHash, model: model, mimeType: "image/png", variation: String(body.variation || "primary-v2").slice(0, 80) } });
     return json({
       imageBase64: first.b64_json,
       mimeType: "image/png",
