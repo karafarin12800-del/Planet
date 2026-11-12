@@ -52,7 +52,7 @@ assert.ok(client.includes("function createVariation") && client.includes("variat
 assert.ok(client.includes("PlanetOrganismMorphology.describe"), "AI prompts use the shared morphology classifier");
 assert.ok(client.includes("This botanical or filamentous organism belongs in the biosphere"), "non-animal species are described as biosphere organisms rather than locked animal portraits");
 assert.ok(client.includes("function isPortraitEligible(s)"), "automatic portrait unlock has a single eligibility gate");
-assert.ok(client.includes("Number(s.bodyLengthCm||0)>10"), "portraits remain locked until the creature is larger than a mouse");
+assert.ok(client.includes("Number(s.bodyLengthCm||0)<=10"), "portraits remain locked at 10 cm and below until the creature grows larger than a mouse");
 assert.ok(client.includes("s.special===true"), "only evolved special species become collectible portraits");
 assert.ok(client.includes("function scanEligibleSpecies()"), "eligible creatures are automatically scanned");
 assert.ok(client.includes("function showCollection()"), "players can browse their saved creature portrait collection");
