@@ -42,7 +42,7 @@ assert.ok(client.includes("portraitCacheHash(species,variation,prompt)") && clie
 assert.ok(worker.includes("env.ORGANISM_IMAGES.get(cacheKey)") && worker.includes("env.ORGANISM_IMAGES.put(cacheKey"), "R2 keeps one global image per genome");
 assert.ok(worker.includes("const genome = typeof body.genome"), "server cache key is derived from the submitted genome");
 assert.ok(client.includes("A local genome-and-habitat portrait was created"), "the UI honestly identifies offline procedural output");
-assert.ok(client.includes("generateOffline(hash)"), "the online failure path falls back to a stable genome-keyed local image");
+assert.ok(client.includes("generateOffline(hash,variation)"), "the online failure path falls back to a prompt/variation-keyed local image");
 assert.ok(client.includes("generateOfflineSVG:id=>"), "the generated SVG path is exposed for direct testing");
 
 
