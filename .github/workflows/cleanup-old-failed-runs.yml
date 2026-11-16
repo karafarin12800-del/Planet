@@ -1,0 +1,72 @@
+name: Cleanup old failed workflow runs
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_delete:
+        description: "I understand this permanently deletes old failed workflow run records"
+        required: true
+        type: boolean
+        default: false
+      older_than_days:
+        description: "Delete failed runs older than this many days (minimum 7)"
+        required: true
+        type: number
+        default: 30
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cleanup:
+    name: Delete old failed runs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate confirmation and age
+        shell: bash
+        env:
+          CONFIRM_DELETE: ${{ inputs.confirm_delete }}
+          OLDER_THAN_DAYS: ${{ inputs.older_than_days }}
+        run: |
+          if [[ "$CONFIRM_DELETE" != "true" ]]; then
+            echo "Deletion was not confirmed. No runs were deleted."
+            exit 1
+          fi
+          if ! [[ "$OLDER_THAN_DAYS" =~ ^[0-9]+$ ]] || (( OLDER_THAN_DAYS < 7 || OLDER_THAN_DAYS > 3650 )); then
+            echo "older_than_days must be a whole number from 7 to 3650."
+            exit 1
+          fi
+
+      - name: Delete failed runs older than the selected age
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OLDER_THAN_DAYS: ${{ inputs.older_than_days }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cutoff="$(date -u -d "${OLDER_THAN_DAYS} days ago" +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Finding failed runs created before $cutoff"
+
+          mapfile -t run_ids < <(
+            gh run list \
+              --repo "${GITHUB_REPOSITORY}" \
+              --status failure \
+              --limit 1000 \
+              --json databaseId,createdAt \
+              --jq ".[] | select(.createdAt < \"$cutoff\") | .databaseId"
+          )
+
+          if (( ${#run_ids[@]} == 0 )); then
+            echo "No failed runs older than the selected age were found (within the latest 1000 failed runs)."
+            exit 0
+          fi
+
+          echo "Found ${#run_ids[@]} old failed run(s)."
+          deleted=0
+          for run_id in "${run_ids[@]}"; do
+            echo "Deleting failed run $run_id"
+            gh run delete "$run_id" --repo "${GITHUB_REPOSITORY}"
+            ((deleted+=1))
+          done
+          echo "Deleted $deleted old failed run(s)."
