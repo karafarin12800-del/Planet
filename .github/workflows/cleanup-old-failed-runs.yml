@@ -9,7 +9,7 @@ on:
         type: boolean
         default: false
       older_than_days:
-        description: "Delete every run older than this many days (default 30); broken runs are also deleted regardless of age"
+        description: "Delete every run older than this many days; broken runs are also deleted regardless of age"
         required: true
         type: number
         default: 30
@@ -47,7 +47,7 @@ jobs:
           set -euo pipefail
           cutoff="$(date -u -d "${OLDER_THAN_DAYS} days ago" +%Y-%m-%dT%H:%M:%SZ)"
           echo "Cutoff: $cutoff"
-          echo "Scanning workflow run history (GitHub API pagination)..."
+          echo "Scanning workflow run history with API pagination..."
 
           mapfile -t run_ids < <(
             gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs?per_page=100" \
@@ -55,8 +55,9 @@ jobs:
                 | select((.id | tostring) != \"${GITHUB_RUN_ID}\")
                 | select(
                     .created_at < \"$cutoff\"
-                    or ([\"failure\", \"cancelled\", \"timed_out\", \"action_required\", \"startup_failure\", \"stale\"]
-                        | index(.conclusion) != null)
+                    or (.conclusion as \$c
+                        | [\"failure\", \"cancelled\", \"timed_out\", \"action_required\", \"startup_failure\", \"stale\"]
+                        | index(\$c) != null)
                   )
                 | .id"
           )
